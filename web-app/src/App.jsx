@@ -481,9 +481,11 @@ export default function App() {
 
   // Update Audio Volume when config changes
   useEffect(() => {
-    bgmPlayer.volume = sf.vol / 10;
-    sePlayer.volume = sf.sevol / 10;
-    voicePlayer.volume = sf.sevol / 10;
+    const bgmVol = typeof sf.vol === 'number' && !isNaN(sf.vol) ? sf.vol : 8;
+    const seVol = typeof sf.sevol === 'number' && !isNaN(sf.sevol) ? sf.sevol : 8;
+    bgmPlayer.volume = bgmVol / 10;
+    sePlayer.volume = seVol / 10;
+    voicePlayer.volume = seVol / 10;
   }, [sf.vol, sf.sevol]);
 
   // Load scenarios from JSON
@@ -1723,6 +1725,7 @@ export default function App() {
             sf={sf}
             setSf={updateSf}
             onBack={quitToTitle}
+            isGameplay={false}
           />
         )}
 
@@ -1747,6 +1750,19 @@ export default function App() {
                 sf={sf}
                 setSf={updateSf}
                 onBack={() => setShowSettings(false)}
+                isGameplay={true}
+                onSave={() => {
+                  setShowSettings(false);
+                  setShowSaveLoad('SAVE');
+                }}
+                onLoad={() => {
+                  setShowSettings(false);
+                  setShowSaveLoad('LOAD');
+                }}
+                onQuit={() => {
+                  setShowSettings(false);
+                  quitToTitle();
+                }}
               />
             </div>
           </div>

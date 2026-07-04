@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
 
-export default function SaveLoadModal({ mode, onClose, onSaveSlot, onLoadSlot, saveSlots }) {
-  const [currentPage, setCurrentPage] = useState(1);
+const stripHtml = (html) => {
+  if (!html) return '';
+  return html.replace(/<[^>]*>/g, '');
+};
 
-  // Determine slot range based on page
-  const startIndex = (currentPage - 1) * 6;
-  const slotIndices = Array.from({ length: 6 }).map((_, i) => startIndex + i);
+export default function SaveLoadModal({ mode, onClose, onSaveSlot, onLoadSlot, saveSlots }) {
+  // Remember and load the last selected page tab from localStorage
+  const [currentPage, setCurrentPage] = useState(() => {
+    const saved = localStorage.getItem('school_last_save_page');
+    return saved ? parseInt(saved, 10) : 1;
+  });
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    localStorage.setItem('school_last_save_page', pageNumber.toString());
+  };
+
+  // Determine slot range based on page (8 slots per page)
+  const startIndex = (currentPage - 1) * 8;
+  const slotIndices = Array.from({ length: 8 }).map((_, i) => startIndex + i);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -39,26 +53,26 @@ export default function SaveLoadModal({ mode, onClose, onSaveSlot, onLoadSlot, s
           }
         `}</style>
         
-        <h2 className="screen-title">{mode} GAME</h2>
+        <h2 className="screen-title">{mode === 'SAVE' ? '保存游戏 / SAVE' : '读取游戏 / LOAD'}</h2>
 
         <div className="saveload-tabs">
           <button 
             className={`saveload-tab-btn ${currentPage === 1 ? 'active' : ''}`}
-            onClick={() => setCurrentPage(1)}
+            onClick={() => handlePageChange(1)}
           >
-            Page 1 (1-6)
+            Page 1 (1-8)
           </button>
           <button 
             className={`saveload-tab-btn ${currentPage === 2 ? 'active' : ''}`}
-            onClick={() => setCurrentPage(2)}
+            onClick={() => handlePageChange(2)}
           >
-            Page 2 (7-12)
+            Page 2 (9-16)
           </button>
           <button 
             className={`saveload-tab-btn ${currentPage === 3 ? 'active' : ''}`}
-            onClick={() => setCurrentPage(3)}
+            onClick={() => handlePageChange(3)}
           >
-            Page 3 (13-18)
+            Page 3 (17-24)
           </button>
         </div>
         
@@ -71,12 +85,20 @@ export default function SaveLoadModal({ mode, onClose, onSaveSlot, onLoadSlot, s
             
             return (
               <div key={idx} className="save-slot-card glass-panel">
-                <div className="slot-index">Slot {idx + 1}</div>
+                <div className="slot-index-header">
+                  <span className="slot-index">Slot {String(idx + 1).padStart(2, '0')}</span>
+                  {slotData && <span className="slot-date">{slotData.date}</span>}
+                </div>
                 
                 {slotData ? (
                   <div className="slot-meta">
-                    <div className="slot-scene">{slotData.currentScenario} - pointer {slotData.pointer}</div>
-                    <div className="slot-date">{slotData.date}</div>
+                    <div className="slot-scene">{slotData.currentScenario} - Pointer {slotData.pointer}</div>
+                    
+                    <div className="slot-preview" title={stripHtml(slotData.dialogueText)}>
+                      {slotData.speaker && <span className="slot-preview-speaker">{slotData.speaker}:</span>}
+                      {stripHtml(slotData.dialogueText) || 'No text recorded'}
+                    </div>
+                    
                     <div className="slot-actions">
                       {mode === 'SAVE' ? (
                         <button className="slot-action-btn" onClick={() => onSaveSlot(idx)}>Overwrite</button>
@@ -86,10 +108,12 @@ export default function SaveLoadModal({ mode, onClose, onSaveSlot, onLoadSlot, s
                     </div>
                   </div>
                 ) : (
-                  <div className="slot-meta">
-                    <div className="slot-scene">Empty Slot</div>
+                  <div className="slot-meta empty-slot-meta">
+                    <div className="slot-scene-empty">Empty Slot / 空白存档</div>
                     {mode === 'SAVE' && (
-                      <button className="slot-action-btn" onClick={() => onSaveSlot(idx)}>Save Here</button>
+                      <div className="slot-actions">
+                        <button className="slot-action-btn" onClick={() => onSaveSlot(idx)}>Save Here</button>
+                      </div>
                     )}
                   </div>
                 )}
@@ -98,7 +122,7 @@ export default function SaveLoadModal({ mode, onClose, onSaveSlot, onLoadSlot, s
           })}
         </div>
         
-        <button className="modal-close-btn" onClick={onClose}>Close</button>
+        <button className="modal-close-btn" onClick={onClose}>关闭 / Close</button>
       </div>
     </div>
   );

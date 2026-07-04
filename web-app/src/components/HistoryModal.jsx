@@ -14,7 +14,7 @@ export default function HistoryModal({ onClose, historyLog, language, onJumpToSn
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="backlog-modal glass-panel" onClick={(e) => e.stopPropagation()}>
-        <h2 className="screen-title">{language === 'JP' ? 'バックログ' : 'Dialogue History'}</h2>
+        <h2 className="screen-title">{language === 'JP' ? '历史记录' : 'Dialogue History'}</h2>
         
         <div className="backlog-content-area" ref={contentAreaRef}>
           {historyLog && historyLog.length > 0 ? (
@@ -29,7 +29,7 @@ export default function HistoryModal({ onClose, historyLog, language, onJumpToSn
                   className={`backlog-entry ${isClickable ? 'clickable-backlog' : ''}`}
                   onClick={() => isClickable && setConfirmSnapshot({ snapshot: entry.snapshot, index: idx })}
                   style={isClickable ? { cursor: 'pointer' } : {}}
-                  title={isClickable ? (language === 'JP' ? 'この会話の時点に戻る' : 'Jump back to this dialogue point') : ''}
+                  title={isClickable ? (language === 'JP' ? '跳转回此对话点' : 'Jump back to this dialogue point') : ''}
                 >
                   <div className="backlog-entry-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     {speaker && <div className="backlog-entry-speaker">{speaker}</div>}
@@ -50,7 +50,7 @@ export default function HistoryModal({ onClose, historyLog, language, onJumpToSn
                           borderRadius: '4px',
                           transition: 'all 0.2s'
                         }}
-                        title={language === 'JP' ? 'ボイスを再生' : 'Replay Voice'}
+                        title={language === 'JP' ? '播放语音' : 'Replay Voice'}
                       >
                         🔊
                       </button>
@@ -65,13 +65,13 @@ export default function HistoryModal({ onClose, historyLog, language, onJumpToSn
             })
           ) : (
             <div className="backlog-empty">
-              {language === 'JP' ? '履歴はありません。' : 'No history recorded yet.'}
+              {language === 'JP' ? '暂无历史记录。' : 'No history recorded yet.'}
             </div>
           )}
         </div>
         
         <button className="modal-close-btn" onClick={onClose}>
-          {language === 'JP' ? '閉じる' : 'Close'}
+          {language === 'JP' ? '关闭' : 'Close'}
         </button>
 
         {/* --- Backlog Jump Confirmation Box Overlay --- */}
@@ -79,20 +79,20 @@ export default function HistoryModal({ onClose, historyLog, language, onJumpToSn
           <div className="backlog-confirm-overlay" onClick={() => setConfirmSnapshot(null)}>
             <div className="backlog-confirm-dialog glass-panel" onClick={(e) => e.stopPropagation()}>
               <h3>
-                {language === 'JP' ? 'この会話の時点に戻りますか？' : 'Jump back to this dialogue point?'}
+                {language === 'JP' ? '要跳转回此对话点吗？' : 'Jump back to this dialogue point?'}
               </h3>
               <p>
-                {language === 'JP' ? '現在の進行状況は失われます。' : 'Your current progress will be reset.'}
+                {language === 'JP' ? '当前游戏进度将会丢失。' : 'Your current progress will be reset.'}
               </p>
               <div className="backlog-confirm-buttons">
                 <button className="confirm-btn yes-btn" onClick={() => {
                   onJumpToSnapshot(confirmSnapshot.snapshot, confirmSnapshot.index);
                   setConfirmSnapshot(null);
                 }}>
-                  {language === 'JP' ? 'はい' : 'Yes'}
+                  {language === 'JP' ? '确定' : 'Yes'}
                 </button>
                 <button className="confirm-btn no-btn" onClick={() => setConfirmSnapshot(null)}>
-                  {language === 'JP' ? 'いいえ' : 'No'}
+                  {language === 'JP' ? '取消' : 'No'}
                 </button>
               </div>
             </div>
