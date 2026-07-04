@@ -1,19 +1,19 @@
 package main
 
 import (
-	"embed"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/fs"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
 	"sync"
-)
+	"time"
 
-//go:embed web-app/dist
-var distFS embed.FS
+	"game-rewrite/lib/extraction"
+)
 
 type SaveState struct {
 	SF    map[string]interface{} `json:"sf"`
@@ -43,6 +43,12 @@ func loadState() (SaveState, error) {
 	}
 
 	err = json.Unmarshal(data, &state)
+	if state.SF == nil {
+		state.SF = make(map[string]interface{})
+	}
+	if state.Slots == nil {
+		state.Slots = make(map[string]interface{})
+	}
 	return state, err
 }
 
@@ -58,14 +64,47 @@ func saveState(state SaveState) error {
 	return os.WriteFile(saveFile, data, 0644)
 }
 
+func openBrowser(url string) {
+	var err error
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+		if err != nil {
+			exec.Command("google-chrome", url).Start()
+			exec.Command("firefox", url).Start()
+		}
+	case "windows":
+		err = exec.Command("cmd", "/c", "start", "", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	}
+}
+
 func main() {
 	port := flag.Int("port", 8080, "port to listen on")
+	extractMode := flag.Bool("extract", false, "run asset extraction mode")
 	flag.Parse()
 
-	// Extract the embedded static assets folder
-	staticFS, err := fs.Sub(distFS, "web-app/dist")
-	if err != nil {
-		log.Fatal("Failed to load embedded static files: ", err)
+	// Detect if extraction is needed
+	needsExtraction := false
+	if _, err := os.Stat("file_map.json"); os.IsNotExist(err) {
+		needsExtraction = true
+	} else if _, err := os.Stat("sprite_positions.json"); os.IsNotExist(err) {
+		needsExtraction = true
+	} else if _, err := os.Stat("./extracted_data"); os.IsNotExist(err) {
+		needsExtraction = true
+	}
+
+	if *extractMode || needsExtraction {
+		if needsExtraction {
+			fmt.Println("Assets index files or extracted_data directory not found. Starting automatic extraction...")
+		}
+		extraction.RunExtraction()
+		if !*extractMode {
+			fmt.Println("Automatic extraction finished. Launching server...")
+		} else {
+			return
+		}
 	}
 
 	// API routes
@@ -151,6 +190,12 @@ func main() {
 		w.Write([]byte(`{"success":true}`))
 	})
 
+	// Serve scenarios from extracted_data/scenarios
+	http.HandleFunc("/scenarios/", func(w http.ResponseWriter, r *http.Request) {
+		localPath := "./extracted_data" + r.URL.Path
+		http.ServeFile(w, r, localPath)
+	})
+
 	// Serve local media assets from extracted_data
 	assetDirs := []string{"alter", "bgimage", "bgm", "bland_call", "evimage", "evimage_h_scene", "face", "fgimage", "font", "image", "others", "rule", "sound", "voice", "voice_h_scene"}
 	for _, dir := range assetDirs {
@@ -159,9 +204,17 @@ func main() {
 		http.Handle(prefix, http.StripPrefix(prefix, http.FileServer(http.Dir(path))))
 	}
 
-	// Static files handler
-	http.Handle("/", http.FileServer(http.FS(staticFS)))
+	// Static files handler serving built React app from disk
+	http.Handle("/", http.FileServer(http.Dir("./web-app/dist")))
 
-	fmt.Printf("Starting backend server on http://localhost:%d\n", *port)
+	url := fmt.Sprintf("http://localhost:%d", *port)
+	fmt.Printf("Starting backend server on %s\n", url)
+
+	// Async browser open after a slight delay to allow port binding
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		openBrowser(url)
+	}()
+
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
 }

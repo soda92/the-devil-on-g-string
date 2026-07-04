@@ -85,6 +85,23 @@ export default function App() {
     }
   }, []);
 
+  // Sync current scenario and pointer to URL query parameters for debugging
+  useEffect(() => {
+    if (runner.gameState === 'PLAYING' && runner.currentScenario) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('scen', runner.currentScenario);
+      url.searchParams.set('ptr', runner.pointer.toString());
+      window.history.replaceState(null, '', url.pathname + url.search);
+    } else if (runner.gameState === 'TITLE') {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('scen') || url.searchParams.has('ptr')) {
+        url.searchParams.delete('scen');
+        url.searchParams.delete('ptr');
+        window.history.replaceState(null, '', url.pathname + url.search);
+      }
+    }
+  }, [runner.currentScenario, runner.pointer, runner.gameState]);
+
   return (
     <div className="game-container" style={{ transform: `scale(${scale})` }}>
       <div className="game-screen shadow-premium">

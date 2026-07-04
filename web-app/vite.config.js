@@ -14,6 +14,14 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      '/scenarios': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '^/(alter|bgimage|bgm|bland_call|evimage|evimage_h_scene|face|fgimage|font|image|others|rule|sound|voice|voice_h_scene)': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
   test: {
