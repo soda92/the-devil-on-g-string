@@ -919,9 +919,11 @@ export default function App() {
           break;
           
         case 'line_feed':
-          // Append newline wait in dialogueText and typewriter
-          updateDialogueText(dialogueTextRef.current + '<br />');
-          setTypewriterText(prev => prev + '<br />');
+          // Only append newline if we already have text on the current page
+          if (dialogueTextRef.current && dialogueTextRef.current.trim() !== '') {
+            updateDialogueText(dialogueTextRef.current + '<br />');
+            setTypewriterText(prev => prev + '<br />');
+          }
           break;
           
         case 'link_start':
@@ -1028,7 +1030,9 @@ export default function App() {
       if (inst.type === 'text') {
         accumulated += (language === 'JP' ? inst.text_jp : inst.text_en);
       } else if (inst.type === 'line_feed') {
-        accumulated += '<br />';
+        if (accumulated && accumulated.trim() !== '') {
+          accumulated += '<br />';
+        }
       }
     }
 
