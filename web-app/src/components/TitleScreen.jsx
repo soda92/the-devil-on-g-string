@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function TitleScreen({ f, resolveAsset, startNewGame, onShowLoad, onShowGallery, onShowSettings, hasActiveGame, onResume, language, hasHistory, onRewind, onShowFlowchart }) {
+export default function TitleScreen({ f, resolveAsset, startNewGame, onShowLoad, onShowGallery, onShowMusic, onShowSettings, hasActiveGame, onResume, language, hasHistory, onRewind, onShowFlowchart }) {
   // Render hourly background image for title screen
   const getTitleBg = () => {
     const hour = f.chour;
@@ -39,6 +39,9 @@ export default function TitleScreen({ f, resolveAsset, startNewGame, onShowLoad,
           </button>
           <button className="premium-btn title-menu-btn" onClick={onShowGallery}>
             CG 鉴赏
+          </button>
+          <button className="premium-btn title-menu-btn" onClick={onShowMusic}>
+            音乐鉴赏
           </button>
           <button className="premium-btn title-menu-btn" onClick={onShowSettings}>
             游戏设置

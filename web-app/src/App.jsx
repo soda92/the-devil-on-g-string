@@ -11,6 +11,7 @@ import HistoryModal from './components/HistoryModal';
 import GameplayScreen from './components/GameplayScreen';
 import ChoiceGraphModal from './components/ChoiceGraphModal';
 import DebugPanel from './components/DebugPanel';
+import MusicRoom from './components/MusicRoom';
 
 // --- Utility Helpers ---
 import { resolveAsset, resolveCharacterName, tokenizeText } from './utils/gameUtils';
@@ -468,6 +469,7 @@ export default function App() {
               }
             } else if (inst.name === 'black') {
               initialBg = 'black';
+              initialSprites = { 0: null, 1: null, 2: null };
             } else if (inst.name === 'image') {
               if (args.layer === 'base' && args.storage) {
                 initialBg = args.storage;
@@ -620,6 +622,13 @@ export default function App() {
     sePlayer.src = '';
   };
 
+  // Play main theme on Title Screen
+  useEffect(() => {
+    if (gameState === 'TITLE') {
+      playBgm('bgm_01');
+    }
+  }, [gameState]);
+
   const playVoice = (storage) => {
     if (!storage) return;
     const url = resolveAsset(storage, 'voice');
@@ -702,6 +711,7 @@ export default function App() {
             if (args.r !== undefined) tempSprites[0] = args.r; // Right
           } else if (inst.name === 'black') {
             tempBackground = 'black';
+            tempSprites = { 0: null, 1: null, 2: null };
           } else if (inst.name === 'chr1') {
             tempSprites[2] = args.str; // Center
           } else if (inst.name === 'chr2') {
@@ -1392,6 +1402,7 @@ export default function App() {
             startNewGame={startNewGame}
             onShowLoad={() => setShowSaveLoad('LOAD')}
             onShowGallery={() => setGameState('GALLERY')}
+            onShowMusic={() => setGameState('MUSIC')}
             onShowSettings={() => setGameState('SETTINGS')}
             hasActiveGame={(pointer > 0 && scenarioData !== null) || localStorage.getItem('school_autosave') !== null || (saveSlots && saveSlots.autosave)}
             onResume={resumeGame}
@@ -1436,6 +1447,18 @@ export default function App() {
             resolveAsset={resolveAsset}
             onBack={quitToTitle}
             setCgViewerUrl={setCgViewerUrl}
+          />
+        )}
+
+        {/* === MUSIC GALLERY SCREEN VIEW === */}
+        {gameState === 'MUSIC' && (
+          <MusicRoom 
+            playBgm={playBgm}
+            stopBgm={stopBgm}
+            currentBgmName={bgmPlayer.src ? bgmPlayer.src.split('/').pop().split('.')[0] : ''}
+            onBack={quitToTitle}
+            sf={sf}
+            setSf={setSf}
           />
         )}
 

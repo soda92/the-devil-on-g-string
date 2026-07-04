@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GALLERY_ITEMS from '../gallery_items.json';
 
 export default function GalleryScreen({ sf, resolveAsset, onBack, setCgViewerUrl }) {

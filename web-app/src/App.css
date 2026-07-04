@@ -120,21 +120,23 @@
   position: absolute;
   bottom: 0;
   height: 580px;
-  object-fit: contain;
   animation: fade-in 0.3s ease-out;
-  transition: left 0.3s ease;
+  transition: left 0.3s ease, transform 0.3s ease;
 }
 
 .sprite-left {
-  left: -10px;
+  left: 25%;
+  transform: translateX(-50%);
 }
 
 .sprite-center {
-  left: 200px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .sprite-right {
-  left: 390px;
+  left: 75%;
+  transform: translateX(-50%);
 }
 
 /* Side Narration Overlay (Vertical for JP, Horizontal for EN) */
