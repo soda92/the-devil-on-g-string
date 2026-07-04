@@ -83,6 +83,7 @@ func openBrowser(url string) {
 func main() {
 	port := flag.Int("port", 8080, "port to listen on")
 	extractMode := flag.Bool("extract", false, "run asset extraction mode")
+	devMode := flag.Bool("dev", false, "run in frontend development mode (runs pnpm dev concurrently)")
 	flag.Parse()
 
 	// Detect if extraction is needed
@@ -104,6 +105,28 @@ func main() {
 			fmt.Println("Automatic extraction finished. Launching server...")
 		} else {
 			return
+		}
+	}
+
+	if *devMode {
+		fmt.Println("Launching frontend Vite development server (pnpm dev)...")
+		var cmd *exec.Cmd
+		if runtime.GOOS == "windows" {
+			cmd = exec.Command("cmd", "/c", "pnpm", "dev")
+		} else {
+			cmd = exec.Command("pnpm", "dev")
+		}
+		cmd.Dir = "./web-app"
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		err := cmd.Start()
+		if err != nil {
+			log.Printf("Warning: Failed to start frontend development server (pnpm dev): %v\n", err)
+		} else {
+			go func() {
+				cmd.Wait()
+			}()
 		}
 	}
 
@@ -208,11 +231,24 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir("./web-app/dist")))
 
 	url := fmt.Sprintf("http://localhost:%d", *port)
-	fmt.Printf("Starting backend server on %s\n", url)
+	if *devMode {
+		url = "http://localhost:38942"
+	}
+
+	if *devMode {
+		fmt.Printf("Starting backend server on http://localhost:%d\n", *port)
+		fmt.Printf("Dev mode active. Web application available at %s\n", url)
+	} else {
+		fmt.Printf("Starting backend server on %s\n", url)
+	}
 
 	// Async browser open after a slight delay to allow port binding
 	go func() {
-		time.Sleep(500 * time.Millisecond)
+		delay := 500 * time.Millisecond
+		if *devMode {
+			delay = 1500 * time.Millisecond // Wait slightly longer for Vite dev server to compile on first boot
+		}
+		time.Sleep(delay)
 		openBrowser(url)
 	}()
 

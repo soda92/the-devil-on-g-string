@@ -22,6 +22,7 @@ This project completely rewrites the original engine player, replacing it with a
 *   **Convenient Keyboard Shortcuts**:
     *   `Space`: Toggles dialogue textbox visibility (to admire backgrounds and character sprites).
     *   `Enter` / `NumpadEnter`: Advances dialogue, or makes the textbox visible again if hidden.
+    *   `Escape`: Closes any active overlay (Settings, Save/Load slot selector, History backlog, or Flowchart).
 
 ---
 
@@ -37,6 +38,7 @@ This project completely rewrites the original engine player, replacing it with a
 *   **便捷键盘快捷键**:
     *   `空格键 (Space)`: 隐藏/显示对话框（便于观赏背景 CG 及角色立绘）。
     *   `回车键 (Enter)`: 推进对话，或者在对话框处于隐藏状态时重新将其显示。
+    *   `ESC 键 (Escape)`: 关闭当前打开的任何覆盖层模态框（系统设置、保存/读取存档、历史记录或路线图）。
 
 ---
 
@@ -102,7 +104,14 @@ The server will automatically:
 ---
 
 ## ⚙️ Development Server / 开发模式下运行
-To run a hot-reloaded development environment: / 启动支持热更新的本地开发服务：
+To run a hot-reloaded development environment concurrently with a single command: / 仅需一条命令即可同时启动支持热更新的前后端本地开发服务：
+
+```bash
+# Start backend server and automatically spawn Vite dev server in the background
+./G弦上的魔王-server -dev
+```
+
+Alternatively, you can start them manually in separate terminals: / 或者，你也可以在不同的终端中手动分别启动它们：
 
 1.  Start the Go backend server (handles data APIs and assets serving): / 启动 Go 后端服务：
     ```bash
