@@ -15,11 +15,32 @@ export default function DebugPanel({
   dialogueMode,
   speaker
 }) {
+  const [showButton, setShowButton] = useState(() => {
+    return localStorage.getItem('school_debug_button_visible') === 'true';
+  });
   const [isOpen, setIsOpen] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState(currentScenario);
   const [targetPointer, setTargetPointer] = useState(pointer);
   const [customVarName, setCustomVarName] = useState('');
   const [customVarValue, setCustomVarValue] = useState('');
+
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+        return;
+      }
+      if (e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        setShowButton(prev => {
+          const next = !prev;
+          localStorage.setItem('school_debug_button_visible', String(next));
+          return next;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleJump = () => {
     loadScenario(selectedScenario, null, parseInt(targetPointer) || 0);
@@ -36,6 +57,10 @@ export default function DebugPanel({
       setF(prev => ({ ...prev, [name]: val }));
     }
   };
+
+  if (!showButton && !isOpen) {
+    return null;
+  }
 
   if (!isOpen) {
     return (

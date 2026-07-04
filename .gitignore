@@ -11,7 +11,7 @@ G弦上的魔王.exe
 G弦上的魔王-server
 /*.json
 compiled_scenarios
-web-app/public
+web-app/public/scenarios
 
 file_map.json
 gallery_items.json
