@@ -23,6 +23,14 @@ bgmPlayer.loop = true;
 const sePlayer = new Audio();
 const voicePlayer = new Audio();
 
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    bgmPlayer.pause();
+    sePlayer.pause();
+    voicePlayer.pause();
+  });
+}
+
 // --- Save State Cleaners for Flowchart Nested Snapshots ---
 const cleanFForSnapshot = (originalF) => {
   if (!originalF) return {};
@@ -113,6 +121,10 @@ export default function App() {
   const [dialogueMode, setDialogueMode] = useState('avg');
   const [isAutoMode, setIsAutoMode] = useState(false);
   const currentVoiceRef = useRef(null);
+  
+  const [isAudioUnlocked, setIsAudioUnlocked] = useState(false);
+  const initialBgmRef = useRef('');
+  const initialVoiceRef = useRef('');
   
   const dialogueTextRef = useRef('');
   const updateDialogueText = (val) => {
@@ -515,6 +527,7 @@ export default function App() {
         let initialSprites = { 0: null, 1: null, 2: null };
         let initialSpeaker = '';
         let initialDialogueMode = 'avg';
+        let initialVoice = '';
         
         for (let i = 0; i < startIdx; i++) {
           const inst = data.instructions[i];
@@ -574,6 +587,7 @@ export default function App() {
               initialSprites = { 0: null, 1: null, 2: null };
             } else if (inst.name === 'name' || inst.name === 'nm') {
               initialSpeaker = args.txt || args.t || '';
+              initialVoice = args.s || '';
             } else if (inst.name === 'novel') {
               initialDialogueMode = 'novel';
             } else if (inst.name === 'avg' || inst.name === 'avg_with_name') {
@@ -591,6 +605,10 @@ export default function App() {
           const resolvedSp = resolveCharacterName(initialSpeaker, 'JP');
           setSpeaker(resolvedSp);
           currentSpeakerRef.current = { jp: resolvedSp, en: resolveCharacterName(resolvedSp, 'EN') };
+        }
+        initialVoiceRef.current = initialVoice;
+        if (initialVoice) {
+          playVoice(initialVoice);
         }
         if (initialBgm) {
           playBgm(initialBgm);
@@ -664,6 +682,7 @@ export default function App() {
   // Audio Controllers
   const playBgm = (storage) => {
     if (!storage) return;
+    initialBgmRef.current = storage;
     const url = resolveAsset(storage, 'bgm');
     const fullUrl = window.location.origin + url;
     if (bgmPlayer.src !== fullUrl) {
@@ -855,6 +874,12 @@ export default function App() {
           } else if (inst.name === 'jump') {
             const storage = args.storage ? args.storage.replace('.ks', '') : currentScenario;
             const target = args.target ? args.target.replace('*', '') : null;
+            
+            console.log(
+              `%c[JUMP] Target Scenario: %c${storage}%c | Target Label: %c*${target || 'None'}`,
+              'color: #c678dd; font-weight: bold;', 'color: #ce9178; font-weight: bold;',
+              'color: #c678dd;', 'color: #56b6c2; font-weight: bold;'
+            );
             
             // Trigger storage jump
             loadScenario(storage, target);
@@ -1109,6 +1134,17 @@ export default function App() {
   // Advance on screen click
   const handleScreenClick = () => {
     if (showOptions || gameState !== 'PLAYING') return;
+
+    if (!isAudioUnlocked) {
+      setIsAudioUnlocked(true);
+      if (initialBgmRef.current) {
+        playBgm(initialBgmRef.current);
+      }
+      if (initialVoiceRef.current) {
+        playVoice(initialVoiceRef.current);
+      }
+      return;
+    }
     
     // If dialogue box was hidden, restore it on click instead of advancing
     if (!textVisible) {
@@ -1362,12 +1398,20 @@ export default function App() {
       stopBgm();
     }
     
+    console.log(
+      `%c[LOAD] Loaded Slot: %c${slotData.slotId || 'autosave'}%c | Scenario: %c${slotData.currentScenario}%c | Pointer: %c${slotData.pointer}`,
+      'color: #61afef; font-weight: bold;', 'color: #d19a66; font-weight: bold;',
+      'color: #61afef;', 'color: #ce9178; font-weight: bold;',
+      'color: #61afef;', 'color: #b5cea8; font-weight: bold;'
+    );
+    
     setShowSaveLoad(null);
   };
 
   const handleSaveSlot = (slotIdx) => {
     const slotKey = `school_save_slot_${slotIdx}`;
     const saveData = {
+      slotId: slotIdx,
       f: cleanFForSnapshot(f),
       choicesHistory: cleanChoicesHistoryForSave(f.choicesHistory),
       sprites,
@@ -1387,6 +1431,13 @@ export default function App() {
     };
     localStorage.setItem(slotKey, JSON.stringify(saveData));
     
+    console.log(
+      `%c[SAVE] Saved to Slot: %c${slotIdx}%c | Scenario: %c${currentScenario}%c | Pointer: %c${pointer}`,
+      'color: #98c379; font-weight: bold;', 'color: #d19a66; font-weight: bold;',
+      'color: #98c379;', 'color: #ce9178; font-weight: bold;',
+      'color: #98c379;', 'color: #b5cea8; font-weight: bold;'
+    );
+    
     // Save to backend API
     fetch('/api/save-slot', {
       method: 'POST',
@@ -1402,6 +1453,12 @@ export default function App() {
 
   // Select Choice Option
   const handleSelectOption = (opt) => {
+    console.log(
+      `%c[CHOICE] Selected: %c"${language === 'JP' ? opt.text_jp : opt.text_en}"%c | Target: %c*${opt.target}`,
+      'color: #f14c4c; font-weight: bold;', 'color: #e5c07b; font-style: italic;',
+      'color: #f14c4c;', 'color: #56b6c2; font-weight: bold;'
+    );
+
     // Record choice point to history flowchart before execution modifies variables
     const choiceEntry = {
       scenario: currentScenario,
@@ -1457,6 +1514,65 @@ export default function App() {
     setShowSaveLoad(null);
   };
 
+  // Expose quick_check to browser console
+  useEffect(() => {
+    window.quick_check = () => {
+      console.log("%c=== ENGINE QUICK CHECK ===", "color: #aa3bff; font-weight: bold; font-size: 14px;");
+      console.log("Scenario       :", currentScenario);
+      console.log("Pointer        :", pointer);
+      console.log("Background     :", background);
+      console.log("Sprites        :", sprites);
+      console.log("Speaker        :", speaker);
+      console.log("Dialogue Mode  :", dialogueMode);
+      console.log("Dialogue Text  :", dialogueText);
+      console.log("Typewriter     :", typewriterText);
+      console.log("Waiting state  :", isWaiting);
+      console.log("Auto Mode      :", isAutoMode);
+      console.log("Skip Mode      :", isFastForward);
+      console.log("f (Variables)  :", f);
+      console.log("sf (Sys Flags) :", sf);
+      console.log("BGM Player     : src =", bgmPlayer.src, "| paused =", bgmPlayer.paused, "| volume =", bgmPlayer.volume);
+      console.log("Voice Player   : src =", voicePlayer.src, "| paused =", voicePlayer.paused);
+      console.log("SE Player      : src =", sePlayer.src, "| paused =", sePlayer.paused);
+      return {
+        scenario: currentScenario,
+        pointer,
+        background,
+        sprites,
+        speaker,
+        dialogueMode,
+        dialogueText,
+        typewriterText,
+        isWaiting,
+        isAutoMode,
+        isFastForward,
+        f,
+        sf,
+        audio: {
+          bgm: { src: bgmPlayer.src, paused: bgmPlayer.paused, volume: bgmPlayer.volume },
+          se: { src: sePlayer.src, paused: sePlayer.paused, volume: sePlayer.volume },
+          voice: { src: voicePlayer.src, paused: voicePlayer.paused, volume: voicePlayer.volume }
+        }
+      };
+    };
+    return () => {
+      delete window.quick_check;
+    };
+  }, [currentScenario, pointer, background, sprites, speaker, dialogueMode, dialogueText, typewriterText, isWaiting, isAutoMode, isFastForward, f, sf]);
+
+  // Log state progression in browser console
+  useEffect(() => {
+    if (gameState === 'PLAYING') {
+      console.log(
+        `%c[STEP] Scenario: %c${currentScenario}%c | Pointer: %c${pointer}%c | BG: %c${background}%c | Speaker: %c${speaker || 'None'}`,
+        'color: #9cdcfe;', 'color: #ce9178; font-weight: bold;',
+        'color: #9cdcfe;', 'color: #b5cea8; font-weight: bold;',
+        'color: #9cdcfe;', 'color: #4fc1ff; font-style: italic;',
+        'color: #9cdcfe;', 'color: #4ec9b0; font-weight: bold;'
+      );
+    }
+  }, [currentScenario, pointer, background, gameState]);
+
   // Render hourly background image for title screen
   const getTitleBg = () => {
     const hour = f.chour;
@@ -1506,23 +1622,73 @@ export default function App() {
             handleWheel={handleWheel}
             handleSelectOption={handleSelectOption}
             setLanguage={setLanguage}
-            setShowSaveLoad={setShowSaveLoad}
-            setShowSettings={setShowSettings}
-            quitToTitle={quitToTitle}
-            setShowHistory={setShowHistory}
-            onShowFlowchart={() => setShowChoiceGraph(true)}
+            setShowSaveLoad={(mode) => {
+              if (!isAudioUnlocked) {
+                setIsAudioUnlocked(true);
+                if (initialBgmRef.current) playBgm(initialBgmRef.current);
+              }
+              setShowSaveLoad(mode);
+            }}
+            setShowSettings={(show) => {
+              if (!isAudioUnlocked) {
+                setIsAudioUnlocked(true);
+                if (initialBgmRef.current) playBgm(initialBgmRef.current);
+              }
+              setShowSettings(show);
+            }}
+            quitToTitle={() => {
+              if (!isAudioUnlocked) {
+                setIsAudioUnlocked(true);
+                if (initialBgmRef.current) playBgm(initialBgmRef.current);
+              }
+              quitToTitle();
+            }}
+            setShowHistory={(show) => {
+              if (!isAudioUnlocked) {
+                setIsAudioUnlocked(true);
+                if (initialBgmRef.current) playBgm(initialBgmRef.current);
+              }
+              setShowHistory(show);
+            }}
+            onShowFlowchart={() => {
+              if (!isAudioUnlocked) {
+                setIsAudioUnlocked(true);
+                if (initialBgmRef.current) playBgm(initialBgmRef.current);
+              }
+              setShowChoiceGraph(true);
+            }}
             dialogueMode={dialogueMode}
             isAutoMode={isAutoMode}
             isFastForward={isFastForward}
             onToggleAuto={() => {
-              setIsAutoMode(prev => !prev);
+              if (!isAudioUnlocked) {
+                setIsAudioUnlocked(true);
+                if (initialBgmRef.current) playBgm(initialBgmRef.current);
+              }
+              const nextAuto = !isAutoMode;
+              console.log(
+                `%c[SYSTEM] Auto Mode toggled to: %c${nextAuto ? 'ON' : 'OFF'}`,
+                'color: #abb2bf; font-weight: bold;',
+                nextAuto ? 'color: #98c379; font-weight: bold;' : 'color: #e06c75; font-weight: bold;'
+              );
+              setIsAutoMode(nextAuto);
               setIsFastForward(false);
               isFastForwardRef.current = false;
             }}
             onToggleSkip={() => {
-              setIsFastForward(prev => !prev);
+              if (!isAudioUnlocked) {
+                setIsAudioUnlocked(true);
+                if (initialBgmRef.current) playBgm(initialBgmRef.current);
+              }
+              const nextSkip = !isFastForward;
+              console.log(
+                `%c[SYSTEM] Skip Mode toggled to: %c${nextSkip ? 'ON' : 'OFF'}`,
+                'color: #abb2bf; font-weight: bold;',
+                nextSkip ? 'color: #98c379; font-weight: bold;' : 'color: #e06c75; font-weight: bold;'
+              );
+              setIsFastForward(nextSkip);
               setIsAutoMode(false);
-              isFastForwardRef.current = !isFastForward;
+              isFastForwardRef.current = nextSkip;
             }}
           />
         )}
