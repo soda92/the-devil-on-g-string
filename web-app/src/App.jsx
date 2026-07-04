@@ -224,6 +224,7 @@ export default function App() {
               runner.setIsFastForward(nextSkip);
               runner.setIsAutoMode(false);
             }}
+            sf={runner.sf}
           />
         )}
 

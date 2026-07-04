@@ -113,7 +113,11 @@ export function useKagRunner({
       first: 1,
       vol: 8,
       sevol: 8,
-      typewriterMode: 'CHAR'
+      typewriterMode: 'CHAR',
+      avgOpacity: 6,
+      avgBlur: 16,
+      novelOpacity: 8,
+      novelBlur: 8
     };
     if (saved) {
       try {
@@ -213,11 +217,29 @@ export function useKagRunner({
               const merged = { ...prev, ...state.slots };
               return merged;
             });
-            // Write backend slots to localStorage
+            // Write backend slots to localStorage, respecting timestamps to avoid overwriting newer local saves
             Object.entries(state.slots).forEach(([slotId, slotData]) => {
               if (slotData) {
                 const key = slotId === 'autosave' ? 'school_autosave' : `school_save_slot_${slotId}`;
-                localStorage.setItem(key, typeof slotData === 'string' ? slotData : JSON.stringify(slotData));
+                const parsedData = typeof slotData === 'string' ? JSON.parse(slotData) : slotData;
+                
+                // Check if local storage has a newer version
+                const localStr = localStorage.getItem(key);
+                let keepLocal = false;
+                if (localStr) {
+                  try {
+                    const localData = JSON.parse(localStr);
+                    const localTS = localData.timestamp || 0;
+                    const remoteTS = parsedData.timestamp || 0;
+                    if (localTS > remoteTS) {
+                      keepLocal = true;
+                    }
+                  } catch (e) {}
+                }
+                
+                if (!keepLocal) {
+                  localStorage.setItem(key, JSON.stringify(parsedData));
+                }
               }
             });
           }
@@ -519,7 +541,8 @@ export function useKagRunner({
       showOptions: showOptions || null,
       historyLog: cleanHistoryLogForSave(historyLog),
       bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null,
-      date: new Date().toLocaleString()
+      date: new Date().toLocaleString(),
+      timestamp: Date.now()
     };
     
     // 1. Instantly write to local storage
@@ -539,12 +562,12 @@ export function useKagRunner({
     }, 2000);
   };
 
-  // Trigger autosave when pointer or scenario changes
+  // Trigger autosave when pointer, scenario, or history log changes
   useEffect(() => {
     if (gameState === 'PLAYING' && pointer > 0 && currentScenario) {
       triggerAutosave(pointer, currentScenario);
     }
-  }, [pointer, currentScenario, gameState]);
+  }, [pointer, currentScenario, gameState, historyLog]);
 
   // Main Scenario Interpreter Loop Runner
   useEffect(() => {
@@ -1175,7 +1198,8 @@ export function useKagRunner({
       showOptions: showOptions || null,
       historyLog: cleanHistoryLogForSave(historyLog),
       bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null,
-      date: new Date().toLocaleString()
+      date: new Date().toLocaleString(),
+      timestamp: Date.now()
     };
     localStorage.setItem(slotKey, JSON.stringify(saveData));
     

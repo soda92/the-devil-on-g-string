@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-export default function DialogueBox({ dialogueMode, speaker, typewriterText, dialogueText, isWaiting, language, setLanguage, onSave, onLoad, onConfig, onQuit, onScreenClick, onShowHistory, onShowFlowchart, isAutoMode, isFastForward, onToggleAuto, onToggleSkip }) {
+export default function DialogueBox({ dialogueMode, speaker, typewriterText, dialogueText, isWaiting, language, setLanguage, onSave, onLoad, onConfig, onQuit, onScreenClick, onShowHistory, onShowFlowchart, isAutoMode, isFastForward, onToggleAuto, onToggleSkip, sf }) {
   const textRef = useRef(null);
 
   useEffect(() => {
@@ -9,8 +9,32 @@ export default function DialogueBox({ dialogueMode, speaker, typewriterText, dia
     }
   }, [typewriterText]);
 
+  const opacityVal = dialogueMode === 'novel' 
+    ? (sf && sf.novelOpacity !== undefined ? sf.novelOpacity : 8)
+    : (sf && sf.avgOpacity !== undefined ? sf.avgOpacity : 6);
+    
+  const blurVal = dialogueMode === 'novel'
+    ? (sf && sf.novelBlur !== undefined ? sf.novelBlur : 8)
+    : (sf && sf.avgBlur !== undefined ? sf.avgBlur : 16);
+
+  const bgStyle = dialogueMode === 'novel' 
+    ? { 
+        backgroundColor: `rgba(10, 10, 10, ${opacityVal / 10})`,
+        backdropFilter: `blur(${blurVal}px)`,
+        WebkitBackdropFilter: `blur(${blurVal}px)`
+      }
+    : { 
+        backgroundColor: `rgba(15, 10, 30, ${opacityVal / 10})`,
+        backdropFilter: `blur(${blurVal}px)`,
+        WebkitBackdropFilter: `blur(${blurVal}px)`
+      };
+
   return (
-    <div className={`dialogue-box-layer glass-panel ${dialogueMode === 'novel' ? 'novel-mode' : 'avg-mode'}`} onClick={(e) => e.stopPropagation()}>
+    <div 
+      className={`dialogue-box-layer glass-panel ${dialogueMode === 'novel' ? 'novel-mode' : 'avg-mode'}`} 
+      onClick={(e) => e.stopPropagation()}
+      style={bgStyle}
+    >
       {speaker && dialogueMode !== 'novel' && <div className="dialogue-speaker">{speaker}</div>}
       
       <div 

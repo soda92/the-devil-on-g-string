@@ -226,4 +226,39 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
       expect.stringContaining('"pointer":4')
     );
   });
+
+  it('correctly adjusts separate AVG and Novel opacity and blur states on settings slider changes', async () => {
+    const App = await getApp();
+    render(<App />);
+    
+    // Open Settings panel
+    const settingsBtn = screen.getByText(/游戏设置/i);
+    await act(async () => {
+      fireEvent.click(settingsBtn);
+    });
+    
+    // Find all sliders (BGM, Voice/SE, AVG Opacity, AVG Blur, Novel Opacity, Novel Blur)
+    const sliders = screen.getAllByRole('slider');
+    expect(sliders.length).toBe(6);
+    
+    const avgOpacitySlider = sliders[2];
+    const avgBlurSlider = sliders[3];
+    const novelOpacitySlider = sliders[4];
+    const novelBlurSlider = sliders[5];
+    
+    // Change slider values
+    await act(async () => {
+      fireEvent.change(avgOpacitySlider, { target: { value: '5' } });
+      fireEvent.change(avgBlurSlider, { target: { value: '12' } });
+      fireEvent.change(novelOpacitySlider, { target: { value: '3' } });
+      fireEvent.change(novelBlurSlider, { target: { value: '6' } });
+    });
+    
+    // Check that state updated in window.quick_check()
+    const engineState = window.quick_check();
+    expect(engineState.sf.avgOpacity).toBe(5);
+    expect(engineState.sf.avgBlur).toBe(12);
+    expect(engineState.sf.novelOpacity).toBe(3);
+    expect(engineState.sf.novelBlur).toBe(6);
+  });
 });
