@@ -7,6 +7,7 @@ wheels/
 *.egg-info
 extracted_data
 G弦上的魔王
+/*.json
 
 # Virtual environments
 .venv
