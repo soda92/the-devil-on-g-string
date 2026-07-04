@@ -22,3 +22,5 @@ scenario_names.json
 /game-server
 
 *_backup
+
+game-server.exe

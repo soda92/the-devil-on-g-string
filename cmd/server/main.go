@@ -7,7 +7,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"runtime"
 	"sync"
+	"time"
 
 	"game-rewrite/lib/extraction"
 )
@@ -55,14 +58,47 @@ func saveState(state SaveState) error {
 	return os.WriteFile(saveFile, data, 0644)
 }
 
+func openBrowser(url string) {
+	var err error
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+		if err != nil {
+			exec.Command("google-chrome", url).Start()
+			exec.Command("firefox", url).Start()
+		}
+	case "windows":
+		err = exec.Command("cmd", "/c", "start", "", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	}
+}
+
 func main() {
 	port := flag.Int("port", 8080, "port to listen on")
 	extractMode := flag.Bool("extract", false, "run asset extraction mode")
 	flag.Parse()
 
-	if *extractMode {
+	// Detect if extraction is needed
+	needsExtraction := false
+	if _, err := os.Stat("file_map.json"); os.IsNotExist(err) {
+		needsExtraction = true
+	} else if _, err := os.Stat("sprite_positions.json"); os.IsNotExist(err) {
+		needsExtraction = true
+	} else if _, err := os.Stat("./extracted_data"); os.IsNotExist(err) {
+		needsExtraction = true
+	}
+
+	if *extractMode || needsExtraction {
+		if needsExtraction {
+			fmt.Println("Assets index files or extracted_data directory not found. Starting automatic extraction...")
+		}
 		extraction.RunExtraction()
-		return
+		if !*extractMode {
+			fmt.Println("Automatic extraction finished. Launching server...")
+		} else {
+			return
+		}
 	}
 
 	// API routes
@@ -165,6 +201,14 @@ func main() {
 	// Static files handler serving built React app from disk
 	http.Handle("/", http.FileServer(http.Dir("./web-app/dist")))
 
-	fmt.Printf("Starting backend server on http://localhost:%d\n", *port)
+	url := fmt.Sprintf("http://localhost:%d", *port)
+	fmt.Printf("Starting backend server on %s\n", url)
+
+	// Async browser open after a slight delay to allow port binding
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		openBrowser(url)
+	}()
+
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), nil))
 }
