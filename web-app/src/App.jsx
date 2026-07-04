@@ -441,6 +441,92 @@ export default function App() {
       let startIdx = 0;
       if (overridePointer !== null) {
         startIdx = overridePointer;
+        
+        // Reconstruct states up to overridePointer to prevent blank screens/silence on deep links
+        let initialBg = 'white';
+        let initialBgm = '';
+        let initialSprites = { 0: null, 1: null, 2: null };
+        let initialSpeaker = '';
+        let initialDialogueMode = 'avg';
+        
+        for (let i = 0; i < overridePointer; i++) {
+          const inst = data.instructions[i];
+          if (inst && inst.type === 'command') {
+            const args = inst.args || {};
+            if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm') {
+              initialBgm = args.storage;
+            } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm') {
+              initialBgm = '';
+            } else if (inst.name === 'bg' || inst.name === 'bg2' || inst.name === 'bg_ch' || inst.name === 'b_ch') {
+              initialBg = args.str || args.storage || 'black';
+              if (inst.name === 'b_ch' || inst.name === 'bg_ch') {
+                initialSprites = { 0: null, 1: null, 2: null };
+              }
+            } else if (inst.name === 'ev' || inst.name === 'ev_ch') {
+              if (args.str || args.storage) {
+                initialBg = args.str || args.storage;
+              }
+            } else if (inst.name === 'black') {
+              initialBg = 'black';
+            } else if (inst.name === 'image') {
+              if (args.layer === 'base' && args.storage) {
+                initialBg = args.storage;
+              } else if (args.layer !== 'base') {
+                const layer = args.layer !== undefined ? parseInt(args.layer) : 2;
+                if (args.visible === 'false' || !args.storage) {
+                  initialSprites[layer] = null;
+                } else {
+                  const isBgOrEv = args.storage.startsWith('bg') || args.storage.startsWith('ev_') || args.storage === 'black' || args.storage === 'white';
+                  if (isBgOrEv) {
+                    initialBg = args.storage;
+                  } else {
+                    initialSprites[layer] = args.storage;
+                  }
+                }
+              }
+            } else if (inst.name === 'chr') {
+              if (args.c !== undefined) initialSprites[2] = args.c;
+              if (args.l !== undefined) initialSprites[1] = args.l;
+              if (args.r !== undefined) initialSprites[0] = args.r;
+            } else if (inst.name === 'chr1') {
+              initialSprites[2] = args.str;
+            } else if (inst.name === 'chr2') {
+              initialSprites[1] = args.str;
+            } else if (inst.name === 'chr3') {
+              initialSprites[0] = args.str;
+            } else if (inst.name === 'dellay') {
+              const pos = args.pos;
+              if (pos === 'c') initialSprites[2] = null;
+              if (pos === 'l') initialSprites[1] = null;
+              if (pos === 'r') initialSprites[0] = null;
+            } else if (inst.name === 'delchr') {
+              const l = args.layer !== undefined ? parseInt(args.layer) : 2;
+              initialSprites[l] = null;
+            } else if (inst.name === 'alldelchr') {
+              initialSprites = { 0: null, 1: null, 2: null };
+            } else if (inst.name === 'name' || inst.name === 'nm') {
+              initialSpeaker = args.txt || args.t || '';
+            } else if (inst.name === 'novel') {
+              initialDialogueMode = 'novel';
+            } else if (inst.name === 'avg' || inst.name === 'avg_with_name') {
+              initialDialogueMode = 'avg';
+            }
+          }
+        }
+        
+        setBackground(initialBg);
+        setSprites(initialSprites);
+        setDialogueMode(initialDialogueMode);
+        if (initialSpeaker) {
+          const resolvedSp = resolveCharacterName(initialSpeaker, 'JP');
+          setSpeaker(resolvedSp);
+          currentSpeakerRef.current = { jp: resolvedSp, en: resolveCharacterName(resolvedSp, 'EN') };
+        }
+        if (initialBgm) {
+          playBgm(initialBgm);
+        } else {
+          stopBgm();
+        }
       } else if (targetLabel) {
         const idx = data.instructions.findIndex(i => i.type === 'label' && i.name === targetLabel);
         if (idx !== -1) {
@@ -610,6 +696,10 @@ export default function App() {
                 }
               }
             }
+          } else if (inst.name === 'chr') {
+            if (args.c !== undefined) tempSprites[2] = args.c; // Center
+            if (args.l !== undefined) tempSprites[1] = args.l; // Left
+            if (args.r !== undefined) tempSprites[0] = args.r; // Right
           } else if (inst.name === 'black') {
             tempBackground = 'black';
           } else if (inst.name === 'chr1') {
@@ -632,6 +722,11 @@ export default function App() {
             tempSprites[2] = args.str1;
             tempSprites[1] = args.str4;
             tempSprites[0] = args.str5;
+          } else if (inst.name === 'dellay') {
+            const pos = args.pos;
+            if (pos === 'c') tempSprites[2] = null;
+            if (pos === 'l') tempSprites[1] = null;
+            if (pos === 'r') tempSprites[0] = null;
           } else if (inst.name === 'delchr') {
             const l = args.layer !== undefined ? parseInt(args.layer) : 2;
             tempSprites[l] = null;

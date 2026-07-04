@@ -5,14 +5,14 @@ import spritePositions from '../sprite_positions.json';
 function Sprite({ spriteName, resolveAsset, positionClass }) {
   if (!spriteName) return null;
   const cleanName = spriteName.split('.')[0];
-  const positionInfo = spritePositions[cleanName];
+  const positionInfo = spritePositions[cleanName] || spritePositions['st_' + cleanName];
   
   if (positionInfo) {
     const baseSrc = resolveAsset(positionInfo.base, 'fgimage');
     const overlaySrc = resolveAsset(spriteName, 'fgimage');
     return (
-      <div className={`sprite-img ${positionClass}`} style={{ overflow: 'visible' }}>
-        <img src={baseSrc} alt="base body" style={{ height: '100%', display: 'block' }} />
+      <div className={`sprite-img ${positionClass}`} style={{ overflow: 'visible', width: 'fit-content' }}>
+        <img src={baseSrc} alt="base body" style={{ height: '100%', width: 'auto', display: 'block' }} />
         <img 
           src={overlaySrc} 
           alt="face overlay" 

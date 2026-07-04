@@ -112,18 +112,14 @@ def parse_pos_files():
                                 with Image.open(overlay_img_path) as overlay_img:
                                     overlay_w, overlay_h = overlay_img.size
                                     
-                                # Calculate percentages
-                                left_pct = (x / base_w) * 100
-                                top_pct = (y / base_height) * 100
-                                width_pct = (overlay_w / base_w) * 100
-                                
                                 sprite_positions[sprite_name] = {
                                     "base": base_sprite,
                                     "x": x,
                                     "y": y,
-                                    "left_pct": left_pct,
-                                    "top_pct": top_pct,
-                                    "width_pct": width_pct
+                                    "base_w": base_w,
+                                    "base_h": base_height,
+                                    "overlay_w": overlay_w,
+                                    "overlay_h": overlay_h
                                 }
                             except Exception as img_err:
                                 print(f"Error reading image dimensions for {sprite_name}: {img_err}")

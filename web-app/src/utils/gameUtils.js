@@ -4,7 +4,11 @@ import fileMap from '../file_map.json';
 export const resolveAsset = (filename, defaultFolder = '') => {
   if (!filename) return '';
   const cleanName = filename.split('.')[0]; // strip extension
-  const mapped = fileMap[cleanName];
+  
+  let mapped = fileMap[cleanName];
+  if (!mapped) {
+    mapped = fileMap['st_' + cleanName];
+  }
   if (mapped) return mapped;
   
   if (defaultFolder) {
