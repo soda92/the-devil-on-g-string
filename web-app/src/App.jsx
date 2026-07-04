@@ -73,15 +73,28 @@ export default function App() {
     audio.voicePlayer.volume = sevol / 10;
   }, [runner.sf.vol, runner.sf.sevol]);
 
-  // Read URL search params on mount
+  // Read URL search params on mount, restoring from autosave if they match the URL scenario/pointer
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const scen = params.get('scen');
     const ptr = params.get('ptr');
     if (scen) {
       const parsedPtr = parseInt(ptr) || 0;
-      runner.setGameState('PLAYING');
-      runner.loadScenario(scen, null, parsedPtr);
+      const autoStr = localStorage.getItem('school_autosave');
+      let loadedFromAuto = false;
+      if (autoStr) {
+        try {
+          const autoData = JSON.parse(autoStr);
+          if (autoData.currentScenario === scen && autoData.pointer === parsedPtr) {
+            runner.loadSaveSlot(autoData);
+            loadedFromAuto = true;
+          }
+        } catch (e) {}
+      }
+      if (!loadedFromAuto) {
+        runner.setGameState('PLAYING');
+        runner.loadScenario(scen, null, parsedPtr);
+      }
     }
   }, []);
 

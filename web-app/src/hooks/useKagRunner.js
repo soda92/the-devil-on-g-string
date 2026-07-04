@@ -779,17 +779,28 @@ export function useKagRunner({
             bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null
           };
           
-          setHistoryLog(prev => [
-            ...prev.slice(-299), 
-            { 
-              speakerJp: currentSpeakerRef.current.jp, 
-              speakerEn: currentSpeakerRef.current.en, 
-              textJp: inst.text_jp, 
-              textEn: inst.text_en,
-              voice: currentVoiceRef.current,
-              snapshot
-            }
-          ]);
+          setHistoryLog(prev => {
+            const newHistory = [
+              ...prev,
+              { 
+                speakerJp: currentSpeakerRef.current.jp, 
+                speakerEn: currentSpeakerRef.current.en, 
+                textJp: inst.text_jp, 
+                textEn: inst.text_en,
+                voice: currentVoiceRef.current,
+                currentScenario,
+                pointer: p,
+                snapshot
+              }
+            ];
+            // Strip snapshots older than 150 entries to keep memory and saves lightweight
+            return newHistory.map((item, idx) => {
+              if (idx < newHistory.length - 150 && item.snapshot) {
+                return { ...item, snapshot: null };
+              }
+              return item;
+            });
+          });
           currentVoiceRef.current = null;
           shouldBlock = true;
           break;
@@ -1277,34 +1288,49 @@ export function useKagRunner({
     setScenarioData(null);
     setIsWaiting(true);
     
+    const entry = historyLog[entryIdx];
+    const targetScen = snap ? snap.currentScenario : entry.currentScenario;
+    const targetPtr = snap ? snap.pointer : entry.pointer;
+
     setHistoryLog(prev => prev.slice(0, entryIdx + 1));
     
-    setF({
-      ...snap.f,
-      choicesHistory: (f.choicesHistory || []).slice(0, snap.choicesCount || 0)
-    });
-    setSprites(snap.sprites);
-    setBackground(snap.background);
-    setSpeaker(snap.speaker);
-    currentSpeakerRef.current = snap.currentSpeaker || { jp: snap.speaker || '', en: snap.speaker || '' };
-    updateDialogueText(snap.dialogueText);
-    setTypewriterText(snap.dialogueText);
-    
-    await loadScenario(snap.currentScenario, null, snap.pointer, true);
-    
-    if (snap.showOptions) {
-      setShowOptions(snap.showOptions);
+    if (snap) {
+      setF({
+        ...snap.f,
+        choicesHistory: (f.choicesHistory || []).slice(0, snap.choicesCount || 0)
+      });
+      setSprites(snap.sprites);
+      setBackground(snap.background);
+      setSpeaker(snap.speaker);
+      currentSpeakerRef.current = snap.currentSpeaker || { jp: snap.speaker || '', en: snap.speaker || '' };
+      updateDialogueText(snap.dialogueText);
+      setTypewriterText(snap.dialogueText);
+      
+      if (snap.showOptions) {
+        setShowOptions(snap.showOptions);
+      } else {
+        setShowOptions(false);
+      }
+      
+      if (snap.bgm) {
+        initialBgmRef.current = snap.bgm;
+        playBgm(snap.bgm);
+      } else {
+        initialBgmRef.current = '';
+        stopBgm();
+      }
     } else {
+      // Fallback path: pre-scanner reconstructs background, sprites, voice, BGM automatically
+      const resolvedSp = language === 'JP' ? entry.speakerJp : entry.speakerEn;
+      const text = language === 'JP' ? entry.textJp : entry.textEn;
+      setSpeaker(resolvedSp);
+      currentSpeakerRef.current = { jp: entry.speakerJp || '', en: entry.speakerEn || '' };
+      updateDialogueText(text);
+      setTypewriterText(text);
       setShowOptions(false);
     }
     
-    if (snap.bgm) {
-      initialBgmRef.current = snap.bgm;
-      playBgm(snap.bgm);
-    } else {
-      initialBgmRef.current = '';
-      stopBgm();
-    }
+    await loadScenario(targetScen, null, targetPtr, true);
     
     setIsWaiting(true);
     setGameState('PLAYING');

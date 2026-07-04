@@ -21,7 +21,7 @@ export default function HistoryModal({ onClose, historyLog, language, onJumpToSn
             historyLog.map((entry, idx) => {
               const speaker = language === 'JP' ? entry.speakerJp : entry.speakerEn;
               const text = language === 'JP' ? entry.textJp : entry.textEn;
-              const isClickable = !!entry.snapshot;
+              const isClickable = !!entry.snapshot || (!!entry.currentScenario && entry.pointer !== undefined);
               
               return (
                 <div 
