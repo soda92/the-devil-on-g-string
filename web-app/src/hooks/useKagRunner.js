@@ -35,6 +35,7 @@ const cleanHistoryLogForSave = (history) => {
 };
 
 export function useKagRunner({
+  config,
   playBgm,
   stopBgm,
   playSe,
@@ -44,14 +45,16 @@ export function useKagRunner({
   sePlayer,
   voicePlayer
 }) {
+  const storagePrefix = config?.storagePrefix || 'school';
+
   const [language, setLanguage] = useState('JP');
   const [gameState, setGameState] = useState('TITLE');
   
   // Visual Novel States
-  const [currentScenario, setCurrentScenario] = useState('g01');
+  const [currentScenario, setCurrentScenario] = useState(config?.initial?.scenario || 'g01');
   const [scenarioData, setScenarioData] = useState(null);
   const [pointer, setPointer] = useState(0);
-  const [background, setBackground] = useState('white');
+  const [background, setBackground] = useState(config?.initial?.background || 'white');
   const [sprites, setSprites] = useState({ 0: null, 1: null, 2: null });
   const [speaker, setSpeaker] = useState('');
   const [dialogueText, setDialogueText] = useState('');
@@ -69,14 +72,17 @@ export function useKagRunner({
   const [showChoiceGraph, setShowChoiceGraph] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
+  const [quakeActive, setQuakeActive] = useState(false);
+  const [flashActive, setFlashActive] = useState(null);
+
   const [saveSlots, setSaveSlots] = useState(() => {
     const initial = {};
-    const auto = localStorage.getItem('school_autosave');
+    const auto = localStorage.getItem(`${storagePrefix}_autosave`);
     if (auto) {
       try { initial.autosave = JSON.parse(auto); } catch(e){}
     }
     for (let i = 0; i < 24; i++) {
-      const slot = localStorage.getItem(`school_save_slot_${i}`);
+      const slot = localStorage.getItem(`${storagePrefix}_save_slot_${i}`);
       if (slot) {
         try { initial[i] = JSON.parse(slot); } catch(e){}
       }
@@ -84,26 +90,16 @@ export function useKagRunner({
     return initial;
   });
 
-  const [f, setF] = useState({
-    flag_haru: 0,
-    flag_kanon: 0,
-    flag_mizuha: 0,
-    flag_tubaki: 0,
-    badflag_kanon: 0,
-    kanon_clear: 0,
-    mizuha_clear: 0,
-    tubaki_clear: 0,
-    game_clear: 0,
-    go_next_chapter: 0,
-    show_next_chapter: 0,
-    evcgmode: 0,
-    faceRecord: 0,
-    choicesHistory: [],
-    chour: new Date().getHours()
+  const [f, setF] = useState(() => {
+    return {
+      ...(config?.defaultF || {}),
+      choicesHistory: [],
+      chour: new Date().getHours()
+    };
   });
 
   const [sf, setSf] = useState(() => {
-    const saved = localStorage.getItem('school_school_sf');
+    const saved = localStorage.getItem(`${storagePrefix}_sf`);
     const defaults = {
       game_clear: 0,
       kanon_clear: 0,
@@ -117,7 +113,8 @@ export function useKagRunner({
       avgOpacity: 6,
       avgBlur: 16,
       novelOpacity: 8,
-      novelBlur: 8
+      novelBlur: 8,
+      ...(config?.defaultSf || {})
     };
     if (saved) {
       try {
@@ -200,7 +197,7 @@ export function useKagRunner({
                 next.sevol = 8;
                 needsBackendSave = true;
               }
-              localStorage.setItem('school_school_sf', JSON.stringify(next));
+              localStorage.setItem(`${storagePrefix}_sf`, JSON.stringify(next));
               if (needsBackendSave) {
                 fetch('/api/save-sf', {
                   method: 'POST',
@@ -220,7 +217,7 @@ export function useKagRunner({
             // Write backend slots to localStorage, respecting timestamps to avoid overwriting newer local saves
             Object.entries(state.slots).forEach(([slotId, slotData]) => {
               if (slotData) {
-                const key = slotId === 'autosave' ? 'school_autosave' : `school_save_slot_${slotId}`;
+                const key = slotId === 'autosave' ? `${storagePrefix}_autosave` : `${storagePrefix}_save_slot_${slotId}`;
                 const parsedData = typeof slotData === 'string' ? JSON.parse(slotData) : slotData;
                 
                 // Check if local storage has a newer version
@@ -246,7 +243,7 @@ export function useKagRunner({
         }
       } catch (e) {
         console.warn("Failed to load backend state, falling back to localStorage", e);
-        const savedSf = localStorage.getItem('school_school_sf');
+        const savedSf = localStorage.getItem(`${storagePrefix}_sf`);
         if (savedSf) setSf(prev => ({ ...prev, ...JSON.parse(savedSf) }));
       }
     };
@@ -261,7 +258,7 @@ export function useKagRunner({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(nextSf)
       }).catch(err => console.error("Failed to save SF to backend", err));
-      localStorage.setItem('school_school_sf', JSON.stringify(nextSf));
+      localStorage.setItem(`${storagePrefix}_sf`, JSON.stringify(nextSf));
       return nextSf;
     });
   };
@@ -354,21 +351,22 @@ export function useKagRunner({
           const inst = data.instructions[i];
           if (inst && inst.type === 'command') {
             const args = inst.args || {};
-            if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm') {
+            if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm' || inst.name === 'fibgm' || inst.name === 'xbgm') {
               initialBgm = args.storage;
-            } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm') {
+            } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm' || inst.name === 'fobgm' || inst.name === 'sbgm') {
               initialBgm = '';
             } else if (inst.name === 'bg' || inst.name === 'bg2' || inst.name === 'bg_ch' || inst.name === 'b_ch') {
               initialBg = args.str || args.storage || 'black';
-              if (inst.name === 'b_ch' || inst.name === 'bg_ch') {
-                initialSprites = { 0: null, 1: null, 2: null };
-              }
-            } else if (inst.name === 'ev' || inst.name === 'ev_ch') {
+              initialSprites = { 0: null, 1: null, 2: null };
+            } else if (inst.name === 'ev' || inst.name === 'ev_ch' || inst.name === 'ev_mosaic') {
               if (args.str || args.storage) {
                 initialBg = args.str || args.storage;
               }
-            } else if (inst.name === 'black') {
-              initialBg = 'black';
+              initialSprites = { 0: null, 1: null, 2: null };
+            } else if (inst.name === 'black' || inst.name === 'hide') {
+              if (inst.name === 'black') {
+                initialBg = 'black';
+              }
               initialSprites = { 0: null, 1: null, 2: null };
             } else if (inst.name === 'image') {
               if (args.layer === 'base' && args.storage) {
@@ -450,9 +448,9 @@ export function useKagRunner({
         spritesRef.current = initialSprites;
         setDialogueMode(initialDialogueMode);
         if (initialSpeaker) {
-          const resolvedSp = resolveCharacterName(initialSpeaker, 'JP');
+          const resolvedSp = resolveCharacterName(initialSpeaker, 'JP', config?.characterNames);
           setSpeaker(resolvedSp);
-          currentSpeakerRef.current = { jp: resolvedSp, en: resolveCharacterName(resolvedSp, 'EN') };
+          currentSpeakerRef.current = { jp: resolvedSp, en: resolveCharacterName(resolvedSp, 'EN', config?.characterNames) };
         }
         initialVoiceRef.current = initialVoice;
         if (initialVoice) {
@@ -546,7 +544,7 @@ export function useKagRunner({
     };
     
     // 1. Instantly write to local storage
-    localStorage.setItem('school_autosave', JSON.stringify(saveData));
+    localStorage.setItem(`${storagePrefix}_autosave`, JSON.stringify(saveData));
     
     // 2. Update React slots state
     setSaveSlots(prev => ({ ...prev, autosave: saveData }));
@@ -591,28 +589,81 @@ export function useKagRunner({
           break;
         case 'command':
           const args = inst.args || {};
-          if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm') {
+          if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm' || inst.name === 'fibgm' || inst.name === 'xbgm') {
             initialBgmRef.current = args.storage;
             playBgm(args.storage);
-          } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm') {
+          } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm' || inst.name === 'fobgm' || inst.name === 'sbgm') {
             initialBgmRef.current = '';
             stopBgm();
-          } else if (inst.name === 'playse' || inst.name === 'se' || inst.name === 'fadeinse') {
+          } else if (inst.name === 'playse' || inst.name === 'se' || inst.name === 'fadeinse' || inst.name === 'fise') {
             playSe(args.storage);
-          } else if (inst.name === 'stopse' || inst.name === 'fadeoutse') {
+          } else if (inst.name === 'stopse' || inst.name === 'fadeoutse' || inst.name === 'fose' || inst.name === 'sse') {
             // Stop sound effect
             sePlayer.pause();
             sePlayer.src = '';
           } else if (inst.name === 'bg' || inst.name === 'bg2' || inst.name === 'bg_ch' || inst.name === 'b_ch') {
             tempBackground = args.str || args.storage || 'black';
-            if (inst.name === 'b_ch' || inst.name === 'bg_ch') {
-              tempSprites = { 0: null, 1: null, 2: null };
-            }
-          } else if (inst.name === 'ev' || inst.name === 'ev_ch') {
+            tempSprites = { 0: null, 1: null, 2: null };
+          } else if (inst.name === 'ev' || inst.name === 'ev_ch' || inst.name === 'ev_mosaic') {
             const cgStorage = args.str || args.storage;
             if (cgStorage) {
               tempBackground = cgStorage;
               newSf[cgStorage] = 1;
+            }
+            tempSprites = { 0: null, 1: null, 2: null };
+          } else if (inst.name === 'hide') {
+            tempSprites = { 0: null, 1: null, 2: null };
+            setTextVisible(false);
+          } else if (inst.name === 'show') {
+            setTextVisible(true);
+          } else if (inst.name === 'wait') {
+            const delay = args.time ? parseInt(args.time) : 0;
+            if (delay > 0 && !isFastForwardRef.current) {
+              setIsWaiting(true);
+              setTimeout(() => {
+                setIsWaiting(false);
+              }, delay);
+              shouldBlock = true;
+              break;
+            }
+          } else if (inst.name === 'wvl') {
+            if (voicePlayer && !voicePlayer.paused && !voicePlayer.ended && !isFastForwardRef.current) {
+              setIsWaiting(true);
+              const onVoiceEnd = () => {
+                setIsWaiting(false);
+                voicePlayer.removeEventListener('ended', onVoiceEnd);
+                voicePlayer.removeEventListener('pause', onVoiceEnd);
+              };
+              voicePlayer.addEventListener('ended', onVoiceEnd);
+              voicePlayer.addEventListener('pause', onVoiceEnd);
+              shouldBlock = true;
+              break;
+            }
+          } else if (inst.name === 'quake' || inst.name === 'squake') {
+            const time = args.time ? parseInt(args.time) : 800;
+            setQuakeActive(true);
+            if (inst.name === 'quake') {
+              setTimeout(() => {
+                setQuakeActive(false);
+              }, time);
+            }
+          } else if (inst.name === 'stopquake') {
+            setQuakeActive(false);
+          } else if (inst.name === 'flash' || inst.name === 'flash_3times') {
+            const color = args.color ? args.color : 'white';
+            const time = args.time ? parseInt(args.time) : 150;
+            if (inst.name === 'flash_3times') {
+              setFlashActive(color);
+              setTimeout(() => setFlashActive(null), 100);
+              setTimeout(() => setFlashActive(color), 200);
+              setTimeout(() => setFlashActive(null), 300);
+              setTimeout(() => setFlashActive(color), 400);
+              setTimeout(() => setFlashActive(null), 500);
+            } else {
+              setFlashActive(color);
+              setTimeout(() => {
+                setFlashActive(null);
+              }, time);
             }
           } else if (inst.name === 'image') {
             const storage = args.storage;
@@ -708,7 +759,7 @@ export function useKagRunner({
             setTextVisible(false);
           } else if (inst.name === 'name' || inst.name === 'nm') {
             const jpName = args.txt || args.t || '';
-            const enName = resolveCharacterName(args.txt_en || args.t_en || args.t || '', 'EN');
+            const enName = resolveCharacterName(args.txt_en || args.t_en || args.t || '', 'EN', config?.characterNames);
             currentSpeakerRef.current = { jp: jpName, en: enName };
             setSpeaker(language === 'JP' ? jpName : enName);
             if (inst.name === 'nm' && args.s) {
@@ -1098,7 +1149,7 @@ export function useKagRunner({
       }
       return;
     }
-    const auto = localStorage.getItem('school_autosave');
+    const auto = localStorage.getItem(`${storagePrefix}_autosave`);
     if (auto) {
       try {
         loadSaveSlot(JSON.parse(auto));
@@ -1192,7 +1243,7 @@ export function useKagRunner({
   };
 
   const handleSaveSlot = (slotIdx) => {
-    const slotKey = `school_save_slot_${slotIdx}`;
+    const slotKey = `${storagePrefix}_save_slot_${slotIdx}`;
     const saveData = {
       slotId: slotIdx,
       f: cleanFForSnapshot(f),
@@ -1448,6 +1499,8 @@ export function useKagRunner({
     jumpToHistorySnapshot,
     jumpToChoiceSnapshot,
     isAudioUnlocked,
-    setIsAudioUnlocked
+    setIsAudioUnlocked,
+    quakeActive,
+    flashActive
   };
 }

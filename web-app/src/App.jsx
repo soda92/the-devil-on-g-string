@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import gameConfig from './game_config.json';
 
 // --- Sub Components ---
 import TitleScreen from './components/TitleScreen';
@@ -39,7 +40,7 @@ export default function App() {
   }, []);
 
   // Initialize modular Audio Hook with localStorage values if available
-  const savedSfStr = localStorage.getItem('school_school_sf');
+  const savedSfStr = localStorage.getItem(`${gameConfig.storagePrefix || 'school'}_sf`);
   let initialVol = 8;
   let initialSeVol = 8;
   if (savedSfStr) {
@@ -54,6 +55,7 @@ export default function App() {
 
   // Initialize main KAG Engine interpreter state loop
   const runner = useKagRunner({
+    config: gameConfig,
     playBgm: audio.playBgm,
     stopBgm: audio.stopBgm,
     playSe: audio.playSe,
@@ -136,7 +138,7 @@ export default function App() {
 
   return (
     <div className="game-container" style={{ transform: `scale(${scale})` }}>
-      <div className="game-screen shadow-premium">
+      <div className={`game-screen shadow-premium ${runner.quakeActive ? 'shake-effect' : ''}`}>
         
         {/* === TITLE SCREEN VIEW === */}
         {runner.gameState === 'TITLE' && (
@@ -272,6 +274,14 @@ export default function App() {
             setSf={runner.updateSf}
             onBack={runner.quitToTitle}
             isGameplay={false}
+          />
+        )}
+
+        {/* === SCREEN FLASH VISUAL EFFECT === */}
+        {runner.flashActive && (
+          <div 
+            className="screen-flash-overlay" 
+            style={{ backgroundColor: runner.flashActive }}
           />
         )}
 
