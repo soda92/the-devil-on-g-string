@@ -34,6 +34,44 @@ func decodeShiftJIS(b []byte) (string, error) {
 	return string(decoded), nil
 }
 
+func decodeUTF16LE(b []byte) (string, error) {
+	if len(b) < 2 {
+		return string(b), nil
+	}
+	if b[0] == 0xFF && b[1] == 0xFE {
+		b = b[2:]
+	}
+	utf := make([]uint16, len(b)/2)
+	for i := range utf {
+		utf[i] = uint16(b[2*i]) | (uint16(b[2*i+1]) << 8)
+	}
+	return string(utf16.Decode(utf)), nil
+}
+
+func decodeUTF16BE(b []byte) (string, error) {
+	if len(b) < 2 {
+		return string(b), nil
+	}
+	if b[0] == 0xFE && b[1] == 0xFF {
+		b = b[2:]
+	}
+	utf := make([]uint16, len(b)/2)
+	for i := range utf {
+		utf[i] = uint16(b[2*i+1]) | (uint16(b[2*i]) << 8)
+	}
+	return string(utf16.Decode(utf)), nil
+}
+
+func decodeScenarioBytes(b []byte) (string, error) {
+	if bytes.HasPrefix(b, []byte("\xFF\xFE")) {
+		return decodeUTF16LE(b)
+	}
+	if bytes.HasPrefix(b, []byte("\xFE\xFF")) {
+		return decodeUTF16BE(b)
+	}
+	return decodeShiftJIS(b)
+}
+
 func compileAllScenarios(extractedDataDir string) error {
 	scenarioDir := filepath.Join(extractedDataDir, "scenario")
 	outputDir := filepath.Join(extractedDataDir, "scenarios")
@@ -63,7 +101,7 @@ func compileAllScenarios(extractedDataDir string) error {
 			return err
 		}
 		
-		content, err := decodeShiftJIS(data)
+		content, err := decodeScenarioBytes(data)
 		if err != nil {
 			content = string(data)
 		}
@@ -269,7 +307,7 @@ func parseLineTextAndTags(line string, translationCache map[string]string, trans
 					instructions = append(instructions, Instruction{
 						"type": "wait_click",
 					})
-				} else if tagName == "p" || tagName == "page" {
+				} else if tagName == "p" || tagName == "page" || tagName == "np" {
 					instructions = append(instructions, Instruction{
 						"type": "page_break",
 					})
@@ -353,7 +391,7 @@ func compileCommand(cmdName string, args map[string]string, translationCache map
 		return []Instruction{{"type": "eval", "exp": args["exp"]}}
 	} else if cmdName == "l" || cmdName == "waitclick" {
 		return []Instruction{{"type": "wait_click"}}
-	} else if cmdName == "p" || cmdName == "page" {
+	} else if cmdName == "p" || cmdName == "page" || cmdName == "np" {
 		return []Instruction{{"type": "page_break"}}
 	} else if cmdName == "er" {
 		return []Instruction{{"type": "clear_text"}}
