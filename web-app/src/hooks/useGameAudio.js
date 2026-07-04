@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { resolveAsset } from '../utils/gameUtils';
 
 // --- Singleton Audio Elements ---
@@ -19,6 +19,21 @@ if (import.meta.hot) {
 
 export function useGameAudio(vol = 8, sevol = 8) {
   const currentVoiceRef = useRef(null);
+  const [isBgmPlaying, setIsBgmPlaying] = useState(false);
+
+  // Synchronize playing state with actual audio events
+  useEffect(() => {
+    const onPlay = () => setIsBgmPlaying(true);
+    const onPause = () => setIsBgmPlaying(false);
+    bgmPlayer.addEventListener('play', onPlay);
+    bgmPlayer.addEventListener('pause', onPause);
+    // Initialize current state
+    setIsBgmPlaying(!bgmPlayer.paused);
+    return () => {
+      bgmPlayer.removeEventListener('play', onPlay);
+      bgmPlayer.removeEventListener('pause', onPause);
+    };
+  }, []);
 
   // Sync volumes when they change
   useEffect(() => {
@@ -60,9 +75,24 @@ export function useGameAudio(vol = 8, sevol = 8) {
     voicePlayer.play().catch(err => console.log("Voice play interrupted", err));
   };
 
+  const toggleBgm = () => {
+    if (bgmPlayer.paused) {
+      // If we don't have a source set, default to title theme
+      if (!bgmPlayer.src || bgmPlayer.src === window.location.href) {
+        playBgm('bgm_01');
+      } else {
+        bgmPlayer.play().catch(err => console.log("BGM play interrupted", err));
+      }
+    } else {
+      bgmPlayer.pause();
+    }
+  };
+
   return {
     playBgm,
     stopBgm,
+    toggleBgm,
+    isBgmPlaying,
     playSe,
     playVoice,
     bgmPlayer,

@@ -560,8 +560,11 @@ export function useKagRunner({
             }
           } else if (inst.name === 'chr' || inst.name === 'chr_dash' || inst.name === 'chr_walk' || inst.name === 'chr_jump' || inst.name === 'chr_bow') {
             if (args.c !== undefined) tempSprites[2] = args.c; 
+            else if (args.cc !== undefined) tempSprites[2] = args.cc; 
             if (args.l !== undefined) tempSprites[1] = args.l; 
+            else if (args.ll !== undefined) tempSprites[1] = args.ll; 
             if (args.r !== undefined) tempSprites[0] = args.r; 
+            else if (args.rr !== undefined) tempSprites[0] = args.rr; 
           } else if (inst.name === 'black') {
             tempBackground = 'black';
             tempSprites = { 0: null, 1: null, 2: null };
@@ -613,10 +616,10 @@ export function useKagRunner({
             tempSprites[1] = args.str4;
             tempSprites[0] = args.str5;
           } else if (inst.name === 'dellay' || inst.name === 'dellay_far' || inst.name === 'dellay_walk' || inst.name === 'dellay_dash') {
-            const pos = args.pos;
-            if (pos === 'c' || pos === 'cc') tempSprites[2] = null;
-            if (pos === 'l' || pos === 'll') tempSprites[1] = null;
-            if (pos === 'r' || pos === 'rr') tempSprites[0] = null;
+            const pos = String(args.pos || '');
+            if (pos.includes('c') || pos === 'all') tempSprites[2] = null;
+            if (pos.includes('l') || pos === 'all') tempSprites[1] = null;
+            if (pos.includes('r') || pos === 'all') tempSprites[0] = null;
           } else if (inst.name === 'delchr') {
             const l = args.layer !== undefined ? parseInt(args.layer) : 2;
             tempSprites[l] = null;

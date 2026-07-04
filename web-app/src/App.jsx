@@ -102,6 +102,25 @@ export default function App() {
     }
   }, [runner.currentScenario, runner.pointer, runner.gameState]);
 
+  // Handle ESC key to close active overlays
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        if (runner.showHistory) {
+          runner.setShowHistory(false);
+        } else if (runner.showSettings) {
+          runner.setShowSettings(false);
+        } else if (runner.showSaveLoad) {
+          runner.setShowSaveLoad(null);
+        } else if (runner.showChoiceGraph) {
+          runner.setShowChoiceGraph(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [runner.showHistory, runner.showSettings, runner.showSaveLoad, runner.showChoiceGraph]);
+
   return (
     <div className="game-container" style={{ transform: `scale(${scale})` }}>
       <div className="game-screen shadow-premium">
@@ -122,6 +141,8 @@ export default function App() {
             hasHistory={runner.historyLog.length > 0}
             onRewind={runner.rewindToLastScene}
             onShowFlowchart={() => runner.setShowChoiceGraph(true)}
+            isBgmPlaying={audio.isBgmPlaying}
+            onToggleBgm={audio.toggleBgm}
           />
         )}
 
