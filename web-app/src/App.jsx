@@ -10,6 +10,7 @@ import DialogueBox from './components/DialogueBox';
 import HistoryModal from './components/HistoryModal';
 import GameplayScreen from './components/GameplayScreen';
 import ChoiceGraphModal from './components/ChoiceGraphModal';
+import DebugPanel from './components/DebugPanel';
 
 // --- Utility Helpers ---
 import { resolveAsset, resolveCharacterName, tokenizeText } from './utils/gameUtils';
@@ -19,6 +20,7 @@ const bgmPlayer = new Audio();
 bgmPlayer.loop = true;
 
 const sePlayer = new Audio();
+const voicePlayer = new Audio();
 
 // --- Save State Cleaners for Flowchart Nested Snapshots ---
 const cleanFForSnapshot = (originalF) => {
@@ -191,6 +193,18 @@ export default function App() {
         })
         .catch(e => console.log("SE context unlock status:", e));
 
+      if (!voicePlayer.src) {
+        voicePlayer.src = silentBuffer;
+      }
+      voicePlayer.play()
+        .then(() => {
+          if (voicePlayer.src === silentBuffer) {
+            voicePlayer.pause();
+            voicePlayer.src = '';
+          }
+        })
+        .catch(e => console.log("Voice context unlock status:", e));
+
       window.removeEventListener('click', unlock);
       window.removeEventListener('keydown', unlock);
     };
@@ -215,6 +229,35 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [isFastForward, isWaiting, showOptions]);
+
+  // Read URL search params on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const scen = params.get('scen');
+    const ptr = params.get('ptr');
+    if (scen) {
+      const parsedPtr = parseInt(ptr) || 0;
+      setGameState('PLAYING');
+      loadScenario(scen, null, parsedPtr);
+    }
+  }, []);
+
+  // Sync state to URL search params
+  useEffect(() => {
+    if (gameState === 'PLAYING') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('scen', currentScenario);
+      url.searchParams.set('ptr', String(pointer));
+      window.history.replaceState(null, '', url.pathname + url.search);
+    } else {
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('scen') || url.searchParams.has('ptr')) {
+        url.searchParams.delete('scen');
+        url.searchParams.delete('ptr');
+        window.history.replaceState(null, '', url.pathname + url.search);
+      }
+    }
+  }, [currentScenario, pointer, gameState]);
 
   // Handle keyboard hotkeys: Space/Enter/L/PageUp/Escape, and Hold-down Shift+S to Skip dialogue
   useEffect(() => {
@@ -372,6 +415,7 @@ export default function App() {
   useEffect(() => {
     bgmPlayer.volume = sf.vol / 10;
     sePlayer.volume = sf.sevol / 10;
+    voicePlayer.volume = sf.sevol / 10;
   }, [sf.vol, sf.sevol]);
 
   // Load scenarios from JSON
@@ -490,6 +534,13 @@ export default function App() {
     sePlayer.src = '';
   };
 
+  const playVoice = (storage) => {
+    if (!storage) return;
+    const url = resolveAsset(storage, 'voice');
+    voicePlayer.src = url;
+    voicePlayer.play().catch(err => console.log("Voice play failed", err));
+  };
+
   // Scenario loop runner
   useEffect(() => {
     if (!scenarioData || isWaiting || showOptions || gameState !== 'PLAYING') return;
@@ -514,11 +565,11 @@ export default function App() {
         case 'command':
           const args = inst.args || {};
           // Execute core game commands
-          if (inst.name === 'playbgm' || inst.name === 'fadeinbgm') {
+          if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm') {
             playBgm(args.storage);
           } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm') {
             stopBgm();
-          } else if (inst.name === 'playse' || inst.name === 'fadeinse') {
+          } else if (inst.name === 'playse' || inst.name === 'se' || inst.name === 'fadeinse') {
             playSe(args.storage);
           } else if (inst.name === 'stopse' || inst.name === 'fadeoutse') {
             stopSe();
@@ -590,11 +641,14 @@ export default function App() {
             setTextVisible(true);
           } else if (inst.name === 'delmsg') {
             setTextVisible(false);
-          } else if (inst.name === 'name') {
-            const jpName = args.txt || '';
-            const enName = resolveCharacterName(args.txt_en || args.txt || '', 'EN');
+          } else if (inst.name === 'name' || inst.name === 'nm') {
+            const jpName = args.txt || args.t || '';
+            const enName = resolveCharacterName(args.txt_en || args.t_en || args.t || '', 'EN');
             currentSpeakerRef.current = { jp: jpName, en: enName };
             setSpeaker(language === 'JP' ? jpName : enName);
+            if (inst.name === 'nm' && args.s) {
+              playVoice(args.s);
+            }
           } else if (inst.name === 'l_moji') {
             setSideNarration({
               visible: true,
@@ -620,7 +674,7 @@ export default function App() {
             setDialogueMode('novel');
             setTypewriterText('');
             updateDialogueText('');
-          } else if (inst.name === 'avg') {
+          } else if (inst.name === 'avg' || inst.name === 'avg_with_name') {
             setDialogueMode('avg');
             setTypewriterText('');
             updateDialogueText('');
@@ -673,7 +727,9 @@ export default function App() {
           break;
           
         case 'wait_click':
-          shouldBlock = true;
+          if (p - 1 !== pointer) {
+            shouldBlock = true;
+          }
           break;
           
         case 'page_break':
@@ -1352,6 +1408,22 @@ export default function App() {
             onJumpToSnapshot={jumpToHistorySnapshot}
           />
         )}
+
+        {/* === DEBUG PANEL OVERLAY === */}
+        <DebugPanel 
+          currentScenario={currentScenario}
+          pointer={pointer}
+          scenarioData={scenarioData}
+          f={f}
+          sf={sf}
+          setF={setF}
+          setSf={updateSf}
+          loadScenario={loadScenario}
+          sprites={sprites}
+          background={background}
+          dialogueMode={dialogueMode}
+          speaker={speaker}
+        />
 
       </div>
     </div>

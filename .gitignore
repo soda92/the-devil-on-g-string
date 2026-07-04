@@ -14,6 +14,7 @@ web-app/public
 file_map.json
 gallery_items.json
 sprite_positions.json
+scenario_names.json
 
 # Virtual environments
 .venv

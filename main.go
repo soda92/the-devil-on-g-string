@@ -151,6 +151,14 @@ func main() {
 		w.Write([]byte(`{"success":true}`))
 	})
 
+	// Serve local media assets from extracted_data
+	assetDirs := []string{"alter", "bgimage", "bgm", "bland_call", "evimage", "evimage_h_scene", "face", "fgimage", "font", "image", "others", "rule", "sound", "voice", "voice_h_scene"}
+	for _, dir := range assetDirs {
+		prefix := "/" + dir + "/"
+		path := "./extracted_data/" + dir
+		http.Handle(prefix, http.StripPrefix(prefix, http.FileServer(http.Dir(path))))
+	}
+
 	// Static files handler
 	http.Handle("/", http.FileServer(http.FS(staticFS)))
 

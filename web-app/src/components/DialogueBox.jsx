@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export default function DialogueBox({ dialogueMode, speaker, typewriterText, dialogueText, isWaiting, language, setLanguage, onSave, onLoad, onConfig, onQuit, onScreenClick, onShowHistory, onShowFlowchart }) {
+  const textRef = useRef(null);
+
+  useEffect(() => {
+    if (textRef.current) {
+      textRef.current.scrollTop = textRef.current.scrollHeight;
+    }
+  }, [typewriterText]);
+
   return (
     <div className={`dialogue-box-layer glass-panel ${dialogueMode === 'novel' ? 'novel-mode' : 'avg-mode'}`} onClick={(e) => e.stopPropagation()}>
       {speaker && dialogueMode !== 'novel' && <div className="dialogue-speaker">{speaker}</div>}
       
       <div 
+        ref={textRef}
         className="dialogue-text" 
         dangerouslySetInnerHTML={{ __html: typewriterText }} 
         onClick={onScreenClick}
