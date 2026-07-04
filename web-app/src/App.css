@@ -203,6 +203,25 @@
   animation: slide-up 0.5s ease-out;
 }
 
+.dialogue-box-layer.novel-mode {
+  top: 15px;
+  bottom: 15px;
+  left: 15px;
+  width: 768px;
+  height: 570px;
+  background: rgba(10, 10, 10, 0.85);
+  padding: 35px;
+  justify-content: flex-start;
+  animation: fade-in 0.3s ease-out;
+}
+
+.dialogue-box-layer.novel-mode .dialogue-text {
+  font-size: 20px;
+  line-height: 1.8;
+  max-height: 460px;
+  overflow-y: auto;
+}
+
 .dialogue-speaker {
   position: absolute;
   top: -24px;

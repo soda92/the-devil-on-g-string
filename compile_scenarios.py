@@ -58,11 +58,11 @@ def parse_line_text_and_tags(line):
                 instructions.append({
                     "type": "link_end"
                 })
-            elif tag_name in ('l', 'waitclick'):
+            elif tag_name in ('l', 'waitclick', 'wvl'):
                 instructions.append({
                     "type": "wait_click"
                 })
-            elif tag_name in ('p', 'page'):
+            elif tag_name in ('p', 'page', 'np'):
                 instructions.append({
                     "type": "page_break"
                 })
@@ -194,11 +194,11 @@ def compile_scenario_file(filepath):
                         "type": "eval",
                         "exp": args.get('exp', '')
                     })
-                elif cmd_name in ('l', 'waitclick'):
+                elif cmd_name in ('l', 'waitclick', 'wvl'):
                     instructions.append({
                         "type": "wait_click"
                     })
-                elif cmd_name in ('p', 'page'):
+                elif cmd_name in ('p', 'page', 'np'):
                     instructions.append({
                         "type": "page_break"
                     })

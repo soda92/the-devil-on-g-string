@@ -4,44 +4,44 @@ export default function TitleScreen({ f, resolveAsset, startNewGame, onShowLoad,
   // Render hourly background image for title screen
   const getTitleBg = () => {
     const hour = f.chour;
-    if (hour >= 7 && hour <= 16) return 'bg_106'; // Day
-    if (hour >= 17 && hour <= 19) return 'bg_107'; // Evening
-    return 'bg_108'; // Night
+    if (hour >= 7 && hour <= 16) return 'bg_02a'; // Day
+    if (hour >= 17 && hour <= 19) return 'bg_02b'; // Evening
+    return 'bg_02c'; // Night
   };
 
   return (
     <div className="title-screen-layer" style={{ backgroundImage: `url(${resolveAsset(getTitleBg(), 'bgimage')})` }}>
       <div className="title-blur-panel glass-panel">
-        <h1 className="title-heading">SCHOOL★SCHOOL</h1>
-        <h2 className="title-subheading">Re:imagined</h2>
+        <h1 className="title-heading" style={{ fontSize: '36px', letterSpacing: '2px', textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>G弦上的魔王</h1>
+        <h2 className="title-subheading">The Devil on G-String</h2>
         
         <div className="title-menu-buttons">
           {hasActiveGame && (
             <button className="premium-btn title-menu-btn resume-btn" onClick={onResume}>
-              {language === 'JP' ? 'ゲーム再開' : 'Resume Game'}
+              继续游戏
             </button>
           )}
           {hasHistory && (
             <button className="premium-btn title-menu-btn rewind-btn" onClick={onRewind} style={{ borderColor: 'var(--color-primary)' }}>
-              {language === 'JP' ? '直前のシーンに戻る' : 'Rewind Last Scene'}
+              回到前一幕
             </button>
           )}
           {f.choicesHistory && f.choicesHistory.length > 0 && (
             <button className="premium-btn title-menu-btn flowchart-btn" onClick={onShowFlowchart}>
-              {language === 'JP' ? 'ルート状況・履歴' : 'Route Flowchart'}
+              路线流程图
             </button>
           )}
           <button className="premium-btn title-menu-btn" onClick={startNewGame}>
-            {language === 'JP' ? 'はじめから' : 'New Game'}
+            开始游戏
           </button>
           <button className="premium-btn title-menu-btn" onClick={onShowLoad}>
-            {language === 'JP' ? 'つづきから' : 'Load Game'}
+            读取存档
           </button>
           <button className="premium-btn title-menu-btn" onClick={onShowGallery}>
-            {language === 'JP' ? 'CG鑑賞' : 'CG Gallery'}
+            CG 鉴赏
           </button>
           <button className="premium-btn title-menu-btn" onClick={onShowSettings}>
-            {language === 'JP' ? '環境設定' : 'Settings'}
+            游戏设置
           </button>
         </div>
       </div>

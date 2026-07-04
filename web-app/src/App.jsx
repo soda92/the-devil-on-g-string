@@ -107,6 +107,7 @@ export default function App() {
   const [typewriterText, setTypewriterText] = useState('');
   const [textVisible, setTextVisible] = useState(false);
   const [historyLog, setHistoryLog] = useState([]);
+  const [dialogueMode, setDialogueMode] = useState('avg');
   
   const dialogueTextRef = useRef('');
   const updateDialogueText = (val) => {
@@ -301,6 +302,7 @@ export default function App() {
         currentSpeaker: currentSpeakerRef.current,
         dialogueText: dialogueTextRef.current,
         language,
+        dialogueMode,
         currentScenario,
         pointer,
         showOptions: showOptions || null,
@@ -614,6 +616,14 @@ export default function App() {
             setTimeout(() => {
               setSideNarration(prev => ({ ...prev, visible: false }));
             }, 4500);
+          } else if (inst.name === 'novel') {
+            setDialogueMode('novel');
+            setTypewriterText('');
+            updateDialogueText('');
+          } else if (inst.name === 'avg') {
+            setDialogueMode('avg');
+            setTypewriterText('');
+            updateDialogueText('');
           } else if (inst.name === 'jump') {
             const storage = args.storage ? args.storage.replace('.ks', '') : currentScenario;
             const target = args.target ? args.target.replace('*', '') : null;
@@ -1046,6 +1056,7 @@ export default function App() {
     });
     setSprites({ 0: null, 1: null, 2: null });
     setBackground('white');
+    setDialogueMode('avg');
     setSpeaker('');
     updateDialogueText('');
     setTypewriterText('');
@@ -1069,6 +1080,7 @@ export default function App() {
     currentSpeakerRef.current = slotData.currentSpeaker || { jp: slotData.speaker || '', en: slotData.speaker || '' };
     updateDialogueText(slotData.dialogueText);
     setTypewriterText(slotData.dialogueText);
+    setDialogueMode(slotData.dialogueMode || 'avg');
     
     // Restore language preference
     if (slotData.language) {
@@ -1127,6 +1139,7 @@ export default function App() {
       speaker,
       currentSpeaker: currentSpeakerRef.current,
       dialogueText: dialogueTextRef.current,
+      dialogueMode,
       language,
       currentScenario,
       pointer,
@@ -1261,6 +1274,7 @@ export default function App() {
             quitToTitle={quitToTitle}
             setShowHistory={setShowHistory}
             onShowFlowchart={() => setShowChoiceGraph(true)}
+            dialogueMode={dialogueMode}
           />
         )}
 

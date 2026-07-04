@@ -51,7 +51,8 @@ export default function GameplayScreen({
   setShowSettings,
   quitToTitle,
   setShowHistory,
-  onShowFlowchart
+  onShowFlowchart,
+  dialogueMode
 }) {
   return (
     <div className="playing-layer" onClick={handleScreenClick} onWheel={handleWheel}>
@@ -88,6 +89,7 @@ export default function GameplayScreen({
       {/* Text Dialogue Layer */}
       {textVisible && (
         <DialogueBox 
+          dialogueMode={dialogueMode}
           speaker={speaker}
           typewriterText={typewriterText}
           dialogueText={dialogueText}
