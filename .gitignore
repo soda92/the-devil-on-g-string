@@ -18,3 +18,7 @@ scenario_names.json
 
 # Virtual environments
 .venv
+
+/game-server
+
+*_backup
