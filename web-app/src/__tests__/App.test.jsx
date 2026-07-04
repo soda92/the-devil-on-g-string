@@ -152,4 +152,78 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     expect(engineState.dialogueText).toBe('这是第二句话。');
     expect(engineState.dialogueText).not.toContain('<br />这是第二句话。');
   });
+
+  it('closes active overlays on ESC key press', async () => {
+    const App = await getApp();
+    render(<App />);
+    
+    // Open Settings panel by clicking "游戏设置" button
+    const settingsBtn = screen.getByText(/游戏设置/i);
+    await act(async () => {
+      fireEvent.click(settingsBtn);
+    });
+    
+    // Check settings panel is rendered
+    expect(screen.getByText(/背景音乐音量/i)).toBeDefined();
+    
+    // Press ESC key
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+    });
+    
+    // Check settings panel is closed
+    await waitFor(() => {
+      expect(screen.queryByText(/语音设置/i)).toBeNull();
+    });
+  });
+
+  it('correctly respects title screen mute preference and isolates it from gameplay BGM', async () => {
+    // Enable muted status in mocked localStorage
+    mockLocalStorage.setItem('school_bgm_muted', 'true');
+
+    const App = await getApp();
+    render(<App />);
+
+    // Verify Title Screen rendered
+    expect(screen.getByText(/G弦上的魔王/i)).toBeDefined();
+
+    // Check that title screen BGM is selected but not playing (remains muted)
+    const audioState = window.quick_check().audio;
+    expect(audioState.bgm.src).toContain('bgm_01');
+
+    // Simulate going into gameplay via deep link to play bgm_test_01
+    const url = new URL('http://localhost:38942/?scen=g01&ptr=3');
+    window.history.replaceState({}, '', url.pathname + url.search);
+    
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/这是第一句话。/)).toBeDefined();
+    });
+
+    // The BGM player should now play the gameplay BGM (bgm_test_01) and ignore the title mute status
+    const gameplayBgmState = window.quick_check().audio;
+    expect(gameplayBgmState.bgm.src).toContain('bgm_test_01');
+    expect(mockPlay).toHaveBeenCalled();
+  });
+
+  it('triggers autosave on every dialogue progression step', async () => {
+    mockLocalStorage.setItem.mockClear();
+
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g01&ptr=3');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/这是第一句话。/)).toBeDefined();
+    });
+
+    // Check that current position is written to school_autosave
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
+      'school_autosave',
+      expect.stringContaining('"pointer":4')
+    );
+  });
 });

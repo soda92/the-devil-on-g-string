@@ -135,6 +135,7 @@ export function useKagRunner({
   const initialVoiceRef = useRef('');
   const dialogueTextRef = useRef('');
   const lastFetchIdRef = useRef(0);
+  const autosaveTimeoutRef = useRef(null);
   const backgroundRef = useRef('white');
   const spritesRef = useRef({ 0: null, 1: null, 2: null });
   const fRef = useRef({});
@@ -491,6 +492,59 @@ export function useKagRunner({
       playBgm('bgm_01');
     }
   }, [gameState]);
+
+  // Clean up autosave timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
+    };
+  }, []);
+
+  const triggerAutosave = (currentP = pointer, currentScen = currentScenario) => {
+    if (gameState !== 'PLAYING' || currentP <= 0 || !currentScen) return;
+    
+    const saveData = {
+      slotId: 'autosave',
+      f: cleanFForSnapshot(f),
+      choicesHistory: cleanChoicesHistoryForSave(f.choicesHistory),
+      sprites,
+      background,
+      speaker,
+      currentSpeaker: currentSpeakerRef.current,
+      dialogueText: dialogueTextRef.current,
+      dialogueMode,
+      language,
+      currentScenario: currentScen,
+      pointer: currentP,
+      showOptions: showOptions || null,
+      historyLog: cleanHistoryLogForSave(historyLog),
+      bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null,
+      date: new Date().toLocaleString()
+    };
+    
+    // 1. Instantly write to local storage
+    localStorage.setItem('school_autosave', JSON.stringify(saveData));
+    
+    // 2. Update React slots state
+    setSaveSlots(prev => ({ ...prev, autosave: saveData }));
+    
+    // 3. Debounced/throttled backend post to avoid network spam
+    if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
+    autosaveTimeoutRef.current = setTimeout(() => {
+      fetch('/api/save-slot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slot: 'autosave', data: saveData })
+      }).catch(e => console.error("Failed to auto-save to backend", e));
+    }, 2000);
+  };
+
+  // Trigger autosave when pointer or scenario changes
+  useEffect(() => {
+    if (gameState === 'PLAYING' && pointer > 0 && currentScenario) {
+      triggerAutosave(pointer, currentScenario);
+    }
+  }, [pointer, currentScenario, gameState]);
 
   // Main Scenario Interpreter Loop Runner
   useEffect(() => {

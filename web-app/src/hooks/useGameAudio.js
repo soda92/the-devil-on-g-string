@@ -20,6 +20,16 @@ if (import.meta.hot) {
 export function useGameAudio(vol = 8, sevol = 8) {
   const currentVoiceRef = useRef(null);
   const [isBgmPlaying, setIsBgmPlaying] = useState(false);
+  
+  // Track persistent mute preference in localStorage
+  const [isMuted, setIsMuted] = useState(() => {
+    return localStorage.getItem('school_bgm_muted') === 'true';
+  });
+  const isMutedRef = useRef(isMuted);
+
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
 
   // Synchronize playing state with actual audio events
   useEffect(() => {
@@ -51,8 +61,13 @@ export function useGameAudio(vol = 8, sevol = 8) {
     if (bgmPlayer.src !== fullUrl) {
       bgmPlayer.src = url;
     }
-    if (bgmPlayer.paused) {
-      bgmPlayer.play().catch(err => console.log("BGM play interrupted", err));
+    // Only apply the mute flag to the title screen theme 'bgm_01'
+    if (storage === 'bgm_01' && isMutedRef.current) {
+      bgmPlayer.pause();
+    } else {
+      if (bgmPlayer.paused) {
+        bgmPlayer.play().catch(err => console.log("BGM play interrupted", err));
+      }
     }
   };
 
@@ -77,13 +92,18 @@ export function useGameAudio(vol = 8, sevol = 8) {
 
   const toggleBgm = () => {
     if (bgmPlayer.paused) {
-      // If we don't have a source set, default to title theme
+      // Unmute BGM
+      setIsMuted(false);
+      localStorage.setItem('school_bgm_muted', 'false');
       if (!bgmPlayer.src || bgmPlayer.src === window.location.href) {
         playBgm('bgm_01');
       } else {
         bgmPlayer.play().catch(err => console.log("BGM play interrupted", err));
       }
     } else {
+      // Mute BGM
+      setIsMuted(true);
+      localStorage.setItem('school_bgm_muted', 'true');
       bgmPlayer.pause();
     }
   };
