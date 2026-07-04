@@ -102,16 +102,25 @@ export function useKagRunner({
     chour: new Date().getHours()
   });
 
-  const [sf, setSf] = useState({
-    game_clear: 0,
-    kanon_clear: 0,
-    mizuha_clear: 0,
-    tubaki_clear: 0,
-    show_next_chapter: 0,
-    first: 1,
-    vol: 8,
-    sevol: 8,
-    typewriterMode: 'CHAR'
+  const [sf, setSf] = useState(() => {
+    const saved = localStorage.getItem('school_school_sf');
+    const defaults = {
+      game_clear: 0,
+      kanon_clear: 0,
+      mizuha_clear: 0,
+      tubaki_clear: 0,
+      show_next_chapter: 0,
+      first: 1,
+      vol: 8,
+      sevol: 8,
+      typewriterMode: 'CHAR'
+    };
+    if (saved) {
+      try {
+        return { ...defaults, ...JSON.parse(saved) };
+      } catch (e) {}
+    }
+    return defaults;
   });
 
   // Autoplay lock states
@@ -175,8 +184,27 @@ export function useKagRunner({
           const state = await response.json();
           if (state && state.f) setF(prev => ({ ...prev, ...state.f }));
           if (state && state.sf) {
-            setSf(prev => ({ ...prev, ...state.sf }));
-            localStorage.setItem('school_school_sf', JSON.stringify(state.sf));
+            setSf(prev => {
+              const next = { ...prev, ...state.sf };
+              let needsBackendSave = false;
+              if (next.vol === undefined || isNaN(next.vol)) {
+                next.vol = 8;
+                needsBackendSave = true;
+              }
+              if (next.sevol === undefined || isNaN(next.sevol)) {
+                next.sevol = 8;
+                needsBackendSave = true;
+              }
+              localStorage.setItem('school_school_sf', JSON.stringify(next));
+              if (needsBackendSave) {
+                fetch('/api/save-sf', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ sf: next })
+                }).catch(e => console.warn("Failed to auto-save default SF to backend", e));
+              }
+              return next;
+            });
           }
           if (state && state.slots) {
             // Merge backend slots into saveSlots state
@@ -1242,10 +1270,16 @@ export function useKagRunner({
     setGameState('PLAYING');
   };
 
-  // Keyboard shortcut listener for Space / Enter (screen advance)
+  // Keyboard shortcut listener for Space / Enter (screen advance or visibility toggle)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.code === 'Space' || e.key === 'Enter') {
+      if (gameState !== 'PLAYING' || showSaveLoad || showSettings || showChoiceGraph || showHistory) {
+        return;
+      }
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setTextVisible(prev => !prev);
+      } else if (e.key === 'Enter') {
         e.preventDefault();
         if (handleScreenClickRef.current) {
           handleScreenClickRef.current();
@@ -1254,7 +1288,7 @@ export function useKagRunner({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [gameState, showSaveLoad, showSettings, showChoiceGraph, showHistory]);
 
   return {
     language,

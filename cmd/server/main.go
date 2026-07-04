@@ -43,6 +43,12 @@ func loadState() (SaveState, error) {
 	}
 
 	err = json.Unmarshal(data, &state)
+	if state.SF == nil {
+		state.SF = make(map[string]interface{})
+	}
+	if state.Slots == nil {
+		state.Slots = make(map[string]interface{})
+	}
 	return state, err
 }
 

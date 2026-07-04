@@ -7,6 +7,8 @@ wheels/
 *.egg-info
 extracted_data
 G弦上的魔王
+G弦上的魔王.exe
+G弦上的魔王-server
 /*.json
 compiled_scenarios
 web-app/public
