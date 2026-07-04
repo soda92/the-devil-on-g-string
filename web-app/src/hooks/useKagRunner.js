@@ -868,6 +868,19 @@ export function useKagRunner({
     };
   }, [currentScenario, pointer, background, sprites, speaker, dialogueMode, dialogueText, typewriterText, isWaiting, isAutoMode, isFastForward, f, sf]);
 
+  // Log state progression in browser console
+  useEffect(() => {
+    if (gameState === 'PLAYING') {
+      console.log(
+        `%c[STEP] Scenario: %c${currentScenario}%c | Pointer: %c${pointer}%c | BG: %c${background}%c | Speaker: %c${speaker || 'None'}`,
+        'color: #9cdcfe;', 'color: #ce9178; font-weight: bold;',
+        'color: #9cdcfe;', 'color: #b5cea8; font-weight: bold;',
+        'color: #9cdcfe;', 'color: #4fc1ff; font-style: italic;',
+        'color: #9cdcfe;', 'color: #4ec9b0; font-weight: bold;'
+      );
+    }
+  }, [currentScenario, pointer, background, gameState, speaker]);
+
   // Dialogue box mousewheel scroll backlog history trigger
   const handleWheel = (e) => {
     if (gameState !== 'PLAYING') return;
@@ -1203,10 +1216,10 @@ export function useKagRunner({
     setGameState('PLAYING');
   };
 
-  // Keyboard shortcut listener for Space (screen advance)
+  // Keyboard shortcut listener for Space / Enter (screen advance)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.code === 'Space') {
+      if (e.code === 'Space' || e.key === 'Enter') {
         e.preventDefault();
         if (handleScreenClickRef.current) {
           handleScreenClickRef.current();

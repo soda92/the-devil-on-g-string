@@ -78,8 +78,8 @@ export default function SettingsPanel({
       <div className="settings-actions-footer">
         {isGameplay ? (
           <>
-            <button className="settings-footer-btn" onClick={onBack}>
-              {language === 'JP' ? '返回' : 'Back'}
+            <button className="settings-footer-btn quit-danger-btn" onClick={onQuit}>
+              {language === 'JP' ? '返回标题' : 'Quit to Title'}
             </button>
             <button className="settings-footer-btn" onClick={onSave}>
               {language === 'JP' ? '保存' : 'Save'}
@@ -87,8 +87,8 @@ export default function SettingsPanel({
             <button className="settings-footer-btn" onClick={onLoad}>
               {language === 'JP' ? '读取' : 'Load'}
             </button>
-            <button className="settings-footer-btn quit-danger-btn" onClick={onQuit}>
-              {language === 'JP' ? '返回标题' : 'Quit to Title'}
+            <button className="settings-footer-btn" onClick={onBack}>
+              {language === 'JP' ? '返回' : 'Back'}
             </button>
           </>
         ) : (
