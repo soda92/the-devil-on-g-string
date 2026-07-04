@@ -24,12 +24,14 @@ export default function App() {
   // Screen scaling to fit browser viewport
   const [scale, setScale] = useState(1);
   const [cgViewerUrl, setCgViewerUrl] = useState(null);
+  const [debugOpen, setDebugOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const scaleX = w / 800;
+      const targetWidth = debugOpen ? 1140 : 800;
+      const scaleX = w / targetWidth;
       const scaleY = h / 600;
       const newScale = Math.min(scaleX, scaleY, 1);
       setScale(newScale);
@@ -37,6 +39,21 @@ export default function App() {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, [debugOpen]);
+
+  // Keydown listener in App to toggle debug panel
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+        return;
+      }
+      if (e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        setDebugOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Initialize modular Audio Hook with localStorage values if available
@@ -137,7 +154,16 @@ export default function App() {
   }, [runner.showHistory, runner.showSettings, runner.showSaveLoad, runner.showChoiceGraph]);
 
   return (
-    <div className="game-container" style={{ transform: `scale(${scale})` }}>
+    <div 
+      className="game-container" 
+      style={{ 
+        transform: `scale(${scale})`,
+        display: 'flex',
+        gap: '20px',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
       <div className={`game-screen shadow-premium ${runner.quakeActive ? 'shake-effect' : ''}`}>
         
         {/* === TITLE SCREEN VIEW === */}
@@ -182,7 +208,6 @@ export default function App() {
             setShowSaveLoad={(mode) => {
               if (!runner.isAudioUnlocked) {
                 runner.setIsAudioUnlocked(true);
-                audio.playBgm('bgm_01');
               }
               runner.setShowSaveLoad(mode);
             }}
@@ -353,7 +378,10 @@ export default function App() {
           />
         )}
 
-        {/* === DEBUG PANEL OVERLAY === */}
+      </div>
+
+      {/* === DEBUG PANEL OVERLAY === */}
+      {debugOpen && (
         <DebugPanel 
           currentScenario={runner.currentScenario}
           pointer={runner.pointer}
@@ -367,9 +395,10 @@ export default function App() {
           background={runner.background}
           dialogueMode={runner.dialogueMode}
           speaker={runner.speaker}
+          bgmPlayer={audio.bgmPlayer}
+          onClose={() => setDebugOpen(false)}
         />
-
-      </div>
+      )}
     </div>
   );
 }

@@ -261,4 +261,45 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     expect(engineState.sf.novelOpacity).toBe(3);
     expect(engineState.sf.novelBlur).toBe(6);
   });
+
+  it('correctly scans g05 scenario to pointer 536 and plays only bgm_06', async () => {
+    const instructions = [];
+    for (let i = 0; i < 540; i++) {
+      if (i === 5) {
+        instructions.push({ type: 'command', name: 'bgm', args: { storage: 'bgm_25b' } });
+      } else if (i === 522) {
+        instructions.push({ type: 'command', name: 'fobgm', args: {} });
+      } else if (i === 529) {
+        instructions.push({ type: 'command', name: 'bgm', args: { storage: 'bgm_06' } });
+      } else if (i === 536) {
+        instructions.push({ type: 'text', text_jp: '目标句子。', text_en: 'Target sentence.' });
+      } else {
+        instructions.push({ type: 'comment', text: 'dummy' });
+      }
+    }
+
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ instructions })
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g05&ptr=536');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g05');
+      expect(diag.pointer).toBe(536);
+      expect(diag.audio.bgm.src).toContain('bgm_06');
+      expect(diag.audio.bgm.src).not.toContain('bgm_25b');
+    });
+  });
 });

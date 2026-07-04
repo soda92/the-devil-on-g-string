@@ -508,10 +508,32 @@ export function useKagRunner({
 
   // Play main theme on Title Screen
   useEffect(() => {
-    if (gameState === 'TITLE') {
+    const hasDeepLink = new URLSearchParams(window.location.search).has('scen');
+    if (gameState === 'TITLE' && !hasDeepLink) {
       playBgm('bgm_01');
     }
   }, [gameState]);
+
+  // Play BGM and Voice once audio is unlocked
+  useEffect(() => {
+    if (isAudioUnlocked) {
+      if (gameState === 'TITLE') {
+        const hasDeepLink = new URLSearchParams(window.location.search).has('scen');
+        if (!hasDeepLink) {
+          playBgm('bgm_01');
+        }
+      } else if (gameState === 'PLAYING') {
+        if (initialBgmRef.current) {
+          playBgm(initialBgmRef.current);
+        } else {
+          stopBgm();
+        }
+        if (initialVoiceRef.current) {
+          playVoice(initialVoiceRef.current);
+        }
+      }
+    }
+  }, [isAudioUnlocked, gameState]);
 
   // Clean up autosave timer on unmount
   useEffect(() => {
@@ -1082,12 +1104,6 @@ export function useKagRunner({
 
     if (!isAudioUnlocked) {
       setIsAudioUnlocked(true);
-      if (initialBgmRef.current) {
-        playBgm(initialBgmRef.current);
-      }
-      if (initialVoiceRef.current) {
-        playVoice(initialVoiceRef.current);
-      }
       return;
     }
     
