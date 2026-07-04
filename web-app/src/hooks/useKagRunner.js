@@ -1279,7 +1279,10 @@ export function useKagRunner({
     } else {
       setShowOptions(false);
     }
-    setIsWaiting(true);
+    
+    const targetInst = data[slotData.pointer];
+    const shouldWait = targetInst && (targetInst.type === 'text' || targetInst.type === 'wait_click' || targetInst.type === 'page_break');
+    setIsWaiting(shouldWait);
     setGameState('PLAYING');
     
     if (slotData.bgm) {
@@ -1568,6 +1571,7 @@ export function useKagRunner({
     isAudioUnlocked,
     setIsAudioUnlocked,
     quakeActive,
-    flashActive
+    flashActive,
+    storagePrefix
   };
 }
