@@ -32,7 +32,7 @@ func buildFileMap(extractedDataDir string) error {
 			}
 
 			baseName := strings.TrimSuffix(info.Name(), filepath.Ext(info.Name()))
-			
+
 			rel, err := filepath.Rel(extractedDataDir, path)
 			if err != nil {
 				return nil

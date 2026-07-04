@@ -140,7 +140,7 @@ func RunExtraction() {
 		for _, m := range missing {
 			fmt.Printf("  - %s\n", m)
 		}
-		fmt.Println("This may result in missing graphics, sounds, or errors during gameplay.\n")
+		fmt.Println("This may result in missing graphics, sounds, or errors during gameplay.")
 	}
 
 	fmt.Printf("Found %d XP3 archives to extract:\n", len(xp3Files))

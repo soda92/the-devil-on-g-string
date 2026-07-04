@@ -108,7 +108,8 @@ func extractXP3(xp3Path, outputDir, prependPrefix string) error {
 
 				payload := indexBytes[sub+12 : subEnd]
 
-				if subName == "info" {
+				switch subName {
+				case "info":
 					if len(payload) >= 22 {
 						flags := binary.LittleEndian.Uint32(payload[0:4])
 						entry.IsEncrypted = (flags & 0x80000000) != 0
@@ -121,7 +122,7 @@ func extractXP3(xp3Path, outputDir, prependPrefix string) error {
 						}
 						entry.Path = utf16LEToString(pathBytes)
 					}
-				} else if subName == "segm" {
+				case "segm":
 					numSeg := int(subSize) / 28
 					for s := 0; s < numSeg; s++ {
 						o := s * 28
@@ -136,7 +137,7 @@ func extractXP3(xp3Path, outputDir, prependPrefix string) error {
 							CompressedSize:   cSize,
 						})
 					}
-				} else if subName == "adlr" {
+				case "adlr":
 					if len(payload) >= 4 {
 						entry.Adler32 = binary.LittleEndian.Uint32(payload[:4])
 					}
@@ -198,7 +199,7 @@ func readFileData(f *os.File, entry XP3FileEntry) ([]byte, error) {
 
 func writeExtractedFile(path string, data []byte, outputDir, prependPrefix string) error {
 	path = strings.ReplaceAll(path, "\\", "/")
-	
+
 	if prependPrefix != "" && !strings.HasPrefix(strings.ToLower(path), strings.ToLower(prependPrefix)) {
 		path = prependPrefix + path
 	}

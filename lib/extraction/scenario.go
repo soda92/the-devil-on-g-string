@@ -100,7 +100,7 @@ func compileAllScenarios(extractedDataDir string) error {
 		if err != nil {
 			return err
 		}
-		
+
 		content, err := decodeScenarioBytes(data)
 		if err != nil {
 			content = string(data)
@@ -263,7 +263,7 @@ func parseLineTextAndTags(line string, translationCache map[string]string, trans
 	matches := re.FindAllString(line, -1)
 
 	var instructions []Instruction
-	
+
 	for i := 0; i < len(parts); i++ {
 		part := parts[i]
 		if part != "" {
@@ -286,50 +286,51 @@ func parseLineTextAndTags(line string, translationCache map[string]string, trans
 				}
 				args := parseArgs(argStr)
 
-				if tagName == "ruby2" {
+				switch tagName {
+				case "ruby2":
 					ch := args["ch"]
 					text := args["text"]
 					instructions = append(instructions, Instruction{
 						"type": "ruby_html",
 						"html": fmt.Sprintf("<ruby>%s<rt>%s</rt></ruby>", ch, text),
 					})
-				} else if tagName == "link" {
+				case "link":
 					instructions = append(instructions, Instruction{
 						"type":   "link_start",
 						"target": args["target"],
 						"exp":    args["exp"],
 					})
-				} else if tagName == "endlink" {
+				case "endlink":
 					instructions = append(instructions, Instruction{
 						"type": "link_end",
 					})
-				} else if tagName == "l" || tagName == "waitclick" {
+				case "l", "waitclick":
 					instructions = append(instructions, Instruction{
 						"type": "wait_click",
 					})
-				} else if tagName == "p" || tagName == "page" || tagName == "np" {
+				case "p", "page", "np":
 					instructions = append(instructions, Instruction{
 						"type": "page_break",
 					})
-				} else if tagName == "er" {
+				case "er":
 					instructions = append(instructions, Instruction{
 						"type": "clear_text",
 					})
-				} else if tagName == "if" {
+				case "if":
 					instructions = append(instructions, Instruction{
 						"type": "if",
 						"exp":  args["exp"],
 					})
-				} else if tagName == "endif" {
+				case "endif":
 					instructions = append(instructions, Instruction{
 						"type": "endif",
 					})
-				} else if tagName == "eval" {
+				case "eval":
 					instructions = append(instructions, Instruction{
 						"type": "eval",
 						"exp":  args["exp"],
 					})
-				} else {
+				default:
 					cmdArgs := make(map[string]interface{})
 					for k, v := range args {
 						cmdArgs[k] = v
@@ -347,11 +348,12 @@ func parseLineTextAndTags(line string, translationCache map[string]string, trans
 	var merged []Instruction
 	var currentTextBuffer string
 	for _, inst := range instructions {
-		if inst["type"] == "text_raw" {
+		switch inst["type"] {
+		case "text_raw":
 			currentTextBuffer += inst["text"].(string)
-		} else if inst["type"] == "ruby_html" {
+		case "ruby_html":
 			currentTextBuffer += inst["html"].(string)
-		} else {
+		default:
 			if currentTextBuffer != "" {
 				txt := strings.TrimSpace(currentTextBuffer)
 				if txt != "" {
@@ -383,19 +385,20 @@ func parseLineTextAndTags(line string, translationCache map[string]string, trans
 }
 
 func compileCommand(cmdName string, args map[string]string, translationCache map[string]string, translatableTexts *[]string) []Instruction {
-	if cmdName == "if" {
+	switch cmdName {
+	case "if":
 		return []Instruction{{"type": "if", "exp": args["exp"]}}
-	} else if cmdName == "endif" {
+	case "endif":
 		return []Instruction{{"type": "endif"}}
-	} else if cmdName == "eval" {
+	case "eval":
 		return []Instruction{{"type": "eval", "exp": args["exp"]}}
-	} else if cmdName == "l" || cmdName == "waitclick" {
+	case "l", "waitclick":
 		return []Instruction{{"type": "wait_click"}}
-	} else if cmdName == "p" || cmdName == "page" || cmdName == "np" {
+	case "p", "page", "np":
 		return []Instruction{{"type": "page_break"}}
-	} else if cmdName == "er" {
+	case "er":
 		return []Instruction{{"type": "clear_text"}}
-	} else {
+	default:
 		cmdArgs := make(map[string]interface{})
 		for k, v := range args {
 			cmdArgs[k] = v
