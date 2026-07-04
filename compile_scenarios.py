@@ -2,101 +2,9 @@ import os
 import glob
 import re
 import json
-import urllib.request
-import urllib.parse
-import time
 
 extracted_dir = "/home/soda/Downloads/G弦上的魔王/extracted_data/scenario"
 output_dir = "/home/soda/Downloads/G弦上的魔王/compiled_scenarios"
-cache_file = "/home/soda/Downloads/G弦上的魔王/translation_cache.json"
-
-# Load translation cache
-translation_cache = {}
-if os.path.exists(cache_file):
-    try:
-        with open(cache_file, "r", encoding="utf-8") as f:
-            translation_cache = json.load(f)
-        print(f"Loaded {len(translation_cache)} cached translations.")
-    except Exception as e:
-        print(f"Error loading cache: {e}")
-
-def save_cache():
-    try:
-        with open(cache_file, "w", encoding="utf-8") as f:
-            json.dump(translation_cache, f, ensure_ascii=False, indent=2)
-    except Exception as e:
-        print(f"Error saving cache: {e}")
-
-def translate_single(text, target_lang='en', source_lang='zh-CN'):
-    if not text.strip():
-        return ""
-    
-    # Check cache first
-    if text in translation_cache:
-        return translation_cache[text]
-        
-    url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={source_lang}&tl={target_lang}&dt=t&q=" + urllib.parse.quote(text)
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    try:
-        with urllib.request.urlopen(req) as response:
-            res = json.loads(response.read().decode('utf-8'))
-            translated = "".join([segment[0] for segment in res[0] if segment[0]])
-            translated = translated.strip()
-            translation_cache[text] = translated
-            return translated
-    except Exception as e:
-        print(f"Single translate error: {e}")
-        return text
-
-def translate_batch(texts, target_lang='en', source_lang='zh-CN'):
-    if not texts:
-        return []
-        
-    # Filter out texts already in cache
-    missing_texts = [t for t in texts if t not in translation_cache]
-    
-    if missing_texts:
-        print(f"Translating {len(missing_texts)} new texts in batches...")
-        batch_size = 40
-        for i in range(0, len(missing_texts), batch_size):
-            chunk = missing_texts[i : i + batch_size]
-            cleaned_chunk = [t.replace('\n', ' ').strip() for t in chunk]
-            joined_text = '\n'.join(cleaned_chunk)
-            
-            url = f"https://translate.googleapis.com/translate_a/single?client=gtx&sl={source_lang}&tl={target_lang}&dt=t&q=" + urllib.parse.quote(joined_text)
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-            
-            success = False
-            try:
-                with urllib.request.urlopen(req) as response:
-                    res = json.loads(response.read().decode('utf-8'))
-                    translated_joined = "".join([segment[0] for segment in res[0] if segment[0]])
-                    translated_lines = translated_joined.split('\n')
-                    if translated_lines and not translated_lines[-1]:
-                        translated_lines.pop()
-                        
-                    if len(translated_lines) == len(chunk):
-                        for original, translated in zip(chunk, translated_lines):
-                            translation_cache[original] = translated.strip()
-                        success = True
-                        print(f"  Translated batch {i//batch_size + 1}: {len(chunk)} lines.")
-                    else:
-                        print(f"  Batch {i//batch_size + 1} size mismatch: got {len(translated_lines)}, expected {len(chunk)}. Falling back to single.")
-            except Exception as e:
-                print(f"  Batch {i//batch_size + 1} error: {e}. Falling back to single.")
-                
-            if not success:
-                # Fallback to single translate for this chunk
-                for idx, original in enumerate(chunk):
-                    translate_single(original, target_lang, source_lang)
-                    print(f"    Translated single {i + idx + 1}/{len(missing_texts)}")
-                    time.sleep(0.1) # short throttle
-            
-            save_cache()
-            time.sleep(0.5) # throttle between batches
-            
-    # Return all translations from cache
-    return [translation_cache.get(t, t) for t in texts]
 
 def parse_args(arg_str):
     args = {}
@@ -192,7 +100,6 @@ def parse_line_text_and_tags(line):
     return instructions
 
 def compile_scenario_file(filepath):
-    print(f"Parsing {os.path.basename(filepath)}...")
     instructions = []
     
     # Try reading as UTF-16, fallback to cp932
@@ -328,7 +235,7 @@ def compile_scenario_file(filepath):
                     merged_elements.append({
                         "type": "text",
                         "text_jp": current_text_buffer,
-                        "text_en": ""
+                        "text_en": current_text_buffer  # Use Chinese text for both language modes
                     })
                     current_text_buffer = ""
                 merged_elements.append(elem)
@@ -337,7 +244,7 @@ def compile_scenario_file(filepath):
             merged_elements.append({
                 "type": "text",
                 "text_jp": current_text_buffer,
-                "text_en": ""
+                "text_en": current_text_buffer  # Use Chinese text for both language modes
             })
             
         instructions.extend(merged_elements)
@@ -354,78 +261,22 @@ def main():
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         
-    ks_files = [os.path.join(extracted_dir, "g01.ks")]
-    all_scenarios = {}
-    
-    # 1. Parse all scenarios and gather translatable texts
-    translation_queue = set()
+    ks_files = glob.glob(os.path.join(extracted_dir, "*.ks"))
+    print(f"Found {len(ks_files)} scenario files to compile.")
     
     for ksf in ks_files:
         scen_name = os.path.splitext(os.path.basename(ksf))[0]
         instructions = compile_scenario_file(ksf)
-        all_scenarios[scen_name] = instructions
         
-        # Collect text and specific command arguments for translation
+        # Set Chinese names directly without mapping/translation
         for inst in instructions:
-            if inst["type"] == "text":
-                text = inst["text_jp"].strip()
-                if text:
-                    translation_queue.add(text)
-            elif inst["type"] == "command":
-                cmd_name = inst["name"]
-                args = inst["args"]
-                # In G-String, nm (dialogue) uses 't' for character name
-                if cmd_name == "nm" and "t" in args:
-                    translation_queue.add(args["t"])
-                # Fallback check for standard KAG name tags
-                elif cmd_name == "name" and "txt" in args:
-                    translation_queue.add(args["txt"])
-                elif cmd_name in ("l_moji", "r_moji") and "moji" in args:
-                    translation_queue.add(args["moji"])
-                    
-    print(f"Total unique texts to translate: {len(translation_queue)}")
-    
-    # 2. Run batch translations
-    # G-String Chinese is zh-CN
-    translate_batch(list(translation_queue), target_lang='en', source_lang='zh-CN')
-    
-    character_name_map = {
-        "秋元": "Akimoto",
-        "京介": "Kyousuke",
-        "浅井": "Asai",
-        "宇佐美": "Usami",
-        "荣一": "Eiichi",
-        "栄一": "Eiichi",
-        "花音": "Kanon",
-        "美奈": "Mina",
-        "水羽": "Mizuha",
-        "椿": "Tsubaki",
-        "权三": "Gonzou",
-        "时田": "Tokida",
-        "雪": "Yuki",
-        "沙织": "Saori",
-        "织田": "Oda",
-        "佐伯": "Saeki",
-        "魔王": "Maou",
-    }
-
-    # 3. Populate translated values and output JSON files
-    for scen_name, instructions in all_scenarios.items():
-        for inst in instructions:
-            if inst["type"] == "text":
-                text = inst["text_jp"].strip()
-                inst["text_en"] = translation_cache.get(text, text)
-            elif inst["type"] == "command":
+            if inst["type"] == "command":
                 cmd_name = inst["name"]
                 args = inst["args"]
                 if cmd_name == "nm" and "t" in args:
-                    cn_name = args["t"]
-                    args["t_en"] = character_name_map.get(cn_name, translation_cache.get(cn_name, cn_name))
+                    args["t_en"] = args["t"]
                 elif cmd_name == "name" and "txt" in args:
-                    cn_name = args["txt"]
-                    args["txt_en"] = character_name_map.get(cn_name, translation_cache.get(cn_name, cn_name))
-                elif cmd_name in ("l_moji", "r_moji") and "moji" in args:
-                    args["moji_en"] = translation_cache.get(args["moji"], args["moji"])
+                    args["txt_en"] = args["txt"]
                     
         # Output scenario JSON
         output_filepath = os.path.join(output_dir, f"{scen_name}.json")
@@ -434,7 +285,7 @@ def main():
                 "name": scen_name,
                 "instructions": instructions
             }, out, ensure_ascii=False, indent=2)
-        print(f"Saved {output_filepath}")
+        print(f"Compiled and saved {output_filepath}")
 
 if __name__ == "__main__":
     main()

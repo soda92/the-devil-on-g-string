@@ -8,6 +8,8 @@ wheels/
 extracted_data
 G弦上的魔王
 /*.json
+compiled_scenarios
+web-app/public
 
 # Virtual environments
 .venv
