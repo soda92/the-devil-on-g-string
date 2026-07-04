@@ -1,0 +1,1273 @@
+import { useState, useEffect, useRef } from 'react';
+import { resolveAsset, resolveCharacterName, tokenizeText } from '../utils/gameUtils';
+
+// --- Save State Cleaners for Flowchart Nested Snapshots ---
+const cleanFForSnapshot = (originalF) => {
+  if (!originalF) return {};
+  const clean = { ...originalF };
+  delete clean.choicesHistory;
+  return clean;
+};
+
+const cleanChoicesHistoryForSave = (history) => {
+  if (!history) return [];
+  return history.map(entry => ({
+    ...entry,
+    snapshot: {
+      ...entry.snapshot,
+      f: cleanFForSnapshot(entry.snapshot.f)
+    }
+  }));
+};
+
+const cleanHistoryLogForSave = (history) => {
+  if (!history) return [];
+  return history.map(entry => {
+    if (!entry.snapshot) return entry;
+    return {
+      ...entry,
+      snapshot: {
+        ...entry.snapshot,
+        f: cleanFForSnapshot(entry.snapshot.f)
+      }
+    };
+  });
+};
+
+export function useKagRunner({
+  playBgm,
+  stopBgm,
+  playSe,
+  playVoice,
+  currentVoiceRef,
+  bgmPlayer,
+  sePlayer,
+  voicePlayer
+}) {
+  const [language, setLanguage] = useState('JP');
+  const [gameState, setGameState] = useState('TITLE');
+  
+  // Visual Novel States
+  const [currentScenario, setCurrentScenario] = useState('g01');
+  const [scenarioData, setScenarioData] = useState(null);
+  const [pointer, setPointer] = useState(0);
+  const [background, setBackground] = useState('white');
+  const [sprites, setSprites] = useState({ 0: null, 1: null, 2: null });
+  const [speaker, setSpeaker] = useState('');
+  const [dialogueText, setDialogueText] = useState('');
+  const [typewriterText, setTypewriterText] = useState('');
+  const [textVisible, setTextVisible] = useState(false);
+  const [historyLog, setHistoryLog] = useState([]);
+  const [dialogueMode, setDialogueMode] = useState('avg');
+  const [isAutoMode, setIsAutoMode] = useState(false);
+  const [isFastForward, setIsFastForward] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
+  const [sideNarration, setSideNarration] = useState({ visible: false, text: '', side: 'left', top: 130 });
+  const [showSaveLoad, setShowSaveLoad] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showChoiceGraph, setShowChoiceGraph] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+
+  const [saveSlots, setSaveSlots] = useState(() => {
+    const initial = {};
+    const auto = localStorage.getItem('school_autosave');
+    if (auto) {
+      try { initial.autosave = JSON.parse(auto); } catch(e){}
+    }
+    for (let i = 0; i < 24; i++) {
+      const slot = localStorage.getItem(`school_save_slot_${i}`);
+      if (slot) {
+        try { initial[i] = JSON.parse(slot); } catch(e){}
+      }
+    }
+    return initial;
+  });
+
+  const [f, setF] = useState({
+    flag_haru: 0,
+    flag_kanon: 0,
+    flag_mizuha: 0,
+    flag_tubaki: 0,
+    badflag_kanon: 0,
+    kanon_clear: 0,
+    mizuha_clear: 0,
+    tubaki_clear: 0,
+    game_clear: 0,
+    go_next_chapter: 0,
+    show_next_chapter: 0,
+    evcgmode: 0,
+    faceRecord: 0,
+    choicesHistory: [],
+    chour: new Date().getHours()
+  });
+
+  const [sf, setSf] = useState({
+    game_clear: 0,
+    kanon_clear: 0,
+    mizuha_clear: 0,
+    tubaki_clear: 0,
+    show_next_chapter: 0,
+    first: 1,
+    vol: 8,
+    sevol: 8,
+    typewriterMode: 'CHAR'
+  });
+
+  // Autoplay lock states
+  const [isAudioUnlocked, setIsAudioUnlockedState] = useState(false);
+  const isAudioUnlockedRef = useRef(false);
+  const setIsAudioUnlocked = (val) => {
+    setIsAudioUnlockedState(val);
+    isAudioUnlockedRef.current = val;
+  };
+
+  const initialBgmRef = useRef('');
+  const initialVoiceRef = useRef('');
+  const dialogueTextRef = useRef('');
+  const lastFetchIdRef = useRef(0);
+  const backgroundRef = useRef('white');
+  const spritesRef = useRef({ 0: null, 1: null, 2: null });
+  const fRef = useRef({});
+  const sfRef = useRef({});
+  const isFastForwardRef = useRef(false);
+  const isAutoModeRef = useRef(false);
+  const textTimerRef = useRef(null);
+  const handleScreenClickRef = useRef(null);
+  const currentSpeakerRef = useRef({ jp: '', en: '' });
+
+  // Update Refs to keep useEffect loop runner closures in sync
+  const updateDialogueText = (val) => {
+    setDialogueText(val);
+    dialogueTextRef.current = val;
+  };
+
+  useEffect(() => {
+    backgroundRef.current = background;
+  }, [background]);
+
+  useEffect(() => {
+    spritesRef.current = sprites;
+  }, [sprites]);
+
+  useEffect(() => {
+    fRef.current = f;
+  }, [f]);
+
+  useEffect(() => {
+    sfRef.current = sf;
+  }, [sf]);
+
+  useEffect(() => {
+    isFastForwardRef.current = isFastForward;
+  }, [isFastForward]);
+
+  useEffect(() => {
+    isAutoModeRef.current = isAutoMode;
+  }, [isAutoMode]);
+
+  // Initial local storage synchronizer
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const response = await fetch('/api/state');
+        if (response.ok) {
+          const state = await response.json();
+          if (state && state.f) setF(prev => ({ ...prev, ...state.f }));
+          if (state && state.sf) {
+            setSf(prev => ({ ...prev, ...state.sf }));
+            localStorage.setItem('school_school_sf', JSON.stringify(state.sf));
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to load backend state, falling back to localStorage", e);
+        const savedSf = localStorage.getItem('school_school_sf');
+        if (savedSf) setSf(prev => ({ ...prev, ...JSON.parse(savedSf) }));
+      }
+    };
+    init();
+  }, []);
+
+  const updateSf = (updater) => {
+    setSf(prev => {
+      const nextSf = typeof updater === 'function' ? updater(prev) : updater;
+      fetch('/api/save-sf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(nextSf)
+      }).catch(err => console.error("Failed to save SF to backend", err));
+      localStorage.setItem('school_school_sf', JSON.stringify(nextSf));
+      return nextSf;
+    });
+  };
+
+  const cleanKagExpression = (exp) => {
+    if (!exp) return '';
+    return exp.replace(/\[(sf\.[a-zA-Z0-9_\u4e00-\u9fff\uff00-\uffff]+)\]/g, '$1')
+              .replace(/\[(f\.[a-zA-Z0-9_\u4e00-\u9fff\uff00-\uffff]+)\]/g, '$1');
+  };
+
+  const evaluateExpression = (exp, currentF = f, currentSf = sf) => {
+    if (!exp) return true;
+    try {
+      const cleaned = cleanKagExpression(exp);
+      const func = new Function('f', 'sf', `return (${cleaned});`);
+      return func(currentF, currentSf);
+    } catch (e) {
+      console.error("Expression evaluation failed:", exp, e);
+      return false;
+    }
+  };
+
+  const executeStatement = (exp) => {
+    if (!exp) return;
+    try {
+      const tempF = { ...f };
+      const tempSf = { ...sf };
+      const cleaned = cleanKagExpression(exp);
+      const func = new Function('f', 'sf', `${cleaned}; return { f, sf };`);
+      const result = func(tempF, tempSf);
+      setF(result.f);
+      updateSf(result.sf);
+    } catch (e) {
+      console.error("Statement execution failed:", exp, e);
+    }
+  };
+
+  const skipToEndif = (startPtr) => {
+    let depth = 1;
+    let p = startPtr;
+    while (p < scenarioData.length && depth > 0) {
+      const inst = scenarioData[p];
+      if (inst.type === 'if') depth++;
+      else if (inst.type === 'endif') depth--;
+      p++;
+    }
+    return p;
+  };
+
+  const loadScenario = async (name, targetLabel = null, overridePointer = null, shouldWait = false) => {
+    if (name === 'option' || name === 'systembutton') {
+      setShowSettings(true);
+      return;
+    }
+    if (name === 'title' || name === 'backtotitle') {
+      stopBgm();
+      setGameState('TITLE');
+      return;
+    }
+    
+    const fetchId = ++lastFetchIdRef.current;
+    setScenarioData(null); 
+    setIsWaiting(true);    
+    try {
+      const response = await fetch(`/scenarios/${name}.json`);
+      if (!response.ok) throw new Error(`Failed to fetch scenario: ${name}`);
+      const data = await response.json();
+      
+      if (fetchId !== lastFetchIdRef.current) return;
+      
+      setScenarioData(data.instructions);
+      setCurrentScenario(name);
+      
+      let startIdx = 0;
+      if (overridePointer !== null) {
+        let targetTextIdx = overridePointer;
+        while (targetTextIdx >= 0 && data.instructions[targetTextIdx]?.type !== 'text') {
+          targetTextIdx--;
+        }
+        startIdx = targetTextIdx >= 0 ? targetTextIdx : overridePointer;
+        
+        let initialBg = 'white';
+        let initialBgm = '';
+        let initialSprites = { 0: null, 1: null, 2: null };
+        let initialSpeaker = '';
+        let initialDialogueMode = 'avg';
+        let initialVoice = '';
+        
+        for (let i = 0; i < startIdx; i++) {
+          const inst = data.instructions[i];
+          if (inst && inst.type === 'command') {
+            const args = inst.args || {};
+            if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm') {
+              initialBgm = args.storage;
+            } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm') {
+              initialBgm = '';
+            } else if (inst.name === 'bg' || inst.name === 'bg2' || inst.name === 'bg_ch' || inst.name === 'b_ch') {
+              initialBg = args.str || args.storage || 'black';
+              if (inst.name === 'b_ch' || inst.name === 'bg_ch') {
+                initialSprites = { 0: null, 1: null, 2: null };
+              }
+            } else if (inst.name === 'ev' || inst.name === 'ev_ch') {
+              if (args.str || args.storage) {
+                initialBg = args.str || args.storage;
+              }
+            } else if (inst.name === 'black') {
+              initialBg = 'black';
+              initialSprites = { 0: null, 1: null, 2: null };
+            } else if (inst.name === 'image') {
+              if (args.layer === 'base' && args.storage) {
+                initialBg = args.storage;
+              } else if (args.layer !== 'base') {
+                const layer = args.layer !== undefined ? parseInt(args.layer) : 2;
+                if (args.visible === 'false' || !args.storage) {
+                  initialSprites[layer] = null;
+                } else {
+                  const isBgOrEv = args.storage.startsWith('bg') || args.storage.startsWith('ev_') || args.storage === 'black' || args.storage === 'white';
+                  if (isBgOrEv) {
+                    initialBg = args.storage;
+                  } else {
+                    initialSprites[layer] = args.storage;
+                  }
+                }
+              }
+            } else if (inst.name === 'chr' || inst.name === 'chr_dash' || inst.name === 'chr_walk' || inst.name === 'chr_jump' || inst.name === 'chr_bow') {
+              if (args.c !== undefined) initialSprites[2] = args.c;
+              if (args.l !== undefined) initialSprites[1] = args.l;
+              if (args.r !== undefined) initialSprites[0] = args.r;
+            } else if (inst.name === 'mface') {
+              const match = args.name.match(/^[a-zA-Z]+/);
+              const charPrefix = match ? match[0] : '';
+              if (charPrefix) {
+                for (let layer = 0; layer < 3; layer++) {
+                  if (initialSprites[layer] && initialSprites[layer].startsWith(charPrefix)) {
+                    initialSprites[layer] = args.name;
+                    break;
+                  }
+                }
+              }
+            } else if (inst.name === 'chr_pos_change') {
+              const mapPosToSlot = (pos) => {
+                if (pos === 'c' || pos === 'cc') return 2;
+                if (pos === 'l' || pos === 'll') return 1;
+                if (pos === 'r' || pos === 'rr') return 0;
+                return -1;
+              };
+              const beforeSlot = mapPosToSlot(args.before);
+              const afterSlot = mapPosToSlot(args.after);
+              if (beforeSlot !== -1 && afterSlot !== -1) {
+                const sprite = initialSprites[beforeSlot];
+                initialSprites[afterSlot] = sprite;
+                if (beforeSlot !== afterSlot) {
+                  initialSprites[beforeSlot] = null;
+                }
+              }
+            } else if (inst.name === 'chr1') {
+              initialSprites[2] = args.str;
+            } else if (inst.name === 'chr2') {
+              initialSprites[1] = args.str;
+            } else if (inst.name === 'chr3') {
+              initialSprites[0] = args.str;
+            } else if (inst.name === 'dellay' || inst.name === 'dellay_far' || inst.name === 'dellay_walk' || inst.name === 'dellay_dash') {
+              const pos = args.pos;
+              if (pos === 'c' || pos === 'cc') initialSprites[2] = null;
+              if (pos === 'l' || pos === 'll') initialSprites[1] = null;
+              if (pos === 'r' || pos === 'rr') initialSprites[0] = null;
+            } else if (inst.name === 'delchr') {
+              const l = args.layer !== undefined ? parseInt(args.layer) : 2;
+              initialSprites[l] = null;
+            } else if (inst.name === 'alldelchr') {
+              initialSprites = { 0: null, 1: null, 2: null };
+            } else if (inst.name === 'name' || inst.name === 'nm') {
+              initialSpeaker = args.txt || args.t || '';
+              initialVoice = args.s || '';
+            } else if (inst.name === 'novel') {
+              initialDialogueMode = 'novel';
+            } else if (inst.name === 'avg' || inst.name === 'avg_with_name') {
+              initialDialogueMode = 'avg';
+            }
+          }
+        }
+        
+        setBackground(initialBg);
+        backgroundRef.current = initialBg;
+        setSprites(initialSprites);
+        spritesRef.current = initialSprites;
+        setDialogueMode(initialDialogueMode);
+        if (initialSpeaker) {
+          const resolvedSp = resolveCharacterName(initialSpeaker, 'JP');
+          setSpeaker(resolvedSp);
+          currentSpeakerRef.current = { jp: resolvedSp, en: resolveCharacterName(resolvedSp, 'EN') };
+        }
+        initialVoiceRef.current = initialVoice;
+        if (initialVoice) {
+          playVoice(initialVoice);
+        }
+        if (initialBgm) {
+          playBgm(initialBgm);
+        } else {
+          stopBgm();
+        }
+      } else if (targetLabel) {
+        const idx = data.instructions.findIndex(i => i.type === 'label' && i.name === targetLabel);
+        if (idx !== -1) {
+          startIdx = idx;
+        } else {
+          console.warn(`Label ${targetLabel} not found in ${name}`);
+        }
+      }
+      setPointer(startIdx);
+      setIsWaiting(shouldWait);
+      setShowOptions(false);
+      console.log(`Loaded scenario ${name} at pointer ${startIdx}`);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const triggerTypewriter = (startText, appendText) => {
+    if (textTimerRef.current) clearInterval(textTimerRef.current);
+    
+    const speedMode = sf.typewriterMode || 'CHAR';
+    if (speedMode === 'OFF') {
+      setTypewriterText(startText + appendText);
+      return;
+    }
+
+    const tokens = tokenizeText(appendText, language);
+    let tokenIdx = 0;
+    let accumulated = startText;
+    
+    setTypewriterText(accumulated);
+
+    textTimerRef.current = setInterval(() => {
+      if (tokenIdx < tokens.length) {
+        accumulated += tokens[tokenIdx];
+        setTypewriterText(accumulated);
+        tokenIdx++;
+      } else {
+        clearInterval(textTimerRef.current);
+      }
+    }, language === 'EN' ? 45 : 30);
+  };
+
+  // Play main theme on Title Screen
+  useEffect(() => {
+    if (gameState === 'TITLE') {
+      playBgm('bgm_01');
+    }
+  }, [gameState]);
+
+  // Main Scenario Interpreter Loop Runner
+  useEffect(() => {
+    if (gameState !== 'PLAYING' || !scenarioData || pointer >= scenarioData.length || isWaiting) return;
+
+    let p = pointer;
+    let shouldBlock = false;
+    let newF = { ...fRef.current };
+    let newSf = { ...sfRef.current };
+    let tempSprites = { ...spritesRef.current };
+    let tempBackground = backgroundRef.current;
+
+    while (p < scenarioData.length && !shouldBlock) {
+      const inst = scenarioData[p];
+      p++;
+
+      switch (inst.type) {
+        case 'label':
+          break;
+        case 'comment':
+          break;
+        case 'command':
+          const args = inst.args || {};
+          if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm') {
+            playBgm(args.storage);
+          } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm') {
+            stopBgm();
+          } else if (inst.name === 'playse' || inst.name === 'se' || inst.name === 'fadeinse') {
+            playSe(args.storage);
+          } else if (inst.name === 'stopse' || inst.name === 'fadeoutse') {
+            // Stop sound effect
+            sePlayer.pause();
+            sePlayer.src = '';
+          } else if (inst.name === 'bg' || inst.name === 'bg2' || inst.name === 'bg_ch' || inst.name === 'b_ch') {
+            tempBackground = args.str || args.storage || 'black';
+            if (inst.name === 'b_ch' || inst.name === 'bg_ch') {
+              tempSprites = { 0: null, 1: null, 2: null };
+            }
+          } else if (inst.name === 'ev' || inst.name === 'ev_ch') {
+            const cgStorage = args.str || args.storage;
+            if (cgStorage) {
+              tempBackground = cgStorage;
+              newSf[cgStorage] = 1;
+            }
+          } else if (inst.name === 'image') {
+            const storage = args.storage;
+            const layerStr = String(args.layer || '');
+            const layer = args.layer !== undefined ? parseInt(args.layer) : 2;
+            
+            if (layerStr === 'base') {
+              if (storage) {
+                tempBackground = storage;
+              }
+            } else {
+              if (args.visible === 'false' || !storage) {
+                tempSprites[layer] = null;
+              } else {
+                const isBgOrEv = storage.startsWith('bg') || storage.startsWith('ev_') || storage === 'black' || storage === 'white';
+                if (isBgOrEv) {
+                  tempBackground = storage;
+                } else {
+                  tempSprites[layer] = storage;
+                }
+              }
+            }
+          } else if (inst.name === 'chr' || inst.name === 'chr_dash' || inst.name === 'chr_walk' || inst.name === 'chr_jump' || inst.name === 'chr_bow') {
+            if (args.c !== undefined) tempSprites[2] = args.c; 
+            if (args.l !== undefined) tempSprites[1] = args.l; 
+            if (args.r !== undefined) tempSprites[0] = args.r; 
+          } else if (inst.name === 'black') {
+            tempBackground = 'black';
+            tempSprites = { 0: null, 1: null, 2: null };
+          } else if (inst.name === 'mface') {
+            const match = args.name.match(/^[a-zA-Z]+/);
+            const charPrefix = match ? match[0] : '';
+            if (charPrefix) {
+              for (let layer = 0; layer < 3; layer++) {
+                if (tempSprites[layer] && tempSprites[layer].startsWith(charPrefix)) {
+                  tempSprites[layer] = args.name;
+                  break;
+                }
+              }
+            }
+          } else if (inst.name === 'chr_pos_change') {
+            const mapPosToSlot = (pos) => {
+              if (pos === 'c' || pos === 'cc') return 2;
+              if (pos === 'l' || pos === 'll') return 1;
+              if (pos === 'r' || pos === 'rr') return 0;
+              return -1;
+            };
+            const beforeSlot = mapPosToSlot(args.before);
+            const afterSlot = mapPosToSlot(args.after);
+            if (beforeSlot !== -1 && afterSlot !== -1) {
+              const sprite = tempSprites[beforeSlot];
+              tempSprites[afterSlot] = sprite;
+              if (beforeSlot !== afterSlot) {
+                tempSprites[beforeSlot] = null;
+              }
+            }
+          } else if (inst.name === 'chr1') {
+            tempSprites[2] = args.str; 
+          } else if (inst.name === 'chr2') {
+            tempSprites[1] = args.str; 
+          } else if (inst.name === 'chr3') {
+            tempSprites[0] = args.str; 
+          } else if (inst.name === 'chr4') {
+            tempSprites[1] = args.str; 
+          } else if (inst.name === 'chr5') {
+            tempSprites[0] = args.str; 
+          } else if (inst.name === 'chr6') {
+            const layer = args.layer !== undefined ? parseInt(args.layer) : 2;
+            tempSprites[layer] = args.str;
+          } else if (inst.name === '2chr') {
+            tempSprites[1] = args.str2;
+            tempSprites[0] = args.str3;
+          } else if (inst.name === '3chr') {
+            tempSprites[2] = args.str1;
+            tempSprites[1] = args.str4;
+            tempSprites[0] = args.str5;
+          } else if (inst.name === 'dellay' || inst.name === 'dellay_far' || inst.name === 'dellay_walk' || inst.name === 'dellay_dash') {
+            const pos = args.pos;
+            if (pos === 'c' || pos === 'cc') tempSprites[2] = null;
+            if (pos === 'l' || pos === 'll') tempSprites[1] = null;
+            if (pos === 'r' || pos === 'rr') tempSprites[0] = null;
+          } else if (inst.name === 'delchr') {
+            const l = args.layer !== undefined ? parseInt(args.layer) : 2;
+            tempSprites[l] = null;
+          } else if (inst.name === 'alldelchr') {
+            tempSprites = { 0: null, 1: null, 2: null };
+          } else if (inst.name === 'showmsg') {
+            setTextVisible(true);
+          } else if (inst.name === 'delmsg') {
+            setTextVisible(false);
+          } else if (inst.name === 'name' || inst.name === 'nm') {
+            const jpName = args.txt || args.t || '';
+            const enName = resolveCharacterName(args.txt_en || args.t_en || args.t || '', 'EN');
+            currentSpeakerRef.current = { jp: jpName, en: enName };
+            setSpeaker(language === 'JP' ? jpName : enName);
+            if (inst.name === 'nm' && args.s) {
+              playVoice(args.s);
+              currentVoiceRef.current = args.s;
+            }
+          } else if (inst.name === 'l_moji') {
+            setSideNarration({
+              visible: true,
+              side: 'left',
+              text: language === 'JP' ? args.moji : args.moji_en,
+              top: args.top ? parseInt(args.top) : 130
+            });
+            setTimeout(() => {
+              setSideNarration(prev => ({ ...prev, visible: false }));
+            }, 4500);
+          } else if (inst.name === 'r_moji') {
+            setSideNarration({
+              visible: true,
+              side: 'right',
+              text: language === 'JP' ? args.moji : args.moji_en,
+              top: args.top ? parseInt(args.top) : 130
+            });
+            setTimeout(() => {
+              setSideNarration(prev => ({ ...prev, visible: false }));
+            }, 4500);
+          } else if (inst.name === 'novel') {
+            setDialogueMode('novel');
+            setTypewriterText('');
+            updateDialogueText('');
+          } else if (inst.name === 'avg' || inst.name === 'avg_with_name') {
+            setDialogueMode('avg');
+            setTypewriterText('');
+            updateDialogueText('');
+          } else if (inst.name === 'jump') {
+            const storage = args.storage ? args.storage.replace('.ks', '') : currentScenario;
+            const target = args.target ? args.target.replace('*', '') : null;
+            
+            console.log(
+              `%c[JUMP] Target Scenario: %c${storage}%c | Target Label: %c*${target || 'None'}`,
+              'color: #c678dd; font-weight: bold;', 'color: #ce9178; font-weight: bold;',
+              'color: #c678dd;', 'color: #56b6c2; font-weight: bold;'
+            );
+            loadScenario(storage, target);
+            return;
+          }
+          break;
+          
+        case 'text':
+          const displayTxt = language === 'JP' ? inst.text_jp : inst.text_en;
+          const prevDiag = dialogueTextRef.current;
+          const targetFullText = prevDiag + displayTxt;
+          updateDialogueText(targetFullText);
+          triggerTypewriter(prevDiag, displayTxt);
+          setTextVisible(true);
+          
+          const snapshot = {
+            f: cleanFForSnapshot(newF),
+            choicesCount: newF.choicesHistory ? newF.choicesHistory.length : 0,
+            sprites: { ...tempSprites },
+            background: tempBackground,
+            speaker: language === 'JP' ? currentSpeakerRef.current.jp : currentSpeakerRef.current.en,
+            currentSpeaker: { ...currentSpeakerRef.current },
+            dialogueText: targetFullText,
+            currentScenario,
+            pointer: p,
+            showOptions: showOptions || null,
+            bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null
+          };
+          
+          setHistoryLog(prev => [
+            ...prev.slice(-299), 
+            { 
+              speakerJp: currentSpeakerRef.current.jp, 
+              speakerEn: currentSpeakerRef.current.en, 
+              textJp: inst.text_jp, 
+              textEn: inst.text_en,
+              voice: currentVoiceRef.current,
+              snapshot
+            }
+          ]);
+          currentVoiceRef.current = null;
+          shouldBlock = true;
+          break;
+          
+        case 'wait_click':
+          if (p - 1 !== pointer) {
+            shouldBlock = true;
+          }
+          break;
+          
+        case 'page_break':
+          setTypewriterText('');
+          updateDialogueText('');
+          break;
+          
+        case 'clear_text':
+          setTypewriterText('');
+          updateDialogueText('');
+          break;
+          
+        case 'line_feed':
+          if (dialogueTextRef.current && dialogueTextRef.current.trim() !== '') {
+            updateDialogueText(dialogueTextRef.current + '<br />');
+            setTypewriterText(prev => prev + '<br />');
+          }
+          break;
+          
+        case 'link_start':
+          const options = [];
+          let tempP = p - 1;
+          while (tempP < scenarioData.length) {
+            const nextInst = scenarioData[tempP];
+            if (!nextInst) {
+              tempP++;
+              continue;
+            }
+            if (nextInst.type === 'line_feed' || nextInst.type === 'comment') {
+              tempP++;
+              continue;
+            }
+            if (nextInst.type === 'link_start') {
+              let textValJp = "";
+              let textValEn = "";
+              let linkTextInst = scenarioData[tempP + 1];
+              if (linkTextInst && linkTextInst.type === 'text') {
+                textValJp = linkTextInst.text_jp;
+                textValEn = linkTextInst.text_en;
+              }
+              options.push({
+                text_jp: textValJp,
+                text_en: textValEn,
+                target: nextInst.target.replace('*', ''),
+                exp: nextInst.exp
+              });
+              tempP += 3;
+            } else {
+              break;
+            }
+          }
+          
+          if (options.length > 0) {
+            setShowOptions(options);
+            shouldBlock = true;
+            setIsFastForward(false);
+            isFastForwardRef.current = false;
+            p = tempP;
+          }
+          break;
+          
+        case 'if':
+          if (!evaluateExpression(inst.exp, newF, newSf)) {
+            p = skipToEndif(p);
+          }
+          break;
+          
+        case 'endif':
+          break;
+          
+        case 'eval':
+          try {
+            const cleaned = cleanKagExpression(inst.exp);
+            const result = new Function('f', 'sf', `${cleaned}; return { f, sf };`)(newF, newSf);
+            newF = result.f;
+            newSf = result.sf;
+          } catch (err) {
+            console.error("Inline eval error", err);
+          }
+          break;
+      }
+    }
+
+    setPointer(p);
+    setF(newF);
+    if (JSON.stringify(newSf) !== JSON.stringify(sf)) {
+      updateSf(newSf);
+    } else {
+      setSf(newSf);
+    }
+    setSprites(tempSprites);
+    setBackground(tempBackground);
+    
+    if (shouldBlock) {
+      setIsWaiting(true);
+    }
+  }, [scenarioData, pointer, isWaiting, showOptions, gameState, language]);
+
+  // Update currently displayed text when language toggles
+  useEffect(() => {
+    if (!scenarioData || pointer <= 0 || pointer > scenarioData.length || gameState !== 'PLAYING') return;
+
+    let accumulated = '';
+    let lastClearIdx = -1;
+    
+    for (let i = 0; i < pointer; i++) {
+      const inst = scenarioData[i];
+      if (inst.type === 'page_break' || inst.type === 'clear_text') {
+        lastClearIdx = i;
+      }
+    }
+
+    const startTraceIdx = lastClearIdx !== -1 ? lastClearIdx + 1 : 0;
+    for (let i = startTraceIdx; i < pointer; i++) {
+      const inst = scenarioData[i];
+      if (inst.type === 'text') {
+        accumulated += language === 'JP' ? inst.text_jp : inst.text_en;
+      } else if (inst.type === 'line_feed') {
+        if (accumulated && accumulated.trim() !== '') {
+          accumulated += '<br />';
+        }
+      }
+    }
+
+    setDialogueText(accumulated);
+    setTypewriterText(accumulated);
+    dialogueTextRef.current = accumulated;
+  }, [language]);
+
+  // Handle auto-advance (Auto / Fast-Forward modes)
+  useEffect(() => {
+    if (gameState !== 'PLAYING' || !isWaiting || showOptions) return;
+
+    if (isFastForward) {
+      const timer = setTimeout(() => {
+        setIsWaiting(false);
+      }, 80);
+      return () => clearTimeout(timer);
+    }
+
+    if (isAutoMode) {
+      const charCount = typewriterText.length;
+      const readDelay = Math.max(1200, charCount * 70); 
+      const timer = setTimeout(() => {
+        setIsWaiting(false);
+      }, readDelay);
+      return () => clearTimeout(timer);
+    }
+  }, [isWaiting, isAutoMode, isFastForward, typewriterText, showOptions, gameState]);
+
+  // Expose quick_check diagnostics
+  useEffect(() => {
+    window.quick_check = () => {
+      console.log("%c=== ENGINE QUICK CHECK ===", "color: #aa3bff; font-weight: bold; font-size: 14px;");
+      console.log("Scenario       :", currentScenario);
+      console.log("Pointer        :", pointer);
+      console.log("Background     :", background);
+      console.log("Sprites        :", sprites);
+      console.log("Speaker        :", speaker);
+      console.log("Dialogue Mode  :", dialogueMode);
+      console.log("Dialogue Text  :", dialogueText);
+      console.log("Typewriter     :", typewriterText);
+      console.log("Waiting state  :", isWaiting);
+      console.log("Auto Mode      :", isAutoMode);
+      console.log("Skip Mode      :", isFastForward);
+      console.log("f (Variables)  :", f);
+      console.log("sf (Sys Flags) :", sf);
+      console.log("BGM Player     : src =", bgmPlayer.src, "| paused =", bgmPlayer.paused, "| volume =", bgmPlayer.volume);
+      console.log("Voice Player   : src =", voicePlayer.src, "| paused =", voicePlayer.paused);
+      console.log("SE Player      : src =", sePlayer.src, "| paused =", sePlayer.paused);
+      return {
+        scenario: currentScenario,
+        pointer,
+        background,
+        sprites,
+        speaker,
+        dialogueMode,
+        dialogueText,
+        typewriterText,
+        isWaiting,
+        isAutoMode,
+        isFastForward,
+        f,
+        sf,
+        audio: {
+          bgm: { src: bgmPlayer.src, paused: bgmPlayer.paused, volume: bgmPlayer.volume },
+          se: { src: sePlayer.src, paused: sePlayer.paused, volume: sePlayer.volume },
+          voice: { src: voicePlayer.src, paused: voicePlayer.paused, volume: voicePlayer.volume }
+        }
+      };
+    };
+    return () => {
+      delete window.quick_check;
+    };
+  }, [currentScenario, pointer, background, sprites, speaker, dialogueMode, dialogueText, typewriterText, isWaiting, isAutoMode, isFastForward, f, sf]);
+
+  // Dialogue box mousewheel scroll backlog history trigger
+  const handleWheel = (e) => {
+    if (gameState !== 'PLAYING') return;
+    if (e.deltaY < -15 && historyLog.length > 0) {
+      setShowHistory(true);
+    }
+  };
+
+  const handleScreenClick = () => {
+    if (showOptions || gameState !== 'PLAYING') return;
+
+    if (!isAudioUnlocked) {
+      setIsAudioUnlocked(true);
+      if (initialBgmRef.current) {
+        playBgm(initialBgmRef.current);
+      }
+      if (initialVoiceRef.current) {
+        playVoice(initialVoiceRef.current);
+      }
+      return;
+    }
+    
+    if (!textVisible) {
+      setTextVisible(true);
+      return;
+    }
+    
+    if (typewriterText !== dialogueText) {
+      if (textTimerRef.current) clearInterval(textTimerRef.current);
+      setTypewriterText(dialogueText);
+      return;
+    }
+    
+    if (isWaiting) {
+      setIsWaiting(false);
+    }
+  };
+  handleScreenClickRef.current = handleScreenClick;
+
+  const startNewGame = () => {
+    setIsFastForward(false);
+    isFastForwardRef.current = false;
+    setHistoryLog([]);
+    setF({
+      flag_haru: 0,
+      flag_kanon: 0,
+      flag_mizuha: 0,
+      flag_tubaki: 0,
+      badflag_kanon: 0,
+      kanon_clear: 0,
+      mizuha_clear: 0,
+      tubaki_clear: 0,
+      game_clear: 0,
+      go_next_chapter: 0,
+      show_next_chapter: 0,
+      evcgmode: 0,
+      faceRecord: 0,
+      chour: new Date().getHours(),
+      choicesHistory: []
+    });
+    setSprites({ 0: null, 1: null, 2: null });
+    setBackground('white');
+    setDialogueMode('avg');
+    setSpeaker('');
+    updateDialogueText('');
+    setTypewriterText('');
+    setGameState('PLAYING');
+    loadScenario('g01');
+  };
+
+  const resumeGame = () => {
+    if (pointer > 0 && scenarioData) {
+      setGameState('PLAYING');
+      if (bgmPlayer.src && bgmPlayer.paused) {
+        bgmPlayer.play().catch(e => console.log(e));
+      }
+      return;
+    }
+    const auto = localStorage.getItem('school_autosave');
+    if (auto) {
+      try {
+        loadSaveSlot(JSON.parse(auto));
+      } catch(e){}
+    }
+  };
+
+  const quitToTitle = () => {
+    stopBgm();
+    setGameState('TITLE');
+  };
+
+  const rewindToLastScene = () => {
+    if (historyLog.length <= 1) return;
+    const prevIdx = historyLog.length - 2;
+    const targetSnapshot = historyLog[prevIdx].snapshot;
+    if (targetSnapshot) {
+      loadSaveSlot(targetSnapshot);
+      setHistoryLog(prev => prev.slice(0, prevIdx + 1));
+    }
+  };
+
+  const loadSaveSlot = async (slotData) => {
+    setIsFastForward(false);
+    isFastForwardRef.current = false;
+    setScenarioData(null);
+    setIsWaiting(true);
+    setF({
+      ...slotData.f,
+      choicesHistory: slotData.choicesHistory || []
+    });
+    setSprites(slotData.sprites);
+    setBackground(slotData.background);
+    setSpeaker(slotData.speaker);
+    currentSpeakerRef.current = slotData.currentSpeaker || { jp: slotData.speaker || '', en: slotData.speaker || '' };
+    updateDialogueText(slotData.dialogueText);
+    setTypewriterText(slotData.dialogueText);
+    setDialogueMode(slotData.dialogueMode || 'avg');
+    
+    if (slotData.language) {
+      setLanguage(slotData.language);
+    }
+    
+    if (slotData.historyLog) {
+      setHistoryLog(slotData.historyLog);
+    } else {
+      setHistoryLog([]);
+    }
+    
+    let data = null;
+    try {
+      const response = await fetch(`/scenarios/${slotData.currentScenario}.json`);
+      if (!response.ok) throw new Error(`Failed to fetch scenario: ${slotData.currentScenario}`);
+      const json = await response.json();
+      data = json.instructions;
+    } catch (e) {
+      console.error("Failed to load scenario data for save state, falling back to embedded", e);
+      data = slotData.scenarioData;
+    }
+    
+    if (!data) return;
+    
+    setScenarioData(data);
+    setCurrentScenario(slotData.currentScenario);
+    setPointer(slotData.pointer);
+    
+    if (slotData.showOptions) {
+      setShowOptions(slotData.showOptions);
+    } else {
+      setShowOptions(false);
+    }
+    setIsWaiting(true);
+    setGameState('PLAYING');
+    
+    if (slotData.bgm) {
+      playBgm(slotData.bgm);
+    } else {
+      stopBgm();
+    }
+    
+    console.log(
+      `%c[LOAD] Loaded Slot: %c${slotData.slotId || 'autosave'}%c | Scenario: %c${slotData.currentScenario}%c | Pointer: %c${slotData.pointer}`,
+      'color: #61afef; font-weight: bold;', 'color: #d19a66; font-weight: bold;',
+      'color: #61afef;', 'color: #ce9178; font-weight: bold;',
+      'color: #61afef;', 'color: #b5cea8; font-weight: bold;'
+    );
+    
+    setShowSaveLoad(null);
+  };
+
+  const handleSaveSlot = (slotIdx) => {
+    const slotKey = `school_save_slot_${slotIdx}`;
+    const saveData = {
+      slotId: slotIdx,
+      f: cleanFForSnapshot(f),
+      choicesHistory: cleanChoicesHistoryForSave(f.choicesHistory),
+      sprites,
+      background,
+      speaker,
+      currentSpeaker: currentSpeakerRef.current,
+      dialogueText: dialogueTextRef.current,
+      dialogueMode,
+      language,
+      currentScenario,
+      pointer,
+      showOptions: showOptions || null,
+      historyLog: cleanHistoryLogForSave(historyLog),
+      bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null,
+      date: new Date().toLocaleString()
+    };
+    localStorage.setItem(slotKey, JSON.stringify(saveData));
+    
+    console.log(
+      `%c[SAVE] Saved to Slot: %c${slotIdx}%c | Scenario: %c${currentScenario}%c | Pointer: %c${pointer}`,
+      'color: #98c379; font-weight: bold;', 'color: #d19a66; font-weight: bold;',
+      'color: #98c379;', 'color: #ce9178; font-weight: bold;',
+      'color: #98c379;', 'color: #b5cea8; font-weight: bold;'
+    );
+    
+    fetch('/api/save-slot', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slot: String(slotIdx), data: saveData })
+    }).catch(e => console.error("Failed to save slot to backend", e));
+
+    setSaveSlots(prev => ({ ...prev, [slotIdx]: saveData }));
+    setShowSaveLoad(null);
+  };
+
+  const handleSelectOption = (opt) => {
+    console.log(
+      `%c[CHOICE] Selected: %c"${language === 'JP' ? opt.text_jp : opt.text_en}"%c | Target: %c*${opt.target}`,
+      'color: #f14c4c; font-weight: bold;', 'color: #e5c07b; font-style: italic;',
+      'color: #f14c4c;', 'color: #56b6c2; font-weight: bold;'
+    );
+
+    const choiceEntry = {
+      scenario: currentScenario,
+      pointer: pointer, 
+      options: showOptions.map(o => ({ jp: o.text_jp, en: o.text_en, target: o.target, exp: o.exp })),
+      selectedOption: { jp: opt.text_jp, en: opt.text_en, target: opt.target },
+      snapshot: {
+        f: cleanFForSnapshot(f),
+        choicesCount: f.choicesHistory ? f.choicesHistory.length : 0,
+        sprites: { ...sprites },
+        background: background,
+        speaker: speaker,
+        currentSpeaker: { ...currentSpeakerRef.current },
+        dialogueText: dialogueText,
+        currentScenario,
+        pointer: pointer,
+        bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null
+      }
+    };
+
+    if (opt.exp) {
+      executeStatement(opt.exp);
+    }
+
+    setF(prev => {
+      const prevHistory = prev.choicesHistory || [];
+      return {
+        ...prev,
+        choicesHistory: [...prevHistory, choiceEntry]
+      };
+    });
+
+    setShowOptions(false);
+    setIsWaiting(false);
+    setIsFastForward(false);
+    isFastForwardRef.current = false;
+    
+    const idx = scenarioData.findIndex(i => i.type === 'label' && i.name === opt.target);
+    if (idx !== -1) {
+      setPointer(idx);
+    } else {
+      console.error(`Target label ${opt.target} not found`);
+    }
+  };
+
+  const jumpToHistorySnapshot = async (snap, entryIdx) => {
+    setIsFastForward(false);
+    isFastForwardRef.current = false;
+    setScenarioData(null);
+    setIsWaiting(true);
+    
+    setHistoryLog(prev => prev.slice(0, entryIdx + 1));
+    
+    setF({
+      ...snap.f,
+      choicesHistory: (f.choicesHistory || []).slice(0, snap.choicesCount || 0)
+    });
+    setSprites(snap.sprites);
+    setBackground(snap.background);
+    setSpeaker(snap.speaker);
+    currentSpeakerRef.current = snap.currentSpeaker || { jp: snap.speaker || '', en: snap.speaker || '' };
+    updateDialogueText(snap.dialogueText);
+    setTypewriterText(snap.dialogueText);
+    
+    await loadScenario(snap.currentScenario, null, snap.pointer, true);
+    
+    if (snap.showOptions) {
+      setShowOptions(snap.showOptions);
+    } else {
+      setShowOptions(false);
+    }
+    
+    if (snap.bgm) {
+      playBgm(snap.bgm);
+    } else {
+      stopBgm();
+    }
+    
+    setIsWaiting(true);
+    setGameState('PLAYING');
+    setShowHistory(false);
+  };
+
+  const jumpToChoiceSnapshot = async (choice, choiceIdx) => {
+    setIsFastForward(false);
+    isFastForwardRef.current = false;
+    setScenarioData(null);
+    setIsWaiting(true);
+    
+    const snap = choice.snapshot;
+    
+    setF({
+      ...snap.f,
+      choicesHistory: (f.choicesHistory || []).slice(0, choiceIdx)
+    });
+    setSprites(snap.sprites);
+    setBackground(snap.background);
+    setSpeaker(snap.speaker);
+    currentSpeakerRef.current = snap.currentSpeaker || { jp: snap.speaker || '', en: snap.speaker || '' };
+    updateDialogueText(snap.dialogueText);
+    setTypewriterText(snap.dialogueText);
+    setCurrentScenario(snap.currentScenario);
+    
+    await loadScenario(snap.currentScenario, null, snap.pointer, true);
+    
+    setShowOptions(choice.options.map(o => ({
+      text_jp: o.jp,
+      text_en: o.en,
+      target: o.target,
+      exp: o.exp
+    })));
+    
+    if (snap.bgm) {
+      playBgm(snap.bgm);
+    } else {
+      stopBgm();
+    }
+    
+    setGameState('PLAYING');
+  };
+
+  // Keyboard shortcut listener for Space (screen advance)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (handleScreenClickRef.current) {
+          handleScreenClickRef.current();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  return {
+    language,
+    setLanguage,
+    gameState,
+    setGameState,
+    currentScenario,
+    scenarioData,
+    pointer,
+    background,
+    sprites,
+    speaker,
+    dialogueText,
+    typewriterText,
+    textVisible,
+    setTextVisible,
+    historyLog,
+    setHistoryLog,
+    dialogueMode,
+    isAutoMode,
+    setIsAutoMode,
+    isFastForward,
+    setIsFastForward,
+    isWaiting,
+    showOptions,
+    sideNarration,
+    showSaveLoad,
+    setShowSaveLoad,
+    showSettings,
+    setShowSettings,
+    showChoiceGraph,
+    setShowChoiceGraph,
+    showHistory,
+    setShowHistory,
+    saveSlots,
+    f,
+    setF,
+    sf,
+    updateSf,
+    startNewGame,
+    resumeGame,
+    loadScenario,
+    handleScreenClick,
+    handleSelectOption,
+    handleWheel,
+    rewindToLastScene,
+    loadSaveSlot,
+    handleSaveSlot,
+    quitToTitle,
+    jumpToHistorySnapshot,
+    jumpToChoiceSnapshot,
+    isAudioUnlocked,
+    setIsAudioUnlocked
+  };
+}
