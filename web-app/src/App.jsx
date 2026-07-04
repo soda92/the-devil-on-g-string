@@ -864,9 +864,9 @@ export default function App() {
     let nameTxtEn = '';
     for (let i = pointer - 1; i >= 0; i--) {
       const inst = scenarioData[i];
-      if (inst.type === 'command' && inst.name === 'name') {
-        nameTxtJp = inst.args.txt || '';
-        nameTxtEn = resolveCharacterName(inst.args.txt_en || inst.args.txt || '', 'EN');
+      if (inst.type === 'command' && (inst.name === 'name' || inst.name === 'nm')) {
+        nameTxtJp = inst.args.txt || inst.args.t || '';
+        nameTxtEn = resolveCharacterName(inst.args.txt_en || inst.args.t_en || inst.args.t || '', 'EN');
         break;
       }
     }
