@@ -394,8 +394,10 @@ export function useKagRunner({
           playVoice(initialVoice);
         }
         if (initialBgm) {
+          initialBgmRef.current = initialBgm;
           playBgm(initialBgm);
         } else {
+          initialBgmRef.current = '';
           stopBgm();
         }
       } else if (targetLabel) {
@@ -471,8 +473,10 @@ export function useKagRunner({
         case 'command':
           const args = inst.args || {};
           if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm') {
+            initialBgmRef.current = args.storage;
             playBgm(args.storage);
           } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm') {
+            initialBgmRef.current = '';
             stopBgm();
           } else if (inst.name === 'playse' || inst.name === 'se' || inst.name === 'fadeinse') {
             playSe(args.storage);
@@ -954,8 +958,10 @@ export function useKagRunner({
   const resumeGame = () => {
     if (pointer > 0 && scenarioData) {
       setGameState('PLAYING');
-      if (bgmPlayer.src && bgmPlayer.paused) {
-        bgmPlayer.play().catch(e => console.log(e));
+      if (initialBgmRef.current) {
+        playBgm(initialBgmRef.current);
+      } else {
+        stopBgm();
       }
       return;
     }
@@ -1035,8 +1041,10 @@ export function useKagRunner({
     setGameState('PLAYING');
     
     if (slotData.bgm) {
+      initialBgmRef.current = slotData.bgm;
       playBgm(slotData.bgm);
     } else {
+      initialBgmRef.current = '';
       stopBgm();
     }
     
@@ -1168,8 +1176,10 @@ export function useKagRunner({
     }
     
     if (snap.bgm) {
+      initialBgmRef.current = snap.bgm;
       playBgm(snap.bgm);
     } else {
+      initialBgmRef.current = '';
       stopBgm();
     }
     
@@ -1208,8 +1218,10 @@ export function useKagRunner({
     })));
     
     if (snap.bgm) {
+      initialBgmRef.current = snap.bgm;
       playBgm(snap.bgm);
     } else {
+      initialBgmRef.current = '';
       stopBgm();
     }
     
