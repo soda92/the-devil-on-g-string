@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-export default function DialogueBox({ dialogueMode, speaker, typewriterText, dialogueText, isWaiting, language, setLanguage, onSave, onLoad, onConfig, onQuit, onScreenClick, onShowHistory, onShowFlowchart }) {
+export default function DialogueBox({ dialogueMode, speaker, typewriterText, dialogueText, isWaiting, language, setLanguage, onSave, onLoad, onConfig, onQuit, onScreenClick, onShowHistory, onShowFlowchart, isAutoMode, isFastForward, onToggleAuto, onToggleSkip }) {
   const textRef = useRef(null);
 
   useEffect(() => {
@@ -29,6 +29,8 @@ export default function DialogueBox({ dialogueMode, speaker, typewriterText, dia
       <div className="system-actions-bar">
         <button className="sys-action-btn" onClick={onShowHistory}>历史</button>
         {onShowFlowchart && <button className="sys-action-btn" onClick={onShowFlowchart}>路线</button>}
+        <button className={`sys-action-btn ${isAutoMode ? 'active-auto' : ''}`} onClick={onToggleAuto}>自动</button>
+        <button className={`sys-action-btn ${isFastForward ? 'active-skip' : ''}`} onClick={onToggleSkip}>快进</button>
         <button className="sys-action-btn" onClick={onSave}>保存</button>
         <button className="sys-action-btn" onClick={onLoad}>读取</button>
         <button className="sys-action-btn" onClick={onConfig}>设置</button>

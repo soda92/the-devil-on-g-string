@@ -285,7 +285,8 @@
   color: var(--color-text-bright);
 }
 
-.sys-action-btn.active-skip {
+.sys-action-btn.active-skip,
+.sys-action-btn.active-auto {
   background: var(--color-primary-hover);
   color: var(--color-text-bright);
   font-weight: bold;

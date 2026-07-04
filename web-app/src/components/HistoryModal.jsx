@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-export default function HistoryModal({ onClose, historyLog, language, onJumpToSnapshot }) {
+export default function HistoryModal({ onClose, historyLog, language, onJumpToSnapshot, onReplayVoice }) {
   const contentAreaRef = useRef(null);
   const [confirmSnapshot, setConfirmSnapshot] = useState(null);
 
@@ -31,7 +31,31 @@ export default function HistoryModal({ onClose, historyLog, language, onJumpToSn
                   style={isClickable ? { cursor: 'pointer' } : {}}
                   title={isClickable ? (language === 'JP' ? 'この会話の時点に戻る' : 'Jump back to this dialogue point') : ''}
                 >
-                  {speaker && <div className="backlog-entry-speaker">{speaker}</div>}
+                  <div className="backlog-entry-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    {speaker && <div className="backlog-entry-speaker">{speaker}</div>}
+                    {entry.voice && (
+                      <button 
+                        className="backlog-voice-btn" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onReplayVoice && onReplayVoice(entry.voice);
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--color-primary)',
+                          cursor: 'pointer',
+                          fontSize: '16px',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          transition: 'all 0.2s'
+                        }}
+                        title={language === 'JP' ? 'ボイスを再生' : 'Replay Voice'}
+                      >
+                        🔊
+                      </button>
+                    )}
+                  </div>
                   <div 
                     className="backlog-entry-text" 
                     dangerouslySetInnerHTML={{ __html: text }}

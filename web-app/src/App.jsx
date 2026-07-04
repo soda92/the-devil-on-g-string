@@ -111,12 +111,36 @@ export default function App() {
   const [textVisible, setTextVisible] = useState(false);
   const [historyLog, setHistoryLog] = useState([]);
   const [dialogueMode, setDialogueMode] = useState('avg');
+  const [isAutoMode, setIsAutoMode] = useState(false);
+  const currentVoiceRef = useRef(null);
   
   const dialogueTextRef = useRef('');
   const updateDialogueText = (val) => {
     setDialogueText(val);
     dialogueTextRef.current = val;
   };
+
+  const lastFetchIdRef = useRef(0);
+
+  const backgroundRef = useRef('white');
+  useEffect(() => {
+    backgroundRef.current = background;
+  }, [background]);
+
+  const spritesRef = useRef({ 0: null, 1: null, 2: null });
+  useEffect(() => {
+    spritesRef.current = sprites;
+  }, [sprites]);
+
+  const fRef = useRef({});
+  useEffect(() => {
+    fRef.current = f;
+  }, [f]);
+
+  const sfRef = useRef({});
+  useEffect(() => {
+    sfRef.current = sf;
+  }, [sf]);
   
   const [saveSlots, setSaveSlots] = useState(() => {
     const initial = {};
@@ -230,6 +254,37 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [isFastForward, isWaiting, showOptions]);
+
+  // Auto Mode text progression
+  useEffect(() => {
+    if (!isAutoMode || !isWaiting || showOptions || typewriterText !== dialogueText) return;
+
+    let timeoutId;
+    
+    // Check if voice clip is playing
+    const isVoicePlaying = voicePlayer && !voicePlayer.paused && voicePlayer.src && !voicePlayer.ended;
+    
+    if (isVoicePlaying) {
+      const handleVoiceEnded = () => {
+        timeoutId = setTimeout(() => {
+          setIsWaiting(false);
+        }, 800); // 800ms delay after voice finishes
+      };
+      voicePlayer.addEventListener('ended', handleVoiceEnded);
+      return () => {
+        voicePlayer.removeEventListener('ended', handleVoiceEnded);
+        clearTimeout(timeoutId);
+      };
+    } else {
+      // Delay based on dialogue length
+      const charCount = dialogueText ? dialogueText.replace(/<[^>]*>/g, '').length : 0;
+      const delay = Math.max(1600, 1000 + charCount * 45); // minimum 1.6s
+      timeoutId = setTimeout(() => {
+        setIsWaiting(false);
+      }, delay);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isAutoMode, isWaiting, showOptions, typewriterText, dialogueText]);
 
   // Read URL search params on mount
   useEffect(() => {
@@ -430,27 +485,38 @@ export default function App() {
       quitToTitle();
       return;
     }
+    
+    const fetchId = ++lastFetchIdRef.current;
+    
     setScenarioData(null); // Clear old scenario to block runner during fetch
     setIsWaiting(true);    // Block interaction during loading
     try {
       const response = await fetch(`/scenarios/${name}.json`);
       if (!response.ok) throw new Error(`Failed to fetch scenario: ${name}`);
       const data = await response.json();
+      
+      if (fetchId !== lastFetchIdRef.current) return;
+      
       setScenarioData(data.instructions);
       setCurrentScenario(name);
       
       let startIdx = 0;
       if (overridePointer !== null) {
-        startIdx = overridePointer;
+        // Find the most recent text instruction at or before overridePointer to start from
+        let targetTextIdx = overridePointer;
+        while (targetTextIdx >= 0 && data.instructions[targetTextIdx]?.type !== 'text') {
+          targetTextIdx--;
+        }
+        startIdx = targetTextIdx >= 0 ? targetTextIdx : overridePointer;
         
-        // Reconstruct states up to overridePointer to prevent blank screens/silence on deep links
+        // Reconstruct states up to startIdx to prevent blank screens/silence on deep links
         let initialBg = 'white';
         let initialBgm = '';
         let initialSprites = { 0: null, 1: null, 2: null };
         let initialSpeaker = '';
         let initialDialogueMode = 'avg';
         
-        for (let i = 0; i < overridePointer; i++) {
+        for (let i = 0; i < startIdx; i++) {
           const inst = data.instructions[i];
           if (inst && inst.type === 'command') {
             const args = inst.args || {};
@@ -517,7 +583,9 @@ export default function App() {
         }
         
         setBackground(initialBg);
+        backgroundRef.current = initialBg;
         setSprites(initialSprites);
+        spritesRef.current = initialSprites;
         setDialogueMode(initialDialogueMode);
         if (initialSpeaker) {
           const resolvedSp = resolveCharacterName(initialSpeaker, 'JP');
@@ -642,10 +710,10 @@ export default function App() {
 
     let p = pointer;
     let shouldBlock = false;
-    let newF = { ...f };
-    let newSf = { ...sf };
-    let tempSprites = { ...sprites };
-    let tempBackground = background;
+    let newF = { ...fRef.current };
+    let newSf = { ...sfRef.current };
+    let tempSprites = { ...spritesRef.current };
+    let tempBackground = backgroundRef.current;
 
     while (p < scenarioData.length && !shouldBlock) {
       const inst = scenarioData[p];
@@ -753,6 +821,7 @@ export default function App() {
             setSpeaker(language === 'JP' ? jpName : enName);
             if (inst.name === 'nm' && args.s) {
               playVoice(args.s);
+              currentVoiceRef.current = args.s;
             }
           } else if (inst.name === 'l_moji') {
             setSideNarration({
@@ -825,9 +894,11 @@ export default function App() {
               speakerEn: currentSpeakerRef.current.en, 
               textJp: inst.text_jp, 
               textEn: inst.text_en,
+              voice: currentVoiceRef.current,
               snapshot
             }
           ]);
+          currentVoiceRef.current = null;
           shouldBlock = true;
           break;
           
@@ -1437,6 +1508,18 @@ export default function App() {
             setShowHistory={setShowHistory}
             onShowFlowchart={() => setShowChoiceGraph(true)}
             dialogueMode={dialogueMode}
+            isAutoMode={isAutoMode}
+            isFastForward={isFastForward}
+            onToggleAuto={() => {
+              setIsAutoMode(prev => !prev);
+              setIsFastForward(false);
+              isFastForwardRef.current = false;
+            }}
+            onToggleSkip={() => {
+              setIsFastForward(prev => !prev);
+              setIsAutoMode(false);
+              isFastForwardRef.current = !isFastForward;
+            }}
           />
         )}
 
@@ -1524,6 +1607,7 @@ export default function App() {
             historyLog={historyLog}
             language={language}
             onJumpToSnapshot={jumpToHistorySnapshot}
+            onReplayVoice={playVoice}
           />
         )}
 

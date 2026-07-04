@@ -52,7 +52,11 @@ export default function GameplayScreen({
   quitToTitle,
   setShowHistory,
   onShowFlowchart,
-  dialogueMode
+  dialogueMode,
+  isAutoMode,
+  isFastForward,
+  onToggleAuto,
+  onToggleSkip
 }) {
   return (
     <div className="playing-layer" onClick={handleScreenClick} onWheel={handleWheel}>
@@ -61,21 +65,21 @@ export default function GameplayScreen({
       <div 
         className="bg-layer" 
         style={{ 
-          backgroundColor: background === 'white' ? '#fff' : (background === 'black' ? '#000' : 'transparent'),
-          backgroundImage: (background !== 'white' && background !== 'black') ? `url(${resolveAsset(background, 'bgimage')})` : 'none'
+          backgroundImage: background && background !== 'black' && background !== 'white' ? `url(${resolveAsset(background, 'bgimage')})` : 'none',
+          backgroundColor: background === 'white' ? '#fff' : '#000'
         }} 
       />
 
-      {/* Character Sprites Stacked Layers */}
+      {/* Character Sprites Layer */}
       <div className="sprites-container">
         <Sprite spriteName={sprites[1]} resolveAsset={resolveAsset} positionClass="sprite-left" />
         <Sprite spriteName={sprites[2]} resolveAsset={resolveAsset} positionClass="sprite-center" />
         <Sprite spriteName={sprites[0]} resolveAsset={resolveAsset} positionClass="sprite-right" />
       </div>
 
-      {/* Side Narration (Vertical/Horizontal) Overlay */}
-      {sideNarration.visible && (
-        <div className={`side-narration-overlay side-${sideNarration.side} language-${language}`} style={{ top: `${sideNarration.top}px` }}>
+      {/* Side Narration (Vertical left/right border popups) */}
+      {sideNarration && sideNarration.visible && (
+        <div className={`side-narration-overlay side-narration-${sideNarration.side}`} style={{ top: `${sideNarration.top}px` }}>
           {language === 'JP' ? (
             sideNarration.text.split('').map((char, index) => (
               <span key={index} className="narration-char">{char}</span>
@@ -103,6 +107,10 @@ export default function GameplayScreen({
           onScreenClick={handleScreenClick}
           onShowHistory={() => setShowHistory(true)}
           onShowFlowchart={onShowFlowchart}
+          isAutoMode={isAutoMode}
+          isFastForward={isFastForward}
+          onToggleAuto={onToggleAuto}
+          onToggleSkip={onToggleSkip}
         />
       )}
 
