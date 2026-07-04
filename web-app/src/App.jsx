@@ -56,7 +56,7 @@ export default function App() {
   const [language, setLanguage] = useState('JP'); // 'JP' | 'EN'
   
   // Script and Interpreter States
-  const [currentScenario, setCurrentScenario] = useState('first');
+  const [currentScenario, setCurrentScenario] = useState('g01');
   const [scenarioData, setScenarioData] = useState(null);
   const [pointer, setPointer] = useState(0);
   const [isWaiting, setIsWaiting] = useState(false);
@@ -64,39 +64,33 @@ export default function App() {
   
   // Variables (TJS2 f and sf scopes)
   const [f, setF] = useState({
-    ten: 0,
-    yaku: 0,
-    tika: 0,
-    suo: 0,
-    sara: 0,
-    proro: 0,
-    rclickmode: 2,
-    hukidasi: 0,
+    flag_haru: 0,
+    flag_kanon: 0,
+    flag_mizuha: 0,
+    flag_tubaki: 0,
+    badflag_kanon: 0,
+    kanon_clear: 0,
+    mizuha_clear: 0,
+    tubaki_clear: 0,
+    game_clear: 0,
+    go_next_chapter: 0,
+    show_next_chapter: 0,
+    evcgmode: 0,
+    faceRecord: 0,
+    choicesHistory: [],
     chour: 12, // Hour of the day for title background
   });
   
   const [sf, setSf] = useState({
+    game_clear: 0,
+    kanon_clear: 0,
+    mizuha_clear: 0,
+    tubaki_clear: 0,
+    show_next_chapter: 0,
     first: 1,
-    cr: 0,
-    allcr: 0,
     vol: 8, // BGM volume (0 - 10)
     sevol: 8, // SE volume (0 - 10)
-    // CG unlocks
-    ev_00: 0, ev_01_a: 0, ev_01_b: 0, ev_01_c: 0, ev_02: 0, ev_03: 0,
-    ev_04_a: 0, ev_04_b: 0, ev_04_c: 0, ev_05: 0, ev_06_a: 0, ev_06_b: 0,
-    ev_06_c: 0, ev_06_e: 0, ev_07_a: 0, ev_07_b: 0, ev_08_a: 0, ev_08_d: 0,
-    ev_09_a: 0, ev_10_a: 0, ev_10_b: 0, ev_10_c: 0, ev_10_d: 0, ev_10_e: 0,
-    ev_10_f: 0, ev_11_a: 0, ev_11_f: 0, ev_12_a: 0, ev_13_a: 0, ev_14_a: 0,
-    ev_14_d: 0, ev_15_a: 0, ev_15_b: 0, ev_15_d: 0, ev_15_e: 0, ev_16: 0,
-    ev_17_a: 0, ev_18_a: 0, ev_18_b: 0, ev_19_a: 0, ev_20_a: 0, ev_21_b: 0,
-    ev_22: 0, ev_24: 0, ev_25: 0, ev_26_a: 0, ev_26_c: 0, ev_27_a: 0,
-    ev_28_a: 0, ev_28_c: 0, ev_29_a: 0, ev_29_e: 0,
-    // Route completion flags
-    tenma: 0, yakumo: 0, mikoto: 0, chika: 0, sera: 0,
-    // H replay configurations
-    ten_h: 0, yaku_h: 0, chika_h: 0, suo_h: 0, sara_h: 0, sara_h2: 0, bad_h: 0, mo4_h: 0,
-    // Text animation typewriter speed options: 'WORD' | 'CHAR' | 'OFF'
-    typewriterMode: 'WORD',
+    typewriterMode: 'CHAR',
   });
 
   // Layer States
@@ -1034,7 +1028,19 @@ export default function App() {
     isFastForwardRef.current = false;
     setHistoryLog([]); // Clear history log for new game
     setF({
-      ten: 0, yaku: 0, tika: 0, suo: 0, sara: 0, proro: 0, rclickmode: 2, hukidasi: 0,
+      flag_haru: 0,
+      flag_kanon: 0,
+      flag_mizuha: 0,
+      flag_tubaki: 0,
+      badflag_kanon: 0,
+      kanon_clear: 0,
+      mizuha_clear: 0,
+      tubaki_clear: 0,
+      game_clear: 0,
+      go_next_chapter: 0,
+      show_next_chapter: 0,
+      evcgmode: 0,
+      faceRecord: 0,
       chour: new Date().getHours(), // set title hourly backgrounds
       choicesHistory: [] // Initialize choices history
     });
@@ -1044,7 +1050,7 @@ export default function App() {
     updateDialogueText('');
     setTypewriterText('');
     setGameState('PLAYING');
-    loadScenario('sina_1', 'start');
+    loadScenario('g01');
   };
 
   // Load from Save State

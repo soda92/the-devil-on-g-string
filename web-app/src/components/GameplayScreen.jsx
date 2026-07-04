@@ -1,5 +1,35 @@
 import React from 'react';
 import DialogueBox from './DialogueBox';
+import spritePositions from '../sprite_positions.json';
+
+function Sprite({ spriteName, resolveAsset, positionClass }) {
+  if (!spriteName) return null;
+  const cleanName = spriteName.split('.')[0];
+  const positionInfo = spritePositions[cleanName];
+  
+  if (positionInfo) {
+    const baseSrc = resolveAsset(positionInfo.base, 'fgimage');
+    const overlaySrc = resolveAsset(spriteName, 'fgimage');
+    return (
+      <div className={`sprite-img ${positionClass}`} style={{ overflow: 'visible' }}>
+        <img src={baseSrc} alt="base body" style={{ height: '100%', display: 'block' }} />
+        <img 
+          src={overlaySrc} 
+          alt="face overlay" 
+          style={{ 
+            position: 'absolute', 
+            left: `${positionInfo.left_pct}%`, 
+            top: `${positionInfo.top_pct}%`, 
+            width: `${positionInfo.width_pct}%`,
+            display: 'block'
+          }} 
+        />
+      </div>
+    );
+  }
+  
+  return <img className={`sprite-img ${positionClass}`} src={resolveAsset(spriteName, 'fgimage')} alt={`${positionClass} sprite`} />;
+}
 
 export default function GameplayScreen({
   language,
@@ -37,9 +67,9 @@ export default function GameplayScreen({
 
       {/* Character Sprites Stacked Layers */}
       <div className="sprites-container">
-        {sprites[1] && <img className="sprite-img sprite-left" src={resolveAsset(sprites[1], 'fgimage')} alt="left sprite" />}
-        {sprites[2] && <img className="sprite-img sprite-center" src={resolveAsset(sprites[2], 'fgimage')} alt="center sprite" />}
-        {sprites[0] && <img className="sprite-img sprite-right" src={resolveAsset(sprites[0], 'fgimage')} alt="right sprite" />}
+        <Sprite spriteName={sprites[1]} resolveAsset={resolveAsset} positionClass="sprite-left" />
+        <Sprite spriteName={sprites[2]} resolveAsset={resolveAsset} positionClass="sprite-center" />
+        <Sprite spriteName={sprites[0]} resolveAsset={resolveAsset} positionClass="sprite-right" />
       </div>
 
       {/* Side Narration (Vertical/Horizontal) Overlay */}

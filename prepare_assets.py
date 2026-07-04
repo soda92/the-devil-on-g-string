@@ -68,6 +68,7 @@ def parse_pos_files():
     print("--- Parsing POS files ---")
     sprite_positions = {}
     pos_files_found = 0
+    from PIL import Image
     
     # We look for .pos files in the extracted folders
     for root, dirs, files in os.walk(base_dir):
@@ -89,11 +90,56 @@ def parse_pos_files():
                         base_sprite = match.group(1)
                         x = int(match.group(2))
                         y = int(match.group(3))
-                        sprite_positions[sprite_name] = {
-                            "base": base_sprite,
-                            "x": x,
-                            "y": y
-                        }
+                        
+                        # Find the actual image files to get their dimensions
+                        # Since we renamed TLG files, they might end with .webp or .png
+                        # Let's search in the same directory (root) first
+                        base_img_path = None
+                        overlay_img_path = None
+                        
+                        for ext in [".webp", ".png", ".jpg", ".tlg"]:
+                            test_base = os.path.join(root, base_sprite + ext)
+                            if os.path.exists(test_base):
+                                base_img_path = test_base
+                            test_overlay = os.path.join(root, sprite_name + ext)
+                            if os.path.exists(test_overlay):
+                                overlay_img_path = test_overlay
+                                
+                        if base_img_path and overlay_img_path:
+                            try:
+                                with Image.open(base_img_path) as base_img:
+                                    base_w, base_height = base_img.size
+                                with Image.open(overlay_img_path) as overlay_img:
+                                    overlay_w, overlay_h = overlay_img.size
+                                    
+                                # Calculate percentages
+                                left_pct = (x / base_w) * 100
+                                top_pct = (y / base_height) * 100
+                                width_pct = (overlay_w / base_w) * 100
+                                
+                                sprite_positions[sprite_name] = {
+                                    "base": base_sprite,
+                                    "x": x,
+                                    "y": y,
+                                    "left_pct": left_pct,
+                                    "top_pct": top_pct,
+                                    "width_pct": width_pct
+                                }
+                            except Exception as img_err:
+                                print(f"Error reading image dimensions for {sprite_name}: {img_err}")
+                                # Fallback to standard x, y without percentages
+                                sprite_positions[sprite_name] = {
+                                    "base": base_sprite,
+                                    "x": x,
+                                    "y": y
+                                }
+                        else:
+                            # Fallback if image files are not found
+                            sprite_positions[sprite_name] = {
+                                "base": base_sprite,
+                                "x": x,
+                                "y": y
+                            }
                     else:
                         print(f"Failed to parse POS content in {file}: {content[:100]}")
                 except Exception as e:

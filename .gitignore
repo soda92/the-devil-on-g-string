@@ -11,5 +11,9 @@ G弦上的魔王
 compiled_scenarios
 web-app/public
 
+file_map.json
+gallery_items.json
+sprite_positions.json
+
 # Virtual environments
 .venv
