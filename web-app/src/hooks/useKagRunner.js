@@ -166,7 +166,7 @@ export function useKagRunner({
     isAutoModeRef.current = isAutoMode;
   }, [isAutoMode]);
 
-  // Initial local storage synchronizer
+  // Initial local storage and backend state synchronizer
   useEffect(() => {
     const init = async () => {
       try {
@@ -177,6 +177,20 @@ export function useKagRunner({
           if (state && state.sf) {
             setSf(prev => ({ ...prev, ...state.sf }));
             localStorage.setItem('school_school_sf', JSON.stringify(state.sf));
+          }
+          if (state && state.slots) {
+            // Merge backend slots into saveSlots state
+            setSaveSlots(prev => {
+              const merged = { ...prev, ...state.slots };
+              return merged;
+            });
+            // Write backend slots to localStorage
+            Object.entries(state.slots).forEach(([slotId, slotData]) => {
+              if (slotData) {
+                const key = slotId === 'autosave' ? 'school_autosave' : `school_save_slot_${slotId}`;
+                localStorage.setItem(key, typeof slotData === 'string' ? slotData : JSON.stringify(slotData));
+              }
+            });
           }
         }
       } catch (e) {
