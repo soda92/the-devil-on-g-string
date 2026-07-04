@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export default function TitleScreen({ f, resolveAsset, startNewGame, onShowLoad, onShowGallery, onShowMusic, onShowSettings, hasActiveGame, onResume, language, hasHistory, onRewind, onShowFlowchart, isBgmPlaying, onToggleBgm }) {
+export default function TitleScreen({ f, resolveAsset, startNewGame, onShowLoad, onShowGallery, onShowMusic, onShowSettings, hasActiveGame, onResume, language, hasHistory, onRewind, onShowFlowchart, isBgmPlaying, onToggleBgm, showNextChapter, onNextChapter }) {
   const [isMenuVisible, setIsMenuVisible] = useState(true);
 
   // Render hourly background image for title screen
@@ -75,6 +75,11 @@ export default function TitleScreen({ f, resolveAsset, startNewGame, onShowLoad,
           <h2 className="title-subheading">The Devil on G-String</h2>
           
           <div className="title-menu-buttons">
+            {showNextChapter && (
+              <button className="premium-btn title-menu-btn resume-btn" onClick={onNextChapter} style={{ background: 'var(--color-primary)', borderColor: 'var(--color-primary-hover)' }}>
+                {language === 'JP' ? '进入下一章' : 'Enter Next Chapter'}
+              </button>
+            )}
             {hasActiveGame && (
               <button className="premium-btn title-menu-btn resume-btn" onClick={onResume}>
                 继续游戏

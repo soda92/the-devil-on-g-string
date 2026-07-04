@@ -153,6 +153,19 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [runner.showHistory, runner.showSettings, runner.showSaveLoad, runner.showChoiceGraph]);
 
+  const handleNextChapter = () => {
+    const saved = localStorage.getItem(`${runner.storagePrefix}_save_slot_150`);
+    if (saved) {
+      try {
+        const slotData = JSON.parse(saved);
+        runner.setTf({ go_next_chapter: true });
+        runner.loadSaveSlot(slotData);
+      } catch (e) {
+        console.error("Failed to parse next chapter save slot", e);
+      }
+    }
+  };
+
   return (
     <div 
       className="game-container" 
@@ -184,6 +197,8 @@ export default function App() {
             onShowFlowchart={() => runner.setShowChoiceGraph(true)}
             isBgmPlaying={audio.isBgmPlaying}
             onToggleBgm={audio.toggleBgm}
+            showNextChapter={runner.sf.show_next_chapter === 1 || runner.sf.show_next_chapter === true || runner.sf.show_next_chapter === 'true'}
+            onNextChapter={handleNextChapter}
           />
         )}
 

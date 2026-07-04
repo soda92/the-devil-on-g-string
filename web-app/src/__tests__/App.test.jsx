@@ -302,4 +302,90 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
       expect(diag.audio.bgm.src).not.toContain('bgm_25b');
     });
   });
+
+  it('correctly processes chapter completion at g06 ptr 1470 and transition to next chapter', async () => {
+    // Construct g06 scenario end instructions
+    const g06Instructions = [];
+    for (let i = 0; i < 1470; i++) {
+      g06Instructions.push({ type: 'comment', text: 'dummy' });
+    }
+    // ptr 1470
+    g06Instructions.push({ type: 'page_break' }); // 1470
+    g06Instructions.push({ type: 'line_feed' });  // 1471
+    g06Instructions.push({ type: 'command', name: 'fobgm', args: {} }); // 1472
+    g06Instructions.push({ type: 'command', name: 'hide', args: {} }); // 1473
+    g06Instructions.push({ type: 'command', name: 'black', args: { time: 2000 } }); // 1474
+    g06Instructions.push({ type: 'eval', exp: 'tf.go_next_chapter=false' }); // 1475
+    g06Instructions.push({ type: 'eval', exp: 'sf.show_next_chapter=true' }); // 1476
+    g06Instructions.push({ type: 'command', name: 'save', args: { cond: '!tf.go_next_chapter', place: 150 } }); // 1477
+    g06Instructions.push({ type: 'command', name: 'jump', args: { cond: '!tf.go_next_chapter', storage: 'title.ks', target: '*title_init' } }); // 1478
+    g06Instructions.push({ type: 'eval', exp: 'sf.show_next_chapter=false' }); // 1479
+    g06Instructions.push({ type: 'command', name: 'jump', args: { storage: 'g07.ks' } }); // 1480
+
+    const g07Instructions = [
+      { type: 'command', name: 'bg', args: { storage: 'bg_test_g07' } },
+      { type: 'text', text_jp: '这是g07第一句话。', text_en: 'This is g07 first sentence.' }
+    ];
+
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/g06.json')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ instructions: g06Instructions }) });
+      }
+      if (url.includes('/scenarios/g07.json')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ instructions: g07Instructions }) });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g06&ptr=1470');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    // Wait for the scenario to load and align to 1470
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g06');
+      expect(diag.pointer).toBe(1470);
+    });
+
+    // Unlock audio
+    const container = screen.getByText(/G弦上的魔王/i).closest('.game-container');
+    await act(async () => {
+      fireEvent.click(container);
+    });
+
+    // Advance past page break at 1470
+    await act(async () => {
+      fireEvent.click(container);
+    });
+
+    // It should evaluate conditions, save to slot 150, jump to title, and remain sf.show_next_chapter = true
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.gameState).toBe('TITLE');
+      expect(diag.sf.show_next_chapter).toBe(true);
+    });
+
+    // Verify slot 150 was written to localStorage
+    const savedSlot = mockLocalStorage.getItem('school_save_slot_150');
+    expect(savedSlot).toBeDefined();
+
+    // The Title Screen should now render the "Next Chapter" button
+    const nextChapterBtn = screen.getByText(/进入下一章/i);
+    expect(nextChapterBtn).toBeDefined();
+
+    // Click "Enter Next Chapter"
+    await act(async () => {
+      fireEvent.click(nextChapterBtn);
+    });
+
+    // It should load slot 150, set tf.go_next_chapter = true, bypass title jump, and jump to g07
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g07');
+      expect(screen.getByText(/这是g07第一句话。/)).toBeDefined();
+    });
+  });
 });
