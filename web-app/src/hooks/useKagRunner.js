@@ -833,9 +833,15 @@ export function useKagRunner({
         case 'text':
           const displayTxt = language === 'JP' ? inst.text_jp : inst.text_en;
           const prevDiag = dialogueTextRef.current;
-          const targetFullText = prevDiag + displayTxt;
+          let targetFullText;
+          if (dialogueMode === 'novel' && prevDiag !== '') {
+            const separator = (prevDiag.endsWith('<br />') || prevDiag.endsWith('<br/>')) ? '' : '<br />';
+            targetFullText = prevDiag + separator + displayTxt;
+          } else {
+            targetFullText = prevDiag + displayTxt;
+          }
           updateDialogueText(targetFullText);
-          triggerTypewriter(prevDiag, displayTxt);
+          triggerTypewriter(prevDiag, targetFullText.slice(prevDiag.length));
           setTextVisible(true);
           
           const snapshot = {
