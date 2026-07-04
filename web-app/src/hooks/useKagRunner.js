@@ -124,6 +124,13 @@ export function useKagRunner({
     return defaults;
   });
 
+  const [tf, setTf] = useState({});
+  const tfRef = useRef({});
+  useEffect(() => {
+    tfRef.current = tf;
+  }, [tf]);
+
+
   // Autoplay lock states
   const [isAudioUnlocked, setIsAudioUnlockedState] = useState(false);
   const isAudioUnlockedRef = useRef(false);
@@ -266,15 +273,16 @@ export function useKagRunner({
   const cleanKagExpression = (exp) => {
     if (!exp) return '';
     return exp.replace(/\[(sf\.[a-zA-Z0-9_\u4e00-\u9fff\uff00-\uffff]+)\]/g, '$1')
-              .replace(/\[(f\.[a-zA-Z0-9_\u4e00-\u9fff\uff00-\uffff]+)\]/g, '$1');
+              .replace(/\[(f\.[a-zA-Z0-9_\u4e00-\u9fff\uff00-\uffff]+)\]/g, '$1')
+              .replace(/\[(tf\.[a-zA-Z0-9_\u4e00-\u9fff\uff00-\uffff]+)\]/g, '$1');
   };
 
-  const evaluateExpression = (exp, currentF = f, currentSf = sf) => {
+  const evaluateExpression = (exp, currentF = f, currentSf = sf, currentTf = tfRef.current) => {
     if (!exp) return true;
     try {
       const cleaned = cleanKagExpression(exp);
-      const func = new Function('f', 'sf', `return (${cleaned});`);
-      return func(currentF, currentSf);
+      const func = new Function('f', 'sf', 'tf', `return (${cleaned});`);
+      return func(currentF, currentSf, currentTf);
     } catch (e) {
       console.error("Expression evaluation failed:", exp, e);
       return false;
@@ -286,11 +294,13 @@ export function useKagRunner({
     try {
       const tempF = { ...f };
       const tempSf = { ...sf };
+      const tempTf = { ...tf };
       const cleaned = cleanKagExpression(exp);
-      const func = new Function('f', 'sf', `${cleaned}; return { f, sf };`);
-      const result = func(tempF, tempSf);
+      const func = new Function('f', 'sf', 'tf', `${cleaned}; return { f, sf, tf };`);
+      const result = func(tempF, tempSf, tempTf);
       setF(result.f);
       updateSf(result.sf);
+      setTf(result.tf);
     } catch (e) {
       console.error("Statement execution failed:", exp, e);
     }
@@ -597,6 +607,7 @@ export function useKagRunner({
     let shouldBlock = false;
     let newF = { ...fRef.current };
     let newSf = { ...sfRef.current };
+    let newTf = { ...tfRef.current };
     let tempSprites = { ...spritesRef.current };
     let tempBackground = backgroundRef.current;
 
@@ -611,9 +622,17 @@ export function useKagRunner({
           break;
         case 'command':
           const args = inst.args || {};
+          if (args.cond) {
+            if (!evaluateExpression(args.cond, newF, newSf, newTf)) {
+              break;
+            }
+          }
           if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm' || inst.name === 'fibgm' || inst.name === 'xbgm') {
             initialBgmRef.current = args.storage;
             playBgm(args.storage);
+          } else if (inst.name === 'save') {
+            const place = args.place !== undefined ? parseInt(args.place) : 150;
+            handleSaveSlot(place, p, currentScenario, newF, newSf, tempSprites, tempBackground);
           } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm' || inst.name === 'fobgm' || inst.name === 'sbgm') {
             initialBgmRef.current = '';
             stopBgm();
@@ -825,6 +844,17 @@ export function useKagRunner({
               'color: #c678dd; font-weight: bold;', 'color: #ce9178; font-weight: bold;',
               'color: #c678dd;', 'color: #56b6c2; font-weight: bold;'
             );
+            setF(newF);
+            if (JSON.stringify(newSf) !== JSON.stringify(sf)) {
+              updateSf(newSf);
+            } else {
+              setSf(newSf);
+            }
+            setTf(newTf);
+            tfRef.current = newTf;
+            setSprites(tempSprites);
+            setBackground(tempBackground);
+            
             loadScenario(storage, target);
             return;
           }
@@ -950,7 +980,7 @@ export function useKagRunner({
           break;
           
         case 'if':
-          if (!evaluateExpression(inst.exp, newF, newSf)) {
+          if (!evaluateExpression(inst.exp, newF, newSf, newTf)) {
             p = skipToEndif(p);
           }
           break;
@@ -961,9 +991,10 @@ export function useKagRunner({
         case 'eval':
           try {
             const cleaned = cleanKagExpression(inst.exp);
-            const result = new Function('f', 'sf', `${cleaned}; return { f, sf };`)(newF, newSf);
+            const result = new Function('f', 'sf', 'tf', `${cleaned}; return { f, sf, tf };`)(newF, newSf, newTf);
             newF = result.f;
             newSf = result.sf;
+            newTf = result.tf;
           } catch (err) {
             console.error("Inline eval error", err);
           }
@@ -978,6 +1009,8 @@ export function useKagRunner({
     } else {
       setSf(newSf);
     }
+    setTf(newTf);
+    tfRef.current = newTf;
     setSprites(tempSprites);
     setBackground(tempBackground);
     
@@ -1072,6 +1105,7 @@ export function useKagRunner({
         isFastForward,
         f,
         sf,
+        gameState,
         audio: {
           bgm: { src: bgmPlayer.src, paused: bgmPlayer.paused, volume: bgmPlayer.volume },
           se: { src: sePlayer.src, paused: sePlayer.paused, volume: sePlayer.volume },
@@ -1082,7 +1116,7 @@ export function useKagRunner({
     return () => {
       delete window.quick_check;
     };
-  }, [currentScenario, pointer, background, sprites, speaker, dialogueMode, dialogueText, typewriterText, isWaiting, isAutoMode, isFastForward, f, sf]);
+  }, [currentScenario, pointer, background, sprites, speaker, dialogueMode, dialogueText, typewriterText, isWaiting, isAutoMode, isFastForward, f, sf, gameState]);
 
   // Log state progression in browser console
   useEffect(() => {
@@ -1134,6 +1168,7 @@ export function useKagRunner({
     setIsFastForward(false);
     isFastForwardRef.current = false;
     setHistoryLog([]);
+    setTf({});
     setF({
       flag_haru: 0,
       flag_kanon: 0,
@@ -1181,6 +1216,7 @@ export function useKagRunner({
 
   const quitToTitle = () => {
     stopBgm();
+    setTf({});
     setGameState('TITLE');
   };
 
@@ -1264,21 +1300,28 @@ export function useKagRunner({
     setShowSaveLoad(null);
   };
 
-  const handleSaveSlot = (slotIdx) => {
+  const handleSaveSlot = (slotIdx, overridePointer = null, overrideScenario = null, overrideF = null, overrideSf = null, overrideSprites = null, overrideBackground = null) => {
     const slotKey = `${storagePrefix}_save_slot_${slotIdx}`;
+    const targetF = overrideF || f;
+    const targetSf = overrideSf || sf;
+    const targetSprites = overrideSprites || sprites;
+    const targetBackground = overrideBackground || background;
+    const targetPointer = overridePointer !== null ? overridePointer : pointer;
+    const targetScenario = overrideScenario || currentScenario;
+    
     const saveData = {
       slotId: slotIdx,
-      f: cleanFForSnapshot(f),
-      choicesHistory: cleanChoicesHistoryForSave(f.choicesHistory),
-      sprites,
-      background,
+      f: cleanFForSnapshot(targetF),
+      choicesHistory: cleanChoicesHistoryForSave(targetF.choicesHistory),
+      sprites: targetSprites,
+      background: targetBackground,
       speaker,
       currentSpeaker: currentSpeakerRef.current,
       dialogueText: dialogueTextRef.current,
       dialogueMode,
       language,
-      currentScenario,
-      pointer,
+      currentScenario: targetScenario,
+      pointer: targetPointer,
       showOptions: showOptions || null,
       historyLog: cleanHistoryLogForSave(historyLog),
       bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null,
@@ -1288,7 +1331,7 @@ export function useKagRunner({
     localStorage.setItem(slotKey, JSON.stringify(saveData));
     
     console.log(
-      `%c[SAVE] Saved to Slot: %c${slotIdx}%c | Scenario: %c${currentScenario}%c | Pointer: %c${pointer}`,
+      `%c[SAVE] Saved to Slot: %c${slotIdx}%c | Scenario: %c${targetScenario}%c | Pointer: %c${targetPointer}`,
       'color: #98c379; font-weight: bold;', 'color: #d19a66; font-weight: bold;',
       'color: #98c379;', 'color: #ce9178; font-weight: bold;',
       'color: #98c379;', 'color: #b5cea8; font-weight: bold;'
@@ -1506,6 +1549,8 @@ export function useKagRunner({
     saveSlots,
     f,
     setF,
+    tf,
+    setTf,
     sf,
     updateSf,
     startNewGame,
