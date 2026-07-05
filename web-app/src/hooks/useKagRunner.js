@@ -117,6 +117,8 @@ export function useKagRunner({
       avgBlur: 16,
       novelOpacity: 8,
       novelBlur: 8,
+      vAlign: 'TOP',
+      hAlign: 'LEFT',
       ...(config?.defaultSf || {})
     };
     if (saved) {

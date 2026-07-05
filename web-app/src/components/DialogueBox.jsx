@@ -56,6 +56,12 @@ export default function DialogueBox({ dialogueMode, speaker, typewriterText, dia
         className="dialogue-text" 
         dangerouslySetInnerHTML={{ __html: typewriterText }} 
         onClick={onScreenClick}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: sf?.vAlign === 'CENTER' ? 'center' : 'flex-start',
+          textAlign: sf?.hAlign === 'CENTER' ? 'center' : (sf?.hAlign === 'RIGHT' ? 'right' : 'left')
+        }}
       />
       
       {/* Text cursor arrow indicator */}

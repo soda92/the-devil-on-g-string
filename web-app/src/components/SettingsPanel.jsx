@@ -59,6 +59,33 @@ export default function SettingsPanel({
         </div>
 
         <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? '对话框文字垂直对齐' : 'Text Vertical Align'}</label>
+          <div className="settings-control-buttons">
+            <button className={`control-btn ${sf.vAlign === 'TOP' || !sf.vAlign ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, vAlign: 'TOP' }))}>
+              {language === 'JP' ? '靠上' : 'Top'}
+            </button>
+            <button className={`control-btn ${sf.vAlign === 'CENTER' ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, vAlign: 'CENTER' }))}>
+              {language === 'JP' ? '居中' : 'Center'}
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? '对话框文字水平对齐' : 'Text Horizontal Align'}</label>
+          <div className="settings-control-buttons">
+            <button className={`control-btn ${sf.hAlign === 'LEFT' || !sf.hAlign ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, hAlign: 'LEFT' }))}>
+              {language === 'JP' ? '靠左' : 'Left'}
+            </button>
+            <button className={`control-btn ${sf.hAlign === 'CENTER' ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, hAlign: 'CENTER' }))}>
+              {language === 'JP' ? '居中' : 'Center'}
+            </button>
+            <button className={`control-btn ${sf.hAlign === 'RIGHT' ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, hAlign: 'RIGHT' }))}>
+              {language === 'JP' ? '靠右' : 'Right'}
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-row">
           <label className="settings-label">{language === 'JP' ? '背景音乐音量' : 'Music Volume'}</label>
           <input 
             type="range" 
