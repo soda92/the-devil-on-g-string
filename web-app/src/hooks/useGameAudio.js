@@ -1,21 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { resolveAsset } from '../utils/gameUtils';
 
-// --- Singleton Audio Elements ---
-const bgmPlayer = new Audio();
-bgmPlayer.loop = true;
-
-const sePlayer = new Audio();
-const voicePlayer = new Audio();
-
-// Clean up audio playback on Vite hot reloads
-if (import.meta.hot) {
-  import.meta.hot.dispose(() => {
-    bgmPlayer.pause();
-    sePlayer.pause();
-    voicePlayer.pause();
-  });
+// --- Singleton Audio Elements (Persisted globally to survive Vite HMR) ---
+if (!globalThis.__bgmPlayer__) {
+  globalThis.__bgmPlayer__ = new Audio();
+  globalThis.__bgmPlayer__.loop = true;
 }
+if (!globalThis.__sePlayer__) {
+  globalThis.__sePlayer__ = new Audio();
+}
+if (!globalThis.__voicePlayer__) {
+  globalThis.__voicePlayer__ = new Audio();
+}
+
+const bgmPlayer = globalThis.__bgmPlayer__;
+const sePlayer = globalThis.__sePlayer__;
+const voicePlayer = globalThis.__voicePlayer__;
 
 export function useGameAudio(vol = 8, sevol = 8) {
   const currentVoiceRef = useRef(null);
