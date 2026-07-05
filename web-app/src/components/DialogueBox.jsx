@@ -83,9 +83,6 @@ export default function DialogueBox({ dialogueMode, speaker, typewriterText, dia
       <div className="system-actions-bar">
         <button className="sys-action-btn" onClick={onShowHistory}>历史</button>
         {onShowFlowchart && <button className="sys-action-btn" onClick={onShowFlowchart}>路线</button>}
-        {currentVoice && (
-          <button className="sys-action-btn voice-replay-action-btn" onClick={replayCurrentVoice}>语音</button>
-        )}
         <button className={`sys-action-btn ${isAutoMode ? 'active-auto' : ''}`} onClick={onToggleAuto}>自动</button>
         <button className={`sys-action-btn ${isFastForward ? 'active-skip' : ''}`} onClick={onToggleSkip}>快进</button>
         <button className="sys-action-btn" onClick={onSave}>保存</button>

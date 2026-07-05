@@ -391,7 +391,11 @@ export default function App() {
             historyLog={runner.historyLog}
             language={runner.language}
             onJumpToSnapshot={runner.jumpToHistorySnapshot}
-            onReplayVoice={audio.playVoice}
+            onReplayVoice={(voice) => {
+              setTimeout(() => {
+                audio.playVoice(voice);
+              }, 150);
+            }}
           />
         )}
 

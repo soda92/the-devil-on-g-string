@@ -54,6 +54,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
       { type: 'command', name: 'bg', args: { storage: 'bg_test_01' } },
       { type: 'command', name: 'playbgm', args: { storage: 'bgm_test_01' } },
       { type: 'command', name: 'chr', args: { c: 'char_center_01' } },
+      { type: 'command', name: 'nm', args: { t: '哈尔', s: 'har_voice_01' } },
       { type: 'text', text_jp: '这是第一句话。', text_en: 'This is the first sentence.' },
       { type: 'page_break' },
       { type: 'line_feed' },
@@ -115,7 +116,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     const engineState = window.quick_check();
 
     expect(engineState.scenario).toBe('g01');
-    expect(engineState.pointer).toBe(9); // Pointer advances past the text node during execution
+    expect(engineState.pointer).toBe(10); // Pointer advances past the text node during execution
     expect(engineState.background).toBe('bg_test_02');
     
     // Sprites center layer should be null because of the @black command at pointer 6
@@ -223,7 +224,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     // Check that current position is written to school_autosave
     expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
       'school_autosave',
-      expect.stringContaining('"pointer":4')
+      expect.stringContaining('"pointer":5')
     );
   });
 
@@ -378,13 +379,37 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     render(<App />);
 
-    // Wait for the scenario to load and align to pointer 4 (dialogue text "这是第一句话。" displayed)
+    // Wait for the scenario to load and align to pointer 5 (dialogue text "这是第一句话。" displayed)
     await waitFor(() => {
       const diag = window.quick_check();
       expect(diag.scenario).toBe('g01');
-      expect(diag.pointer).toBe(4);
+      expect(diag.pointer).toBe(5);
       expect(diag.dialogueText).toBe('这是第一句话。');
     });
+
+    // Test Dialogue Box voice replay button
+    const dialogVoiceBtn = screen.getByTitle(/播放语音/);
+    expect(dialogVoiceBtn).toBeDefined();
+    
+    // Clear voice src first to test replay
+    await act(async () => {
+      const diag = window.quick_check();
+      diag.voicePlayer.src = '';
+    });
+    
+    await act(async () => {
+      fireEvent.click(dialogVoiceBtn);
+    });
+    
+    // Verify voice does not play instantly
+    expect(window.quick_check().audio.voice.src).toBe('');
+    
+    // Wait for 200ms delay to complete
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    });
+    
+    expect(window.quick_check().audio.voice.src).toContain('har_voice_01');
 
     // Unlock audio
     let textLayer = await screen.findByText('这是第一句话。');
@@ -404,10 +429,10 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
       fireEvent.click(textLayer);
     });
 
-    // Wait until it reaches pointer 9 (dialogue text "这是第二句话。")
+    // Wait until it reaches pointer 10 (dialogue text "这是第二句话。")
     await waitFor(() => {
       const diag = window.quick_check();
-      expect(diag.pointer).toBe(9);
+      expect(diag.pointer).toBe(10);
       expect(diag.dialogueText).toBe('这是第二句话。');
     }, { timeout: 3000 });
 
@@ -416,6 +441,29 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     await act(async () => {
       fireEvent.click(historyBtn);
     });
+
+    // Test Backlog entry voice replay button
+    const backlogVoiceBtn = screen.getByTitle(/播放语音/);
+    expect(backlogVoiceBtn).toBeDefined();
+    
+    // Clear voice src first
+    await act(async () => {
+      const diag = window.quick_check();
+      diag.voicePlayer.src = '';
+    });
+    
+    await act(async () => {
+      fireEvent.click(backlogVoiceBtn);
+    });
+    
+    // Verify delay
+    expect(window.quick_check().audio.voice.src).toBe('');
+    
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    });
+    
+    expect(window.quick_check().audio.voice.src).toContain('har_voice_01');
 
     // Click the backlog entry for the first sentence
     const backlogEntry = screen.getByText('这是第一句话。');
@@ -429,11 +477,11 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
       fireEvent.click(confirmBtn);
     });
 
-    // Expect the engine to rewind scenario to g01, pointer should align to Math.max(4, startIdx+1) = 4, dialogue text = '这是第一句话。'
+    // Expect the engine to rewind scenario to g01, pointer should align to Math.max(5, startIdx+1) = 5, dialogue text = '这是第一句话。'
     await waitFor(() => {
       const diag = window.quick_check();
       expect(diag.scenario).toBe('g01');
-      expect(diag.pointer).toBe(4);
+      expect(diag.pointer).toBe(5);
       expect(diag.dialogueText).toBe('这是第一句话。');
     });
 
@@ -446,7 +494,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     await waitFor(() => {
       const diag = window.quick_check();
-      expect(diag.pointer).toBe(9);
+      expect(diag.pointer).toBe(10);
       expect(diag.dialogueText).toBe('这是第二句话。');
     });
   });

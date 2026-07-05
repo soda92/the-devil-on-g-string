@@ -472,6 +472,9 @@ export function useKagRunner({
         setCurrentVoice(initialVoice);
         if (initialVoice) {
           playVoice(initialVoice);
+        } else if (voicePlayer) {
+          voicePlayer.pause();
+          voicePlayer.src = '';
         }
         if (initialBgm) {
           initialBgmRef.current = initialBgm;
@@ -899,6 +902,8 @@ export function useKagRunner({
             bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null
           };
           
+          const voiceFile = currentVoiceRef.current;
+          
           setHistoryLog(prev => {
             const newHistory = [
               ...prev,
@@ -907,7 +912,7 @@ export function useKagRunner({
                 speakerEn: currentSpeakerRef.current.en, 
                 textJp: inst.text_jp, 
                 textEn: inst.text_en,
-                voice: currentVoiceRef.current,
+                voice: voiceFile,
                 currentScenario,
                 pointer: p,
                 snapshot
@@ -1124,6 +1129,7 @@ export function useKagRunner({
         sf,
         gameState,
         isAudioUnlocked,
+        voicePlayer,
         audio: {
           bgm: { src: bgmPlayer.src, paused: bgmPlayer.paused, volume: bgmPlayer.volume },
           se: { src: sePlayer.src, paused: sePlayer.paused, volume: sePlayer.volume },
@@ -1249,6 +1255,7 @@ export function useKagRunner({
   };
 
   const loadSaveSlot = async (slotData) => {
+    if (textTimerRef.current) clearInterval(textTimerRef.current);
     setIsFastForward(false);
     isFastForwardRef.current = false;
     setScenarioData(null);
@@ -1422,6 +1429,7 @@ export function useKagRunner({
   };
 
   const jumpToHistorySnapshot = async (snap, entryIdx) => {
+    if (textTimerRef.current) clearInterval(textTimerRef.current);
     setIsFastForward(false);
     isFastForwardRef.current = false;
     setScenarioData(null);
@@ -1479,6 +1487,7 @@ export function useKagRunner({
   };
 
   const jumpToChoiceSnapshot = async (choice, choiceIdx) => {
+    if (textTimerRef.current) clearInterval(textTimerRef.current);
     setIsFastForward(false);
     isFastForwardRef.current = false;
     setScenarioData(null);
@@ -1540,7 +1549,9 @@ export function useKagRunner({
 
   const replayCurrentVoice = () => {
     if (currentVoice) {
-      playVoice(currentVoice);
+      setTimeout(() => {
+        playVoice(currentVoice);
+      }, 150);
     }
   };
 
