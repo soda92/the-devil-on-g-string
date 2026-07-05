@@ -396,6 +396,7 @@ export default function App() {
                 audio.playVoice(voice);
               }, 150);
             }}
+            autoFocusSearch={runner.historySearchFocused}
           />
         )}
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-export default function HistoryModal({ onClose, historyLog, language, onJumpToSnapshot, onReplayVoice }) {
+export default function HistoryModal({ onClose, historyLog, language, onJumpToSnapshot, onReplayVoice, autoFocusSearch = true }) {
   const contentAreaRef = useRef(null);
   const searchInputRef = useRef(null);
   const [confirmSnapshot, setConfirmSnapshot] = useState(null);
@@ -15,10 +15,10 @@ export default function HistoryModal({ onClose, historyLog, language, onJumpToSn
 
   // Auto-focus search input on mount
   useEffect(() => {
-    if (searchInputRef.current) {
+    if (autoFocusSearch && searchInputRef.current) {
       searchInputRef.current.focus();
     }
-  }, []);
+  }, [autoFocusSearch]);
 
   // Preserve original indexes while filtering search results
   const filteredLog = (historyLog || [])

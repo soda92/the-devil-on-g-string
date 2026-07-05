@@ -685,4 +685,66 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     });
     expect(document.exitFullscreen).toHaveBeenCalled();
   });
+
+  it('correctly toggles auto mode, history (unfocused search), settings, and returns to title on hotkeys', async () => {
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g01&ptr=3');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    // Wait for the scenario to load and align
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g01');
+      expect(diag.pointer).toBe(5);
+    });
+
+    // 1. Test auto mode toggle with KeyA
+    expect(window.quick_check().isAutoMode).toBe(false);
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyA' });
+    });
+    expect(window.quick_check().isAutoMode).toBe(true);
+
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyA' });
+    });
+    expect(window.quick_check().isAutoMode).toBe(false);
+
+    // 2. Test history toggle with KeyH (without search focus)
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyH' });
+    });
+    expect(screen.queryByText('历史记录')).not.toBeNull();
+
+    // Verify search input is NOT focused
+    const searchInput = screen.getByPlaceholderText(/输入关键字搜索/);
+    expect(document.activeElement).not.toBe(searchInput);
+
+    // Press KeyH again to close it
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyH' });
+    });
+    expect(screen.queryByText('历史记录')).toBeNull();
+
+    // 3. Test settings toggle with Semicolon
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'Semicolon' });
+    });
+    expect(screen.queryByText('语言 / Language')).not.toBeNull();
+
+    // Press Semicolon again to close it
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'Semicolon' });
+    });
+    expect(screen.queryByText('语言 / Language')).toBeNull();
+
+    // 4. Test Quit to title with KeyM
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyM' });
+    });
+    expect(window.quick_check().gameState).toBe('TITLE');
+    expect(screen.queryByText('开始游戏')).not.toBeNull();
+  });
 });

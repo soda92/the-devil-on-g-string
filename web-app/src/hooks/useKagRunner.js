@@ -73,6 +73,7 @@ export function useKagRunner({
   const [showSettings, setShowSettings] = useState(false);
   const [showChoiceGraph, setShowChoiceGraph] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [historySearchFocused, setHistorySearchFocused] = useState(true);
 
   const [quakeActive, setQuakeActive] = useState(false);
   const [flashActive, setFlashActive] = useState(null);
@@ -1549,7 +1550,19 @@ export function useKagRunner({
         return;
       }
 
-      // If configuration panels are open, ignore game keys
+      // Settings screen toggle (allows toggling off settings screen)
+      if (DEFAULT_SHORTCUTS.TOGGLE_SETTINGS.includes(code)) {
+        e.preventDefault();
+        if (showSettings) {
+          setShowSettings(false);
+        } else if (!showSaveLoad && !showHistory && !showChoiceGraph) {
+          if (!isAudioUnlocked) setIsAudioUnlocked(true);
+          setShowSettings(true);
+        }
+        return;
+      }
+
+      // If configuration/settings panels are open (and it wasn't the toggle key), ignore game keys
       if (showSettings || showChoiceGraph) {
         return;
       }
@@ -1578,18 +1591,48 @@ export function useKagRunner({
         return;
       }
 
-      // 4. Open search history backlog
-      if (DEFAULT_SHORTCUTS.OPEN_HISTORY.includes(code)) {
+      // 4. Open search history backlog (Slash key - focuses search input)
+      if (DEFAULT_SHORTCUTS.OPEN_HISTORY_SEARCH.includes(code)) {
         e.preventDefault();
         if (!showSaveLoad && !showHistory) {
           if (!isAudioUnlocked) setIsAudioUnlocked(true);
+          setHistorySearchFocused(true);
           setShowHistory(true);
         }
         return;
       }
 
-      // If dialogue history or save/load overlays are active, ignore gameplay keys
+      // Toggle history backlog (H key - does not focus search input, allowing closing with H)
+      if (DEFAULT_SHORTCUTS.TOGGLE_HISTORY.includes(code)) {
+        e.preventDefault();
+        if (showHistory) {
+          setShowHistory(false);
+        } else if (!showSaveLoad) {
+          if (!isAudioUnlocked) setIsAudioUnlocked(true);
+          setHistorySearchFocused(false);
+          setShowHistory(true);
+        }
+        return;
+      }
+
+      // If dialogue history or save/load overlays are active (and it wasn't the toggle key), ignore gameplay keys
       if (showSaveLoad || showHistory) {
+        return;
+      }
+
+      // Toggle auto mode
+      if (DEFAULT_SHORTCUTS.TOGGLE_AUTO.includes(code)) {
+        e.preventDefault();
+        if (!isAudioUnlocked) setIsAudioUnlocked(true);
+        setIsAutoMode(prev => !prev);
+        setIsFastForward(false);
+        return;
+      }
+
+      // Quit to main menu
+      if (DEFAULT_SHORTCUTS.QUIT_TO_TITLE.includes(code)) {
+        e.preventDefault();
+        quitToTitle();
         return;
       }
 
@@ -1657,6 +1700,7 @@ export function useKagRunner({
     setShowChoiceGraph,
     showHistory,
     setShowHistory,
+    historySearchFocused,
     saveSlots,
     f,
     setF,
