@@ -57,6 +57,7 @@ export function useKagRunner({
   const [background, setBackground] = useState(config?.initial?.background || 'white');
   const [sprites, setSprites] = useState({ 0: null, 1: null, 2: null });
   const [speaker, setSpeaker] = useState('');
+  const [currentVoice, setCurrentVoice] = useState('');
   const [dialogueText, setDialogueText] = useState('');
   const [typewriterText, setTypewriterText] = useState('');
   const [textVisible, setTextVisible] = useState(false);
@@ -468,6 +469,7 @@ export function useKagRunner({
           currentSpeakerRef.current = { jp: resolvedSp, en: resolveCharacterName(resolvedSp, 'EN', config?.characterNames) };
         }
         initialVoiceRef.current = initialVoice;
+        setCurrentVoice(initialVoice);
         if (initialVoice) {
           playVoice(initialVoice);
         }
@@ -811,6 +813,8 @@ export function useKagRunner({
             if (inst.name === 'nm' && args.s) {
               playVoice(args.s);
               currentVoiceRef.current = args.s;
+            } else {
+              currentVoiceRef.current = null;
             }
           } else if (inst.name === 'l_moji') {
             setSideNarration({
@@ -866,6 +870,7 @@ export function useKagRunner({
           break;
           
         case 'text':
+          setCurrentVoice(currentVoiceRef.current || '');
           const displayTxt = language === 'JP' ? inst.text_jp : inst.text_en;
           const prevDiag = dialogueTextRef.current;
           let targetFullText;
@@ -887,6 +892,7 @@ export function useKagRunner({
             speaker: language === 'JP' ? currentSpeakerRef.current.jp : currentSpeakerRef.current.en,
             currentSpeaker: { ...currentSpeakerRef.current },
             dialogueText: targetFullText,
+            currentVoice: currentVoiceRef.current || '',
             currentScenario,
             pointer: p,
             showOptions: showOptions || null,
@@ -1255,6 +1261,7 @@ export function useKagRunner({
     setBackground(slotData.background);
     setSpeaker(slotData.speaker);
     currentSpeakerRef.current = slotData.currentSpeaker || { jp: slotData.speaker || '', en: slotData.speaker || '' };
+    setCurrentVoice(slotData.currentVoice || '');
     updateDialogueText(slotData.dialogueText);
     setTypewriterText(slotData.dialogueText);
     setDialogueMode(slotData.dialogueMode || 'avg');
@@ -1332,6 +1339,7 @@ export function useKagRunner({
       background: targetBackground,
       speaker,
       currentSpeaker: currentSpeakerRef.current,
+      currentVoice,
       dialogueText: dialogueTextRef.current,
       dialogueMode,
       language,
@@ -1434,6 +1442,7 @@ export function useKagRunner({
       setBackground(snap.background);
       setSpeaker(snap.speaker);
       currentSpeakerRef.current = snap.currentSpeaker || { jp: snap.speaker || '', en: snap.speaker || '' };
+      setCurrentVoice(snap.currentVoice || '');
       updateDialogueText(snap.dialogueText);
       setTypewriterText(snap.dialogueText);
       
@@ -1456,6 +1465,7 @@ export function useKagRunner({
       const text = language === 'JP' ? entry.textJp : entry.textEn;
       setSpeaker(resolvedSp);
       currentSpeakerRef.current = { jp: entry.speakerJp || '', en: entry.speakerEn || '' };
+      setCurrentVoice(entry.voice || '');
       updateDialogueText(text);
       setTypewriterText(text);
       setShowOptions(false);
@@ -1528,6 +1538,12 @@ export function useKagRunner({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [gameState, showSaveLoad, showSettings, showChoiceGraph, showHistory]);
 
+  const replayCurrentVoice = () => {
+    if (currentVoice) {
+      playVoice(currentVoice);
+    }
+  };
+
   return {
     language,
     setLanguage,
@@ -1539,6 +1555,8 @@ export function useKagRunner({
     background,
     sprites,
     speaker,
+    currentVoice,
+    replayCurrentVoice,
     dialogueText,
     typewriterText,
     textVisible,

@@ -40,6 +40,8 @@ export default function GameplayScreen({
   speaker,
   typewriterText,
   dialogueText,
+  currentVoice,
+  replayCurrentVoice,
   isWaiting,
   showOptions,
   resolveAsset,
@@ -60,7 +62,7 @@ export default function GameplayScreen({
   sf
 }) {
   return (
-    <div className="playing-layer" onClick={handleScreenClick} onWheel={handleWheel}>
+    <div className="playing-layer" onClick={handleScreenClick} onWheel={!sf?.disableWheelHistory ? handleWheel : undefined}>
       
       {/* Background Image/Color */}
       <div 
@@ -98,6 +100,8 @@ export default function GameplayScreen({
           speaker={speaker}
           typewriterText={typewriterText}
           dialogueText={dialogueText}
+          currentVoice={currentVoice}
+          replayCurrentVoice={replayCurrentVoice}
           isWaiting={isWaiting}
           language={language}
           setLanguage={setLanguage}

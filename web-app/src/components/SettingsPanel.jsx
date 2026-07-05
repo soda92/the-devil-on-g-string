@@ -47,6 +47,18 @@ export default function SettingsPanel({
         </div>
 
         <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? '鼠标滚轮开启历史' : 'Scroll Wheel History'}</label>
+          <div className="settings-control-buttons">
+            <button className={`control-btn ${!sf.disableWheelHistory ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, disableWheelHistory: false }))}>
+              {language === 'JP' ? '开启' : 'Enabled'}
+            </button>
+            <button className={`control-btn ${sf.disableWheelHistory ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, disableWheelHistory: true }))}>
+              {language === 'JP' ? '关闭' : 'Disabled'}
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-row">
           <label className="settings-label">{language === 'JP' ? '背景音乐音量' : 'Music Volume'}</label>
           <input 
             type="range" 

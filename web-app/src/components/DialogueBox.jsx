@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-export default function DialogueBox({ dialogueMode, speaker, typewriterText, dialogueText, isWaiting, language, setLanguage, onSave, onLoad, onConfig, onQuit, onScreenClick, onShowHistory, onShowFlowchart, isAutoMode, isFastForward, onToggleAuto, onToggleSkip, sf }) {
+export default function DialogueBox({ dialogueMode, speaker, typewriterText, dialogueText, currentVoice, replayCurrentVoice, isWaiting, language, setLanguage, onSave, onLoad, onConfig, onQuit, onScreenClick, onShowHistory, onShowFlowchart, isAutoMode, isFastForward, onToggleAuto, onToggleSkip, sf }) {
   const textRef = useRef(null);
 
   useEffect(() => {
@@ -35,7 +35,37 @@ export default function DialogueBox({ dialogueMode, speaker, typewriterText, dia
       onClick={(e) => e.stopPropagation()}
       style={bgStyle}
     >
-      {speaker && dialogueMode !== 'novel' && <div className="dialogue-speaker">{speaker}</div>}
+      {speaker && dialogueMode !== 'novel' && (
+        <div className="dialogue-speaker" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>{speaker}</span>
+          {currentVoice && (
+            <button 
+              className="voice-replay-btn" 
+              onClick={(e) => {
+                e.stopPropagation();
+                replayCurrentVoice && replayCurrentVoice();
+              }}
+              title="播放语音 / Replay Voice"
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'inherit',
+                cursor: 'pointer',
+                fontSize: '12px',
+                padding: '0 2px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: '1',
+                transition: 'opacity 0.2s',
+                opacity: 0.8
+              }}
+            >
+              🔊
+            </button>
+          )}
+        </div>
+      )}
       
       <div 
         ref={textRef}
@@ -53,6 +83,9 @@ export default function DialogueBox({ dialogueMode, speaker, typewriterText, dia
       <div className="system-actions-bar">
         <button className="sys-action-btn" onClick={onShowHistory}>历史</button>
         {onShowFlowchart && <button className="sys-action-btn" onClick={onShowFlowchart}>路线</button>}
+        {currentVoice && (
+          <button className="sys-action-btn voice-replay-action-btn" onClick={replayCurrentVoice}>语音</button>
+        )}
         <button className={`sys-action-btn ${isAutoMode ? 'active-auto' : ''}`} onClick={onToggleAuto}>自动</button>
         <button className={`sys-action-btn ${isFastForward ? 'active-skip' : ''}`} onClick={onToggleSkip}>快进</button>
         <button className="sys-action-btn" onClick={onSave}>保存</button>

@@ -212,6 +212,8 @@ export default function App() {
             textVisible={runner.textVisible}
             speaker={runner.speaker}
             typewriterText={runner.typewriterText}
+            currentVoice={runner.currentVoice}
+            replayCurrentVoice={runner.replayCurrentVoice}
             dialogueText={runner.dialogueText}
             isWaiting={runner.isWaiting}
             showOptions={runner.showOptions}
