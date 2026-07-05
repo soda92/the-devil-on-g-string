@@ -387,7 +387,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     });
 
     // Unlock audio
-    const textLayer = await screen.findByText('这是第一句话。');
+    let textLayer = await screen.findByText('这是第一句话。');
     await act(async () => {
       fireEvent.click(textLayer);
     });
@@ -397,6 +397,8 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
       await new Promise((resolve) => setTimeout(resolve, 50));
     });
 
+    // Re-query the text layer element to avoid detached DOM node issues
+    textLayer = await screen.findByText('这是第一句话。');
     // Click to advance past page_break and load next text
     await act(async () => {
       fireEvent.click(textLayer);
@@ -446,6 +448,44 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
       const diag = window.quick_check();
       expect(diag.pointer).toBe(9);
       expect(diag.dialogueText).toBe('这是第二句话。');
+    });
+  });
+
+  it('clears character speaker name and voice on page_break to handle monologues correctly', async () => {
+    const customScenarioData = {
+      instructions: [
+        { type: 'command', name: 'nm', args: { t: '哈尔', s: 'har_voice_01' } },
+        { type: 'text', text_jp: '「恐怕是的。」', text_en: '“Probably yes.”' },
+        { type: 'page_break' },
+        { type: 'line_feed' },
+        { type: 'text', text_jp: '绕了一大圈是想说这些么。', text_en: 'Is that what they wanted to say?' }
+      ]
+    };
+
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(customScenarioData)
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g07&ptr=4');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    // Wait for scenario to load and align. Deep link pointing to index 4 (monologue text) executes index 4 text and advances pointer to 5.
+    // Page break at index 2 must clear speaker and voice.
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g07');
+      expect(diag.pointer).toBe(5);
+      expect(diag.speaker).toBe('');
+      expect(diag.audio.voice.src).toBe('');
     });
   });
 });

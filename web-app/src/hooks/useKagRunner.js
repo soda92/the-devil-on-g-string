@@ -359,8 +359,12 @@ export function useKagRunner({
         
         for (let i = 0; i < startIdx; i++) {
           const inst = data.instructions[i];
-          if (inst && inst.type === 'command') {
-            const args = inst.args || {};
+          if (inst) {
+            if (inst.type === 'page_break' || inst.type === 'clear_text') {
+              initialSpeaker = '';
+              initialVoice = '';
+            } else if (inst.type === 'command') {
+              const args = inst.args || {};
             if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm' || inst.name === 'fibgm' || inst.name === 'xbgm') {
               initialBgm = args.storage;
             } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm' || inst.name === 'fobgm' || inst.name === 'sbgm') {
@@ -451,6 +455,7 @@ export function useKagRunner({
             }
           }
         }
+      }
         
         setBackground(initialBg);
         backgroundRef.current = initialBg;
@@ -923,11 +928,17 @@ export function useKagRunner({
         case 'page_break':
           setTypewriterText('');
           updateDialogueText('');
+          setSpeaker('');
+          currentSpeakerRef.current = { jp: '', en: '' };
+          currentVoiceRef.current = null;
           break;
           
         case 'clear_text':
           setTypewriterText('');
           updateDialogueText('');
+          setSpeaker('');
+          currentSpeakerRef.current = { jp: '', en: '' };
+          currentVoiceRef.current = null;
           break;
           
         case 'line_feed':
