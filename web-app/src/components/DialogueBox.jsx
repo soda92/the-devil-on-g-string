@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 
-export default function DialogueBox({ dialogueMode, speaker, typewriterText, dialogueText, isWaiting, language, setLanguage, onSave, onLoad, onConfig, onQuit, onScreenClick, onShowHistory, onShowFlowchart, isAutoMode, isFastForward, onToggleAuto, onToggleSkip, sf }) {
+export default function DialogueBox({ dialogueMode, speaker, typewriterText, dialogueText, currentVoice, replayCurrentVoice, isWaiting, language, setLanguage, onSave, onLoad, onConfig, onQuit, onScreenClick, onShowHistory, onShowFlowchart, isAutoMode, isFastForward, onToggleAuto, onToggleSkip, sf }) {
   const textRef = useRef(null);
 
   useEffect(() => {
@@ -35,7 +35,21 @@ export default function DialogueBox({ dialogueMode, speaker, typewriterText, dia
       onClick={(e) => e.stopPropagation()}
       style={bgStyle}
     >
-      {speaker && dialogueMode !== 'novel' && <div className="dialogue-speaker">{speaker}</div>}
+      {speaker && dialogueMode !== 'novel' && (
+        <div 
+          className="dialogue-speaker" 
+          onClick={currentVoice ? (e) => {
+            e.stopPropagation();
+            replayCurrentVoice && replayCurrentVoice();
+          } : undefined}
+          style={{ 
+            cursor: currentVoice ? 'pointer' : 'default'
+          }}
+          title={currentVoice ? "播放语音 / Replay Voice" : undefined}
+        >
+          <span>{speaker}</span>
+        </div>
+      )}
       
       <div 
         ref={textRef}

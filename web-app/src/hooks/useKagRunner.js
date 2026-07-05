@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { resolveAsset, resolveCharacterName, tokenizeText } from '../utils/gameUtils';
+import { DEFAULT_SHORTCUTS, toggleFullscreen } from '../utils/shortcutManager';
 
 // --- Save State Cleaners for Flowchart Nested Snapshots ---
 const cleanFForSnapshot = (originalF) => {
@@ -57,6 +58,7 @@ export function useKagRunner({
   const [background, setBackground] = useState(config?.initial?.background || 'white');
   const [sprites, setSprites] = useState({ 0: null, 1: null, 2: null });
   const [speaker, setSpeaker] = useState('');
+  const [currentVoice, setCurrentVoice] = useState('');
   const [dialogueText, setDialogueText] = useState('');
   const [typewriterText, setTypewriterText] = useState('');
   const [textVisible, setTextVisible] = useState(false);
@@ -71,6 +73,7 @@ export function useKagRunner({
   const [showSettings, setShowSettings] = useState(false);
   const [showChoiceGraph, setShowChoiceGraph] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [historySearchFocused, setHistorySearchFocused] = useState(true);
 
   const [quakeActive, setQuakeActive] = useState(false);
   const [flashActive, setFlashActive] = useState(null);
@@ -468,8 +471,12 @@ export function useKagRunner({
           currentSpeakerRef.current = { jp: resolvedSp, en: resolveCharacterName(resolvedSp, 'EN', config?.characterNames) };
         }
         initialVoiceRef.current = initialVoice;
+        setCurrentVoice(initialVoice);
         if (initialVoice) {
           playVoice(initialVoice);
+        } else if (voicePlayer) {
+          voicePlayer.pause();
+          voicePlayer.src = '';
         }
         if (initialBgm) {
           initialBgmRef.current = initialBgm;
@@ -811,6 +818,8 @@ export function useKagRunner({
             if (inst.name === 'nm' && args.s) {
               playVoice(args.s);
               currentVoiceRef.current = args.s;
+            } else {
+              currentVoiceRef.current = null;
             }
           } else if (inst.name === 'l_moji') {
             setSideNarration({
@@ -866,6 +875,7 @@ export function useKagRunner({
           break;
           
         case 'text':
+          setCurrentVoice(currentVoiceRef.current || '');
           const displayTxt = language === 'JP' ? inst.text_jp : inst.text_en;
           const prevDiag = dialogueTextRef.current;
           let targetFullText;
@@ -887,11 +897,14 @@ export function useKagRunner({
             speaker: language === 'JP' ? currentSpeakerRef.current.jp : currentSpeakerRef.current.en,
             currentSpeaker: { ...currentSpeakerRef.current },
             dialogueText: targetFullText,
+            currentVoice: currentVoiceRef.current || '',
             currentScenario,
             pointer: p,
             showOptions: showOptions || null,
             bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null
           };
+          
+          const voiceFile = currentVoiceRef.current;
           
           setHistoryLog(prev => {
             const newHistory = [
@@ -901,7 +914,7 @@ export function useKagRunner({
                 speakerEn: currentSpeakerRef.current.en, 
                 textJp: inst.text_jp, 
                 textEn: inst.text_en,
-                voice: currentVoiceRef.current,
+                voice: voiceFile,
                 currentScenario,
                 pointer: p,
                 snapshot
@@ -1118,6 +1131,7 @@ export function useKagRunner({
         sf,
         gameState,
         isAudioUnlocked,
+        voicePlayer,
         audio: {
           bgm: { src: bgmPlayer.src, paused: bgmPlayer.paused, volume: bgmPlayer.volume },
           se: { src: sePlayer.src, paused: sePlayer.paused, volume: sePlayer.volume },
@@ -1243,6 +1257,7 @@ export function useKagRunner({
   };
 
   const loadSaveSlot = async (slotData) => {
+    if (textTimerRef.current) clearInterval(textTimerRef.current);
     setIsFastForward(false);
     isFastForwardRef.current = false;
     setScenarioData(null);
@@ -1255,6 +1270,7 @@ export function useKagRunner({
     setBackground(slotData.background);
     setSpeaker(slotData.speaker);
     currentSpeakerRef.current = slotData.currentSpeaker || { jp: slotData.speaker || '', en: slotData.speaker || '' };
+    setCurrentVoice(slotData.currentVoice || '');
     updateDialogueText(slotData.dialogueText);
     setTypewriterText(slotData.dialogueText);
     setDialogueMode(slotData.dialogueMode || 'avg');
@@ -1332,6 +1348,7 @@ export function useKagRunner({
       background: targetBackground,
       speaker,
       currentSpeaker: currentSpeakerRef.current,
+      currentVoice,
       dialogueText: dialogueTextRef.current,
       dialogueMode,
       language,
@@ -1414,6 +1431,7 @@ export function useKagRunner({
   };
 
   const jumpToHistorySnapshot = async (snap, entryIdx) => {
+    if (textTimerRef.current) clearInterval(textTimerRef.current);
     setIsFastForward(false);
     isFastForwardRef.current = false;
     setScenarioData(null);
@@ -1434,6 +1452,7 @@ export function useKagRunner({
       setBackground(snap.background);
       setSpeaker(snap.speaker);
       currentSpeakerRef.current = snap.currentSpeaker || { jp: snap.speaker || '', en: snap.speaker || '' };
+      setCurrentVoice(snap.currentVoice || '');
       updateDialogueText(snap.dialogueText);
       setTypewriterText(snap.dialogueText);
       
@@ -1456,6 +1475,7 @@ export function useKagRunner({
       const text = language === 'JP' ? entry.textJp : entry.textEn;
       setSpeaker(resolvedSp);
       currentSpeakerRef.current = { jp: entry.speakerJp || '', en: entry.speakerEn || '' };
+      setCurrentVoice(entry.voice || '');
       updateDialogueText(text);
       setTypewriterText(text);
       setShowOptions(false);
@@ -1469,6 +1489,7 @@ export function useKagRunner({
   };
 
   const jumpToChoiceSnapshot = async (choice, choiceIdx) => {
+    if (textTimerRef.current) clearInterval(textTimerRef.current);
     setIsFastForward(false);
     isFastForwardRef.current = false;
     setScenarioData(null);
@@ -1508,25 +1529,141 @@ export function useKagRunner({
     setGameState('PLAYING');
   };
 
-  // Keyboard shortcut listener for Space / Enter (screen advance or visibility toggle)
+  // Centralized keyboard shortcut manager
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (gameState !== 'PLAYING' || showSaveLoad || showSettings || showChoiceGraph || showHistory) {
+      // Ignore key shortcuts when typing in inputs/textareas
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
         return;
       }
-      if (e.code === 'Space') {
+
+      if (gameState !== 'PLAYING') {
+        return;
+      }
+
+      const code = e.code;
+
+      // 1. Fullscreen toggle (always active during gameplay)
+      if (DEFAULT_SHORTCUTS.TOGGLE_FULLSCREEN.includes(code)) {
+        e.preventDefault();
+        toggleFullscreen();
+        return;
+      }
+
+      // Settings screen toggle (allows toggling off settings screen)
+      if (DEFAULT_SHORTCUTS.TOGGLE_SETTINGS.includes(code)) {
+        e.preventDefault();
+        if (showSettings) {
+          setShowSettings(false);
+        } else if (!showSaveLoad && !showHistory && !showChoiceGraph) {
+          if (!isAudioUnlocked) setIsAudioUnlocked(true);
+          setShowSettings(true);
+        }
+        return;
+      }
+
+      // If configuration/settings panels are open (and it wasn't the toggle key), ignore game keys
+      if (showSettings || showChoiceGraph) {
+        return;
+      }
+
+      // 2. Save screen toggle
+      if (DEFAULT_SHORTCUTS.TOGGLE_SAVE.includes(code)) {
+        e.preventDefault();
+        if (showSaveLoad === 'SAVE') {
+          setShowSaveLoad(null);
+        } else if (!showSaveLoad && !showHistory) {
+          if (!isAudioUnlocked) setIsAudioUnlocked(true);
+          setShowSaveLoad('SAVE');
+        }
+        return;
+      }
+
+      // 3. Load screen toggle
+      if (DEFAULT_SHORTCUTS.TOGGLE_LOAD.includes(code)) {
+        e.preventDefault();
+        if (showSaveLoad === 'LOAD') {
+          setShowSaveLoad(null);
+        } else if (!showSaveLoad && !showHistory) {
+          if (!isAudioUnlocked) setIsAudioUnlocked(true);
+          setShowSaveLoad('LOAD');
+        }
+        return;
+      }
+
+      // 4. Open search history backlog (Slash key - focuses search input)
+      if (DEFAULT_SHORTCUTS.OPEN_HISTORY_SEARCH.includes(code)) {
+        e.preventDefault();
+        if (!showSaveLoad && !showHistory) {
+          if (!isAudioUnlocked) setIsAudioUnlocked(true);
+          setHistorySearchFocused(true);
+          setShowHistory(true);
+        }
+        return;
+      }
+
+      // Toggle history backlog (H key - does not focus search input, allowing closing with H)
+      if (DEFAULT_SHORTCUTS.TOGGLE_HISTORY.includes(code)) {
+        e.preventDefault();
+        if (showHistory) {
+          setShowHistory(false);
+        } else if (!showSaveLoad) {
+          if (!isAudioUnlocked) setIsAudioUnlocked(true);
+          setHistorySearchFocused(false);
+          setShowHistory(true);
+        }
+        return;
+      }
+
+      // If dialogue history or save/load overlays are active (and it wasn't the toggle key), ignore gameplay keys
+      if (showSaveLoad || showHistory) {
+        return;
+      }
+
+      // Toggle auto mode
+      if (DEFAULT_SHORTCUTS.TOGGLE_AUTO.includes(code)) {
+        e.preventDefault();
+        if (!isAudioUnlocked) setIsAudioUnlocked(true);
+        setIsAutoMode(prev => !prev);
+        setIsFastForward(false);
+        return;
+      }
+
+      // Quit to main menu
+      if (DEFAULT_SHORTCUTS.QUIT_TO_TITLE.includes(code)) {
+        e.preventDefault();
+        quitToTitle();
+        return;
+      }
+
+      // 5. Toggle text visibility
+      if (DEFAULT_SHORTCUTS.TOGGLE_TEXT.includes(code)) {
         e.preventDefault();
         setTextVisible(prev => !prev);
-      } else if (e.key === 'Enter') {
+        return;
+      }
+
+      // 6. Advance dialogue text
+      if (DEFAULT_SHORTCUTS.ADVANCE_TEXT.includes(code)) {
         e.preventDefault();
         if (handleScreenClickRef.current) {
           handleScreenClickRef.current();
         }
+        return;
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState, showSaveLoad, showSettings, showChoiceGraph, showHistory]);
+  }, [gameState, showSaveLoad, showSettings, showChoiceGraph, showHistory, isAudioUnlocked]);
+
+  const replayCurrentVoice = () => {
+    if (currentVoice) {
+      setTimeout(() => {
+        playVoice(currentVoice);
+      }, 150);
+    }
+  };
 
   return {
     language,
@@ -1539,6 +1676,8 @@ export function useKagRunner({
     background,
     sprites,
     speaker,
+    currentVoice,
+    replayCurrentVoice,
     dialogueText,
     typewriterText,
     textVisible,
@@ -1561,6 +1700,7 @@ export function useKagRunner({
     setShowChoiceGraph,
     showHistory,
     setShowHistory,
+    historySearchFocused,
     saveSlots,
     f,
     setF,

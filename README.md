@@ -123,3 +123,15 @@ Alternatively, you can start them manually in separate terminals: / 或者，你
     pnpm dev
     ```
 3.  Vite will proxy all static visual novel assets (`/bgimage/`, `/bgm/`, etc.) and API requests back to the Go server on port `8080`. / Vite 会自动将所有的静态资源与 API 请求代理至本地的 Go 服务端口（8080）。
+
+---
+
+## 📖 Trivia & Story Notes / 游戏花絮与设定勘误
+
+### English
+* **Air on the G String (G弦上的咏叹调)**: A real classical violin arrangement by August Wilhelmj (1871) of the second movement of Johann Sebastian Bach's *Orchestral Suite No. 3 in D major* (BWV 1068). Wilhelmj transposed the piece to C major and adapted it so that a violinist can play the entire melody using **only the lowest string (the G string)**.
+* **Historical Fictionalization (Scenario `g10`)**: In scenario `g10` (pointers 943–954), Kyousuke claims that "Air on the G String" was directly played as a requiem at a major US terrorist attack (9/11). This detail is **fictionalized** for the story. Historically, Yo-Yo Ma performed Bach's *Cello Suite No. 1* at the Ground Zero anniversary service, and Samuel Barber's *Adagio for Strings* remains the piece of music most famously associated with 9/11 commemorations.
+
+### 中文说明
+* **G弦上的咏叹调 (Air on the G String)**: 历史上真实存在的小提琴改编曲。由德国小提琴家奥古斯特·威尔赫米（August Wilhelmj）于 1871 年将巴赫的《D大调第三管弦乐组曲》（BWV 1068）的第二乐章进行改编，通过降调（至C大调）并将旋律下移八度，使得整首乐曲可以**仅在小提琴最粗的 G 弦上演奏完毕**。
+* **剧情历史勘误 (剧本 `g10`)**: 在剧本 `g10`（指针 943–954）中，京介提到“G弦上的咏叹调曾在美国大型恐怖袭击（即 9/11 事件）中被直接用作镇魂曲演奏”。该说法为游戏故事的**艺术虚构**。历史上，9/11 双子塔遗址（Ground Zero）首周年纪念仪式上演奏的最著名的巴赫乐曲是马友友演奏的《第一号无伴奏大提琴组曲·前奏曲》，而与 9/11 纪念活动关联最深、最著名的“非官方镇魂曲”则是塞缪尔·巴伯的《弦乐慢板》（Adagio for Strings）。

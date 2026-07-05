@@ -212,6 +212,8 @@ export default function App() {
             textVisible={runner.textVisible}
             speaker={runner.speaker}
             typewriterText={runner.typewriterText}
+            currentVoice={runner.currentVoice}
+            replayCurrentVoice={runner.replayCurrentVoice}
             dialogueText={runner.dialogueText}
             isWaiting={runner.isWaiting}
             showOptions={runner.showOptions}
@@ -389,7 +391,12 @@ export default function App() {
             historyLog={runner.historyLog}
             language={runner.language}
             onJumpToSnapshot={runner.jumpToHistorySnapshot}
-            onReplayVoice={audio.playVoice}
+            onReplayVoice={(voice) => {
+              setTimeout(() => {
+                audio.playVoice(voice);
+              }, 150);
+            }}
+            autoFocusSearch={runner.historySearchFocused}
           />
         )}
 
@@ -411,6 +418,7 @@ export default function App() {
           dialogueMode={runner.dialogueMode}
           speaker={runner.speaker}
           bgmPlayer={audio.bgmPlayer}
+          playVoice={audio.playVoice}
           onClose={() => setDebugOpen(false)}
         />
       )}

@@ -54,6 +54,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
       { type: 'command', name: 'bg', args: { storage: 'bg_test_01' } },
       { type: 'command', name: 'playbgm', args: { storage: 'bgm_test_01' } },
       { type: 'command', name: 'chr', args: { c: 'char_center_01' } },
+      { type: 'command', name: 'nm', args: { t: '哈尔', s: 'har_voice_01' } },
       { type: 'text', text_jp: '这是第一句话。', text_en: 'This is the first sentence.' },
       { type: 'page_break' },
       { type: 'line_feed' },
@@ -115,7 +116,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     const engineState = window.quick_check();
 
     expect(engineState.scenario).toBe('g01');
-    expect(engineState.pointer).toBe(9); // Pointer advances past the text node during execution
+    expect(engineState.pointer).toBe(10); // Pointer advances past the text node during execution
     expect(engineState.background).toBe('bg_test_02');
     
     // Sprites center layer should be null because of the @black command at pointer 6
@@ -223,7 +224,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     // Check that current position is written to school_autosave
     expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
       'school_autosave',
-      expect.stringContaining('"pointer":4')
+      expect.stringContaining('"pointer":5')
     );
   });
 
@@ -378,13 +379,37 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     render(<App />);
 
-    // Wait for the scenario to load and align to pointer 4 (dialogue text "这是第一句话。" displayed)
+    // Wait for the scenario to load and align to pointer 5 (dialogue text "这是第一句话。" displayed)
     await waitFor(() => {
       const diag = window.quick_check();
       expect(diag.scenario).toBe('g01');
-      expect(diag.pointer).toBe(4);
+      expect(diag.pointer).toBe(5);
       expect(diag.dialogueText).toBe('这是第一句话。');
     });
+
+    // Test Dialogue Box voice replay button
+    const dialogVoiceBtn = screen.getByTitle(/播放语音/);
+    expect(dialogVoiceBtn).toBeDefined();
+    
+    // Clear voice src first to test replay
+    await act(async () => {
+      const diag = window.quick_check();
+      diag.voicePlayer.src = '';
+    });
+    
+    await act(async () => {
+      fireEvent.click(dialogVoiceBtn);
+    });
+    
+    // Verify voice does not play instantly
+    expect(window.quick_check().audio.voice.src).toBe('');
+    
+    // Wait for 200ms delay to complete
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    });
+    
+    expect(window.quick_check().audio.voice.src).toContain('har_voice_01');
 
     // Unlock audio
     let textLayer = await screen.findByText('这是第一句话。');
@@ -404,10 +429,10 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
       fireEvent.click(textLayer);
     });
 
-    // Wait until it reaches pointer 9 (dialogue text "这是第二句话。")
+    // Wait until it reaches pointer 10 (dialogue text "这是第二句话。")
     await waitFor(() => {
       const diag = window.quick_check();
-      expect(diag.pointer).toBe(9);
+      expect(diag.pointer).toBe(10);
       expect(diag.dialogueText).toBe('这是第二句话。');
     }, { timeout: 3000 });
 
@@ -416,6 +441,29 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     await act(async () => {
       fireEvent.click(historyBtn);
     });
+
+    // Test Backlog entry voice replay button
+    const backlogVoiceBtn = screen.getByTitle(/播放语音/);
+    expect(backlogVoiceBtn).toBeDefined();
+    
+    // Clear voice src first
+    await act(async () => {
+      const diag = window.quick_check();
+      diag.voicePlayer.src = '';
+    });
+    
+    await act(async () => {
+      fireEvent.click(backlogVoiceBtn);
+    });
+    
+    // Verify delay
+    expect(window.quick_check().audio.voice.src).toBe('');
+    
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    });
+    
+    expect(window.quick_check().audio.voice.src).toContain('har_voice_01');
 
     // Click the backlog entry for the first sentence
     const backlogEntry = screen.getByText('这是第一句话。');
@@ -429,11 +477,11 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
       fireEvent.click(confirmBtn);
     });
 
-    // Expect the engine to rewind scenario to g01, pointer should align to Math.max(4, startIdx+1) = 4, dialogue text = '这是第一句话。'
+    // Expect the engine to rewind scenario to g01, pointer should align to Math.max(5, startIdx+1) = 5, dialogue text = '这是第一句话。'
     await waitFor(() => {
       const diag = window.quick_check();
       expect(diag.scenario).toBe('g01');
-      expect(diag.pointer).toBe(4);
+      expect(diag.pointer).toBe(5);
       expect(diag.dialogueText).toBe('这是第一句话。');
     });
 
@@ -446,7 +494,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     await waitFor(() => {
       const diag = window.quick_check();
-      expect(diag.pointer).toBe(9);
+      expect(diag.pointer).toBe(10);
       expect(diag.dialogueText).toBe('这是第二句话。');
     });
   });
@@ -487,5 +535,216 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
       expect(diag.speaker).toBe('');
       expect(diag.audio.voice.src).toBe('');
     });
+  });
+
+  it('opens history modal with / key press, focuses search input, filters log, highlights matches, and closes on Escape', async () => {
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g01&ptr=3');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    // Wait for the scenario to load and align to pointer 5 (dialogue text "这是第一句话。" displayed)
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g01');
+      expect(diag.pointer).toBe(5);
+    });
+
+    // Advance to next text line ("这是第二句话。") to populate backlog history log
+    let textLayer = await screen.findByText('这是第一句话。');
+    await act(async () => {
+      fireEvent.click(textLayer);
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    textLayer = await screen.findByText('这是第一句话。');
+    await act(async () => {
+      fireEvent.click(textLayer);
+    });
+    await waitFor(() => {
+      expect(window.quick_check().pointer).toBe(10);
+    });
+
+    // Trigger / key press to open history dialog
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'Slash', key: '/' });
+    });
+
+    // Verify history modal opens
+    expect(screen.getByText('历史记录')).toBeDefined();
+
+    // Verify search input is focused
+    const searchInput = screen.getByPlaceholderText(/输入关键字搜索/);
+    expect(searchInput).toBeDefined();
+    expect(document.activeElement).toBe(searchInput);
+
+    // Verify both dialogue lines are initially present
+    expect(screen.queryByText('这是第一句话。')).not.toBeNull();
+    expect(screen.queryByText('这是第二句话。')).not.toBeNull();
+
+    // Type query "第二" to filter log
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: '第二' } });
+    });
+
+    // Verify "这是第一句话。" is filtered out
+    expect(screen.queryByText('这是第一句话。')).toBeNull();
+    
+    // Verify highlighting works
+    const backlogContainer = screen.getByText('历史记录').parentElement;
+    expect(backlogContainer.innerHTML).toContain('search-highlight');
+    expect(backlogContainer.innerHTML).toContain('第二');
+    expect(backlogContainer.innerHTML).not.toContain('第一');
+
+    // Press Escape on search input and verify modal closes
+    await act(async () => {
+      fireEvent.keyDown(searchInput, { key: 'Escape' });
+    });
+
+    // Verify modal is closed
+    expect(screen.queryByText('历史记录')).toBeNull();
+  });
+
+  it('correctly toggles fullscreen, dialogue box, save screen, and load screen on hotkey presses', async () => {
+    // Mock Fullscreen API
+    document.documentElement.requestFullscreen = vi.fn().mockResolvedValue(null);
+    document.exitFullscreen = vi.fn().mockResolvedValue(null);
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      get: vi.fn().mockReturnValue(null)
+    });
+
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g01&ptr=3');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    // Wait for the scenario to load and align
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g01');
+      expect(diag.pointer).toBe(5);
+    });
+
+    // Verify dialogue box is initially visible
+    expect(screen.queryByText('历史')).not.toBeNull();
+
+    // 1. Test dialogue toggle with KeyC
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyC' });
+    });
+    expect(screen.queryByText('历史')).toBeNull();
+
+    // Press KeyC again to restore visibility
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyC' });
+    });
+    expect(screen.queryByText('历史')).not.toBeNull();
+
+    // 2. Test Save screen toggle with KeyS
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyS' });
+    });
+    expect(screen.queryByText('保存游戏 / SAVE')).not.toBeNull();
+
+    // Press KeyS again to close it
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyS' });
+    });
+    expect(screen.queryByText('保存游戏 / SAVE')).toBeNull();
+
+    // 3. Test Load screen toggle with KeyL
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyL' });
+    });
+    expect(screen.queryByText('读取游戏 / LOAD')).not.toBeNull();
+
+    // Press KeyL again to close it
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyL' });
+    });
+    expect(screen.queryByText('读取游戏 / LOAD')).toBeNull();
+
+    // 4. Test Fullscreen toggle with KeyF
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyF' });
+    });
+    expect(document.documentElement.requestFullscreen).toHaveBeenCalled();
+
+    // Mock active fullscreen element to test exiting
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      get: vi.fn().mockReturnValue(document.documentElement)
+    });
+
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyF' });
+    });
+    expect(document.exitFullscreen).toHaveBeenCalled();
+  });
+
+  it('correctly toggles auto mode, history (unfocused search), settings, and returns to title on hotkeys', async () => {
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g01&ptr=3');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    // Wait for the scenario to load and align
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g01');
+      expect(diag.pointer).toBe(5);
+    });
+
+    // 1. Test auto mode toggle with KeyA
+    expect(window.quick_check().isAutoMode).toBe(false);
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyA' });
+    });
+    expect(window.quick_check().isAutoMode).toBe(true);
+
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyA' });
+    });
+    expect(window.quick_check().isAutoMode).toBe(false);
+
+    // 2. Test history toggle with KeyH (without search focus)
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyH' });
+    });
+    expect(screen.queryByText('历史记录')).not.toBeNull();
+
+    // Verify search input is NOT focused
+    const searchInput = screen.getByPlaceholderText(/输入关键字搜索/);
+    expect(document.activeElement).not.toBe(searchInput);
+
+    // Press KeyH again to close it
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyH' });
+    });
+    expect(screen.queryByText('历史记录')).toBeNull();
+
+    // 3. Test settings toggle with Semicolon
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'Semicolon' });
+    });
+    expect(screen.queryByText('语言 / Language')).not.toBeNull();
+
+    // Press Semicolon again to close it
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'Semicolon' });
+    });
+    expect(screen.queryByText('语言 / Language')).toBeNull();
+
+    // 4. Test Quit to title with KeyM
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyM' });
+    });
+    expect(window.quick_check().gameState).toBe('TITLE');
+    expect(screen.queryByText('开始游戏')).not.toBeNull();
   });
 });
