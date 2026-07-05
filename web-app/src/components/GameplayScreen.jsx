@@ -66,7 +66,8 @@ export default function GameplayScreen({
   isFastForward,
   onToggleAuto,
   onToggleSkip,
-  sf
+  sf,
+  updateSf
 }) {
   return (
     <div className="playing-layer" onClick={handleScreenClick} onWheel={!sf?.disableWheelHistory ? handleWheel : undefined}>
@@ -124,6 +125,7 @@ export default function GameplayScreen({
           onToggleAuto={onToggleAuto}
           onToggleSkip={onToggleSkip}
           sf={sf}
+          updateSf={updateSf}
         />
       )}
 

@@ -282,6 +282,7 @@ export default function App() {
               runner.setIsAutoMode(false);
             }}
             sf={runner.sf}
+            updateSf={runner.updateSf}
           />
         )}
 

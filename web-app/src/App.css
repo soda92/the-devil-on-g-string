@@ -894,6 +894,7 @@
   justify-content: center !important;
   align-items: center !important;
   padding: 10px 20px !important;
+  pointer-events: none !important;
 }
 
 .dialogue-box-layer.immerse-mode .dialogue-text {
@@ -911,6 +912,7 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6) !important;
   line-height: 1.5 !important;
   position: relative !important;
+  pointer-events: auto !important;
 }
 
 .cc-speaker {

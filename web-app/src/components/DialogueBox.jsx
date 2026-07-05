@@ -21,7 +21,8 @@ export default function DialogueBox({
   isFastForward, 
   onToggleAuto, 
   onToggleSkip, 
-  sf 
+  sf,
+  updateSf
 }) {
   const textRef = useRef(null);
   const [hovered, setHovered] = useState(false);
@@ -64,12 +65,26 @@ export default function DialogueBox({
     ? `<span class="cc-speaker">[${speaker}]</span>${typewriterText}`
     : typewriterText;
 
+  const handleExitImmerse = () => {
+    if (sf) {
+      const nextSf = { ...sf, immerseMode: false };
+      localStorage.setItem('school_sf', JSON.stringify(nextSf));
+      if (updateSf) {
+        updateSf(nextSf);
+      } else {
+        window.location.reload();
+      }
+    }
+  };
+
   return (
     <div 
       className={`dialogue-box-layer glass-panel ${dialogueMode === 'novel' ? 'novel-mode' : 'avg-mode'} ${sf?.immerseMode ? 'immerse-mode' : ''}`} 
-      onClick={(e) => e.stopPropagation()}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onClick={(e) => {
+        if (!sf?.immerseMode) {
+          e.stopPropagation();
+        }
+      }}
       style={bgStyle}
     >
       {speaker && dialogueMode !== 'novel' && !sf?.immerseMode && (
@@ -92,6 +107,8 @@ export default function DialogueBox({
         ref={textRef}
         className="dialogue-text" 
         onClick={onScreenClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -100,8 +117,9 @@ export default function DialogueBox({
           position: 'relative'
         }}
       >
-        <div style={{ display: 'inline' }}>
+        <div style={{ display: 'inline', cursor: sf?.immerseMode ? 'default' : 'pointer' }}>
           <span dangerouslySetInnerHTML={{ __html: ccText }} />
+          
           {isWaiting && typewriterText === dialogueText && (
             <svg 
               viewBox="0 0 24 24" 
@@ -118,27 +136,58 @@ export default function DialogueBox({
               <path d="M12 5l-3-3M12 5l3-3M12 19l-3 3M12 19l3 3M5 12l-3-3M5 12l-3 3M19 12l3-3M19 12l3 3M7.05 7.05l-3.54 0M7.05 7.05l0-3.54M16.95 16.95l3.54 0M16.95 16.95l0 3.54M7.05 16.95l-3.54 0M7.05 16.95l0 3.54M16.95 7.05l3.54 0M16.95 7.05l0-3.54" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           )}
+
+          {sf?.immerseMode && hovered && (
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleExitImmerse();
+              }}
+              style={{
+                display: 'inline-block',
+                marginLeft: '15px',
+                background: 'rgba(255, 68, 68, 0.25)',
+                color: '#ff8a8a',
+                border: '1px solid #ff4444',
+                borderRadius: '4px',
+                padding: '2px 8px',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                verticalAlign: 'middle',
+                lineHeight: '1.2',
+                transition: 'background 0.2s, color 0.2s',
+                textShadow: 'none',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.background = 'rgba(255, 68, 68, 0.45)';
+                e.target.style.color = '#ffffff';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.background = 'rgba(255, 68, 68, 0.25)';
+                e.target.style.color = '#ff8a8a';
+              }}
+            >
+              {language === 'JP' ? '退出沉浸' : 'Exit Subtitles'}
+            </button>
+          )}
         </div>
       </div>
       
-      {/* Floating System Actions Bar */}
-      <div 
-        className="system-actions-bar"
-        style={{
-          opacity: (sf?.immerseMode && !hovered) ? 0 : 1,
-          transition: 'opacity 0.2s ease',
-          pointerEvents: (sf?.immerseMode && !hovered) ? 'none' : 'auto'
-        }}
-      >
-        <button className="sys-action-btn" onClick={onShowHistory}>历史</button>
-        {onShowFlowchart && <button className="sys-action-btn" onClick={onShowFlowchart}>路线</button>}
-        <button className={`sys-action-btn ${isAutoMode ? 'active-auto' : ''}`} onClick={onToggleAuto}>自动</button>
-        <button className={`sys-action-btn ${isFastForward ? 'active-skip' : ''}`} onClick={onToggleSkip}>快进</button>
-        <button className="sys-action-btn" onClick={onSave}>保存</button>
-        <button className="sys-action-btn" onClick={onLoad}>读取</button>
-        <button className="sys-action-btn" onClick={onConfig}>设置</button>
-        <button className="sys-action-btn" onClick={onQuit}>菜单</button>
-      </div>
+      {/* Floating System Actions Bar (Only in Normal Mode) */}
+      {!sf?.immerseMode && (
+        <div className="system-actions-bar">
+          <button className="sys-action-btn" onClick={onShowHistory}>历史</button>
+          {onShowFlowchart && <button className="sys-action-btn" onClick={onShowFlowchart}>路线</button>}
+          <button className={`sys-action-btn ${isAutoMode ? 'active-auto' : ''}`} onClick={onToggleAuto}>自动</button>
+          <button className={`sys-action-btn ${isFastForward ? 'active-skip' : ''}`} onClick={onToggleSkip}>快进</button>
+          <button className="sys-action-btn" onClick={onSave}>保存</button>
+          <button className="sys-action-btn" onClick={onLoad}>读取</button>
+          <button className="sys-action-btn" onClick={onConfig}>设置</button>
+          <button className="sys-action-btn" onClick={onQuit}>菜单</button>
+        </div>
+      )}
     </div>
   );
 }
