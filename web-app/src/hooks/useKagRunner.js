@@ -44,7 +44,8 @@ export function useKagRunner({
   currentVoiceRef,
   bgmPlayer,
   sePlayer,
-  voicePlayer
+  voicePlayer,
+  toggleBgm
 }) {
   const storagePrefix = config?.storagePrefix || 'school';
 
@@ -1647,6 +1648,15 @@ export function useKagRunner({
         return;
       }
 
+      // Toggle mute/unmute
+      if (DEFAULT_SHORTCUTS.TOGGLE_MUTE.includes(code)) {
+        e.preventDefault();
+        if (toggleBgm) {
+          toggleBgm();
+        }
+        return;
+      }
+
       // 5. Toggle text visibility
       if (DEFAULT_SHORTCUTS.TOGGLE_TEXT.includes(code)) {
         e.preventDefault();
@@ -1666,7 +1676,7 @@ export function useKagRunner({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState, showSaveLoad, showSettings, showChoiceGraph, showHistory, isAudioUnlocked]);
+  }, [gameState, showSaveLoad, showSettings, showChoiceGraph, showHistory, isAudioUnlocked, toggleBgm]);
 
   const replayCurrentVoice = () => {
     if (currentVoice) {

@@ -108,6 +108,61 @@ export function useGameAudio(vol = 8, sevol = 8) {
     }
   };
 
+  // Auto-pause all active players when tab/app is inactive (lost focus/blur/hidden), and resume state when active
+  useEffect(() => {
+    let wasBgmAutoPaused = false;
+    let wasSeAutoPaused = false;
+    let wasVoiceAutoPaused = false;
+
+    const pauseAll = () => {
+      if (bgmPlayer && !bgmPlayer.paused) {
+        bgmPlayer.pause();
+        wasBgmAutoPaused = true;
+      }
+      if (sePlayer && !sePlayer.paused) {
+        sePlayer.pause();
+        wasSeAutoPaused = true;
+      }
+      if (voicePlayer && !voicePlayer.paused) {
+        voicePlayer.pause();
+        wasVoiceAutoPaused = true;
+      }
+    };
+
+    const resumeAll = () => {
+      if (wasBgmAutoPaused && bgmPlayer) {
+        bgmPlayer.play().catch(err => console.log("BGM auto-resume interrupted", err));
+        wasBgmAutoPaused = false;
+      }
+      if (wasSeAutoPaused && sePlayer) {
+        sePlayer.play().catch(err => console.log("SE auto-resume interrupted", err));
+        wasSeAutoPaused = false;
+      }
+      if (wasVoiceAutoPaused && voicePlayer) {
+        voicePlayer.play().catch(err => console.log("Voice auto-resume interrupted", err));
+        wasVoiceAutoPaused = false;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        pauseAll();
+      } else {
+        resumeAll();
+      }
+    };
+
+    window.addEventListener('blur', pauseAll);
+    window.addEventListener('focus', resumeAll);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('blur', pauseAll);
+      window.removeEventListener('focus', resumeAll);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   return {
     playBgm,
     stopBgm,

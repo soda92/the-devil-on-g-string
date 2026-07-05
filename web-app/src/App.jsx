@@ -80,7 +80,8 @@ export default function App() {
     currentVoiceRef: audio.currentVoiceRef,
     bgmPlayer: audio.bgmPlayer,
     sePlayer: audio.sePlayer,
-    voicePlayer: audio.voicePlayer
+    voicePlayer: audio.voicePlayer,
+    toggleBgm: audio.toggleBgm
   });
 
   // Re-sync volume changes when sf settings are updated live in settings panel
