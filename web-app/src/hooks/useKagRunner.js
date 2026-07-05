@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { resolveAsset, resolveCharacterName, tokenizeText } from '../utils/gameUtils';
+import { DEFAULT_SHORTCUTS, toggleFullscreen } from '../utils/shortcutManager';
 
 // --- Save State Cleaners for Flowchart Nested Snapshots ---
 const cleanFForSnapshot = (originalF) => {
@@ -1527,31 +1528,91 @@ export function useKagRunner({
     setGameState('PLAYING');
   };
 
-  // Keyboard shortcut listener for Space / Enter (screen advance or visibility toggle)
+  // Centralized keyboard shortcut manager
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (gameState !== 'PLAYING' || showSaveLoad || showSettings || showChoiceGraph || showHistory) {
+      // Ignore key shortcuts when typing in inputs/textareas
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
         return;
       }
-      if (e.code === 'Space') {
+
+      if (gameState !== 'PLAYING') {
+        return;
+      }
+
+      const code = e.code;
+
+      // 1. Fullscreen toggle (always active during gameplay)
+      if (DEFAULT_SHORTCUTS.TOGGLE_FULLSCREEN.includes(code)) {
+        e.preventDefault();
+        toggleFullscreen();
+        return;
+      }
+
+      // If configuration panels are open, ignore game keys
+      if (showSettings || showChoiceGraph) {
+        return;
+      }
+
+      // 2. Save screen toggle
+      if (DEFAULT_SHORTCUTS.TOGGLE_SAVE.includes(code)) {
+        e.preventDefault();
+        if (showSaveLoad === 'SAVE') {
+          setShowSaveLoad(null);
+        } else if (!showSaveLoad && !showHistory) {
+          if (!isAudioUnlocked) setIsAudioUnlocked(true);
+          setShowSaveLoad('SAVE');
+        }
+        return;
+      }
+
+      // 3. Load screen toggle
+      if (DEFAULT_SHORTCUTS.TOGGLE_LOAD.includes(code)) {
+        e.preventDefault();
+        if (showSaveLoad === 'LOAD') {
+          setShowSaveLoad(null);
+        } else if (!showSaveLoad && !showHistory) {
+          if (!isAudioUnlocked) setIsAudioUnlocked(true);
+          setShowSaveLoad('LOAD');
+        }
+        return;
+      }
+
+      // 4. Open search history backlog
+      if (DEFAULT_SHORTCUTS.OPEN_HISTORY.includes(code)) {
+        e.preventDefault();
+        if (!showSaveLoad && !showHistory) {
+          if (!isAudioUnlocked) setIsAudioUnlocked(true);
+          setShowHistory(true);
+        }
+        return;
+      }
+
+      // If dialogue history or save/load overlays are active, ignore gameplay keys
+      if (showSaveLoad || showHistory) {
+        return;
+      }
+
+      // 5. Toggle text visibility
+      if (DEFAULT_SHORTCUTS.TOGGLE_TEXT.includes(code)) {
         e.preventDefault();
         setTextVisible(prev => !prev);
-      } else if (e.key === 'Enter') {
+        return;
+      }
+
+      // 6. Advance dialogue text
+      if (DEFAULT_SHORTCUTS.ADVANCE_TEXT.includes(code)) {
         e.preventDefault();
         if (handleScreenClickRef.current) {
           handleScreenClickRef.current();
         }
-      } else if (e.key === '/') {
-        e.preventDefault();
-        if (!isAudioUnlocked) {
-          setIsAudioUnlocked(true);
-        }
-        setShowHistory(true);
+        return;
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState, showSaveLoad, showSettings, showChoiceGraph, showHistory]);
+  }, [gameState, showSaveLoad, showSettings, showChoiceGraph, showHistory, isAudioUnlocked]);
 
   const replayCurrentVoice = () => {
     if (currentVoice) {

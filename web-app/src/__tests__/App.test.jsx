@@ -569,7 +569,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     // Trigger / key press to open history dialog
     await act(async () => {
-      fireEvent.keyDown(window, { key: '/' });
+      fireEvent.keyDown(window, { code: 'Slash', key: '/' });
     });
 
     // Verify history modal opens
@@ -605,5 +605,84 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     // Verify modal is closed
     expect(screen.queryByText('历史记录')).toBeNull();
+  });
+
+  it('correctly toggles fullscreen, dialogue box, save screen, and load screen on hotkey presses', async () => {
+    // Mock Fullscreen API
+    document.documentElement.requestFullscreen = vi.fn().mockResolvedValue(null);
+    document.exitFullscreen = vi.fn().mockResolvedValue(null);
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      get: vi.fn().mockReturnValue(null)
+    });
+
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g01&ptr=3');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    // Wait for the scenario to load and align
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g01');
+      expect(diag.pointer).toBe(5);
+    });
+
+    // Verify dialogue box is initially visible
+    expect(screen.queryByText('历史')).not.toBeNull();
+
+    // 1. Test dialogue toggle with KeyC
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyC' });
+    });
+    expect(screen.queryByText('历史')).toBeNull();
+
+    // Press KeyC again to restore visibility
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyC' });
+    });
+    expect(screen.queryByText('历史')).not.toBeNull();
+
+    // 2. Test Save screen toggle with KeyS
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyS' });
+    });
+    expect(screen.queryByText('保存游戏 / SAVE')).not.toBeNull();
+
+    // Press KeyS again to close it
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyS' });
+    });
+    expect(screen.queryByText('保存游戏 / SAVE')).toBeNull();
+
+    // 3. Test Load screen toggle with KeyL
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyL' });
+    });
+    expect(screen.queryByText('读取游戏 / LOAD')).not.toBeNull();
+
+    // Press KeyL again to close it
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyL' });
+    });
+    expect(screen.queryByText('读取游戏 / LOAD')).toBeNull();
+
+    // 4. Test Fullscreen toggle with KeyF
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyF' });
+    });
+    expect(document.documentElement.requestFullscreen).toHaveBeenCalled();
+
+    // Mock active fullscreen element to test exiting
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      get: vi.fn().mockReturnValue(document.documentElement)
+    });
+
+    await act(async () => {
+      fireEvent.keyDown(window, { code: 'KeyF' });
+    });
+    expect(document.exitFullscreen).toHaveBeenCalled();
   });
 });
