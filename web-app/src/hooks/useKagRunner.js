@@ -481,10 +481,10 @@ export function useKagRunner({
           console.warn(`Label ${targetLabel} not found in ${name}`);
         }
       }
-      setPointer(startIdx);
+      setPointer(overridePointer !== null ? overridePointer : startIdx);
       setIsWaiting(shouldWait);
       setShowOptions(false);
-      console.log(`Loaded scenario ${name} at pointer ${startIdx}`);
+      console.log(`Loaded scenario ${name} at pointer ${overridePointer !== null ? overridePointer : startIdx}`);
     } catch (e) {
       console.error(e);
     }
@@ -1106,6 +1106,7 @@ export function useKagRunner({
         f,
         sf,
         gameState,
+        isAudioUnlocked,
         audio: {
           bgm: { src: bgmPlayer.src, paused: bgmPlayer.paused, volume: bgmPlayer.volume },
           se: { src: sePlayer.src, paused: sePlayer.paused, volume: sePlayer.volume },
@@ -1116,7 +1117,7 @@ export function useKagRunner({
     return () => {
       delete window.quick_check;
     };
-  }, [currentScenario, pointer, background, sprites, speaker, dialogueMode, dialogueText, typewriterText, isWaiting, isAutoMode, isFastForward, f, sf, gameState]);
+  }, [currentScenario, pointer, background, sprites, speaker, dialogueMode, dialogueText, typewriterText, isWaiting, isAutoMode, isFastForward, f, sf, gameState, isAudioUnlocked]);
 
   // Log state progression in browser console
   useEffect(() => {

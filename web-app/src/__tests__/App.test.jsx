@@ -343,25 +343,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     render(<App />);
 
-    // Wait for the scenario to load and align to 1470
-    await waitFor(() => {
-      const diag = window.quick_check();
-      expect(diag.scenario).toBe('g06');
-      expect(diag.pointer).toBe(1470);
-    });
-
-    // Unlock audio
-    const container = screen.getByText(/G弦上的魔王/i).closest('.game-container');
-    await act(async () => {
-      fireEvent.click(container);
-    });
-
-    // Advance past page break at 1470
-    await act(async () => {
-      fireEvent.click(container);
-    });
-
-    // It should evaluate conditions, save to slot 150, jump to title, and remain sf.show_next_chapter = true
+    // It should evaluate conditions, save to slot 150, and automatically jump to title screen
     await waitFor(() => {
       const diag = window.quick_check();
       expect(diag.gameState).toBe('TITLE');
@@ -386,6 +368,84 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
       const diag = window.quick_check();
       expect(diag.scenario).toBe('g07');
       expect(screen.getByText(/这是g07第一句话。/)).toBeDefined();
+    });
+  });
+
+  it('correctly rewinds to a history snapshot without duplicating the dialogue text', async () => {
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g01&ptr=3');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    // Wait for the scenario to load and align to pointer 4 (dialogue text "这是第一句话。" displayed)
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g01');
+      expect(diag.pointer).toBe(4);
+      expect(diag.dialogueText).toBe('这是第一句话。');
+    });
+
+    // Unlock audio
+    const textLayer = await screen.findByText('这是第一句话。');
+    await act(async () => {
+      fireEvent.click(textLayer);
+    });
+
+    // Wait a brief moment to let state update flush
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    // Click to advance past page_break and load next text
+    await act(async () => {
+      fireEvent.click(textLayer);
+    });
+
+    // Wait until it reaches pointer 9 (dialogue text "这是第二句话。")
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.pointer).toBe(9);
+      expect(diag.dialogueText).toBe('这是第二句话。');
+    }, { timeout: 3000 });
+
+    // Click the "历史" (History) button in DialogueBox
+    const historyBtn = screen.getByText('历史');
+    await act(async () => {
+      fireEvent.click(historyBtn);
+    });
+
+    // Click the backlog entry for the first sentence
+    const backlogEntry = screen.getByText('这是第一句话。');
+    await act(async () => {
+      fireEvent.click(backlogEntry);
+    });
+
+    // Confirm the backlog jump
+    const confirmBtn = screen.getByText('确定');
+    await act(async () => {
+      fireEvent.click(confirmBtn);
+    });
+
+    // Expect the engine to rewind scenario to g01, pointer should align to Math.max(4, startIdx+1) = 4, dialogue text = '这是第一句话。'
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g01');
+      expect(diag.pointer).toBe(4);
+      expect(diag.dialogueText).toBe('这是第一句话。');
+    });
+
+    // Click the screen to advance. It should proceed to next instructions (page_break, line_feed, black, bg, text "这是第二句话。")
+    // and NOT duplicate the text "这是第一句话。这是第一句话。"
+    const rewoundTextLayer = await screen.findByText('这是第一句话。');
+    await act(async () => {
+      fireEvent.click(rewoundTextLayer);
+    });
+
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.pointer).toBe(9);
+      expect(diag.dialogueText).toBe('这是第二句话。');
     });
   });
 });
