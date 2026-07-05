@@ -100,16 +100,26 @@ export default function DialogueBox({
           position: 'relative'
         }}
       >
-        <span dangerouslySetInnerHTML={{ __html: ccText }} />
-        {isWaiting && typewriterText === dialogueText && sf?.immerseMode && (
-          <span className="cc-bouncing-cursor"> ▼</span>
-        )}
+        <div style={{ display: 'inline' }}>
+          <span dangerouslySetInnerHTML={{ __html: ccText }} />
+          {isWaiting && typewriterText === dialogueText && (
+            <svg 
+              viewBox="0 0 24 24" 
+              className="cc-snowflake-cursor"
+              style={{
+                display: 'inline-block',
+                verticalAlign: 'middle',
+                marginLeft: '6px',
+                width: '14px',
+                height: '14px'
+              }}
+            >
+              <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M4.93 19.07L19.07 4.93" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <path d="M12 5l-3-3M12 5l3-3M12 19l-3 3M12 19l3 3M5 12l-3-3M5 12l-3 3M19 12l3-3M19 12l3 3M7.05 7.05l-3.54 0M7.05 7.05l0-3.54M16.95 16.95l3.54 0M16.95 16.95l0 3.54M7.05 16.95l-3.54 0M7.05 16.95l0 3.54M16.95 7.05l3.54 0M16.95 7.05l0-3.54" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+          )}
+        </div>
       </div>
-      
-      {/* Text cursor arrow indicator (Normal Mode) */}
-      {isWaiting && typewriterText === dialogueText && !sf?.immerseMode && (
-        <div className="dialogue-cursor" onClick={onScreenClick}>▼</div>
-      )}
       
       {/* Floating System Actions Bar */}
       <div 
