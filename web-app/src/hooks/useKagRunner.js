@@ -1541,6 +1541,12 @@ export function useKagRunner({
         if (handleScreenClickRef.current) {
           handleScreenClickRef.current();
         }
+      } else if (e.key === '/') {
+        e.preventDefault();
+        if (!isAudioUnlocked) {
+          setIsAudioUnlocked(true);
+        }
+        setShowHistory(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);

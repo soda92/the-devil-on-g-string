@@ -536,4 +536,74 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
       expect(diag.audio.voice.src).toBe('');
     });
   });
+
+  it('opens history modal with / key press, focuses search input, filters log, highlights matches, and closes on Escape', async () => {
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g01&ptr=3');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    // Wait for the scenario to load and align to pointer 5 (dialogue text "这是第一句话。" displayed)
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g01');
+      expect(diag.pointer).toBe(5);
+    });
+
+    // Advance to next text line ("这是第二句话。") to populate backlog history log
+    let textLayer = await screen.findByText('这是第一句话。');
+    await act(async () => {
+      fireEvent.click(textLayer);
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    textLayer = await screen.findByText('这是第一句话。');
+    await act(async () => {
+      fireEvent.click(textLayer);
+    });
+    await waitFor(() => {
+      expect(window.quick_check().pointer).toBe(10);
+    });
+
+    // Trigger / key press to open history dialog
+    await act(async () => {
+      fireEvent.keyDown(window, { key: '/' });
+    });
+
+    // Verify history modal opens
+    expect(screen.getByText('历史记录')).toBeDefined();
+
+    // Verify search input is focused
+    const searchInput = screen.getByPlaceholderText(/输入关键字搜索/);
+    expect(searchInput).toBeDefined();
+    expect(document.activeElement).toBe(searchInput);
+
+    // Verify both dialogue lines are initially present
+    expect(screen.queryByText('这是第一句话。')).not.toBeNull();
+    expect(screen.queryByText('这是第二句话。')).not.toBeNull();
+
+    // Type query "第二" to filter log
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: '第二' } });
+    });
+
+    // Verify "这是第一句话。" is filtered out
+    expect(screen.queryByText('这是第一句话。')).toBeNull();
+    
+    // Verify highlighting works
+    const backlogContainer = screen.getByText('历史记录').parentElement;
+    expect(backlogContainer.innerHTML).toContain('search-highlight');
+    expect(backlogContainer.innerHTML).toContain('第二');
+    expect(backlogContainer.innerHTML).not.toContain('第一');
+
+    // Press Escape on search input and verify modal closes
+    await act(async () => {
+      fireEvent.keyDown(searchInput, { key: 'Escape' });
+    });
+
+    // Verify modal is closed
+    expect(screen.queryByText('历史记录')).toBeNull();
+  });
 });
