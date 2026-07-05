@@ -418,6 +418,7 @@ export default function App() {
           dialogueMode={runner.dialogueMode}
           speaker={runner.speaker}
           bgmPlayer={audio.bgmPlayer}
+          playVoice={audio.playVoice}
           onClose={() => setDebugOpen(false)}
         />
       )}
