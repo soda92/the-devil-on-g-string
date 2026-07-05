@@ -7,11 +7,18 @@ function Sprite({ spriteName, resolveAsset, positionClass }) {
   const cleanName = spriteName.split('.')[0];
   const positionInfo = spritePositions[cleanName] || spritePositions['st_' + cleanName];
   
+  let height = '580px';
+  if (positionInfo && positionInfo.base_h) {
+    const isStandard = cleanName.endsWith('_s');
+    const refH = isStandard ? 1120 : 1728;
+    height = `${580 * (positionInfo.base_h / refH)}px`;
+  }
+
   if (positionInfo) {
     const baseSrc = resolveAsset(positionInfo.base, 'fgimage');
     const overlaySrc = resolveAsset(spriteName, 'fgimage');
     return (
-      <div className={`sprite-img ${positionClass}`} style={{ overflow: 'visible', width: 'fit-content' }}>
+      <div className={`sprite-img ${positionClass}`} style={{ height, overflow: 'visible', width: 'fit-content' }}>
         <img src={baseSrc} alt="base body" style={{ height: '100%', width: 'auto', display: 'block' }} />
         <img 
           src={overlaySrc} 
@@ -28,7 +35,7 @@ function Sprite({ spriteName, resolveAsset, positionClass }) {
     );
   }
   
-  return <img className={`sprite-img ${positionClass}`} src={resolveAsset(spriteName, 'fgimage')} alt={`${positionClass} sprite`} />;
+  return <img className={`sprite-img ${positionClass}`} src={resolveAsset(spriteName, 'fgimage')} alt={`${positionClass} sprite`} style={{ height }} />;
 }
 
 export default function GameplayScreen({

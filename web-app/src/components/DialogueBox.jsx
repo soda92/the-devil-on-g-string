@@ -36,34 +36,18 @@ export default function DialogueBox({ dialogueMode, speaker, typewriterText, dia
       style={bgStyle}
     >
       {speaker && dialogueMode !== 'novel' && (
-        <div className="dialogue-speaker" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div 
+          className="dialogue-speaker" 
+          onClick={currentVoice ? (e) => {
+            e.stopPropagation();
+            replayCurrentVoice && replayCurrentVoice();
+          } : undefined}
+          style={{ 
+            cursor: currentVoice ? 'pointer' : 'default'
+          }}
+          title={currentVoice ? "播放语音 / Replay Voice" : undefined}
+        >
           <span>{speaker}</span>
-          {currentVoice && (
-            <button 
-              className="voice-replay-btn" 
-              onClick={(e) => {
-                e.stopPropagation();
-                replayCurrentVoice && replayCurrentVoice();
-              }}
-              title="播放语音 / Replay Voice"
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'inherit',
-                cursor: 'pointer',
-                fontSize: '12px',
-                padding: '0 2px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                lineHeight: '1',
-                transition: 'opacity 0.2s',
-                opacity: 0.8
-              }}
-            >
-              🔊
-            </button>
-          )}
         </div>
       )}
       
