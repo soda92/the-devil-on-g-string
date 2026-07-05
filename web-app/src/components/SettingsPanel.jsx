@@ -13,6 +13,10 @@ export default function SettingsPanel({
 }) {
   const vol = sf.vol !== undefined && !isNaN(sf.vol) ? sf.vol : 8;
   const sevol = sf.sevol !== undefined && !isNaN(sf.sevol) ? sf.sevol : 8;
+  const avgOpacity = sf.avgOpacity !== undefined && !isNaN(sf.avgOpacity) ? sf.avgOpacity : 6;
+  const avgBlur = sf.avgBlur !== undefined && !isNaN(sf.avgBlur) ? sf.avgBlur : 16;
+  const novelOpacity = sf.novelOpacity !== undefined && !isNaN(sf.novelOpacity) ? sf.novelOpacity : 8;
+  const novelBlur = sf.novelBlur !== undefined && !isNaN(sf.novelBlur) ? sf.novelBlur : 8;
 
   return (
     <div className="settings-layer glass-panel">
@@ -72,6 +76,70 @@ export default function SettingsPanel({
             className="volume-slider"
           />
           <span className="vol-indicator">{sevol * 10}%</span>
+        </div>
+
+        <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? 'AVG 对话框不透明度' : 'AVG Opacity'}</label>
+          <input 
+            type="range" 
+            min="0" 
+            max="10" 
+            value={avgOpacity} 
+            onChange={(e) => {
+              const newOpacity = parseInt(e.target.value) || 0;
+              setSf(prev => ({ ...prev, avgOpacity: newOpacity }));
+            }}
+            className="volume-slider"
+          />
+          <span className="vol-indicator">{avgOpacity * 10}%</span>
+        </div>
+
+        <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? 'AVG 对话框模糊度' : 'AVG Blur'}</label>
+          <input 
+            type="range" 
+            min="0" 
+            max="20" 
+            value={avgBlur} 
+            onChange={(e) => {
+              const newBlur = parseInt(e.target.value) || 0;
+              setSf(prev => ({ ...prev, avgBlur: newBlur }));
+            }}
+            className="volume-slider"
+          />
+          <span className="vol-indicator">{avgBlur}px</span>
+        </div>
+
+        <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? 'Novel 对话框不透明度' : 'Novel Opacity'}</label>
+          <input 
+            type="range" 
+            min="0" 
+            max="10" 
+            value={novelOpacity} 
+            onChange={(e) => {
+              const newOpacity = parseInt(e.target.value) || 0;
+              setSf(prev => ({ ...prev, novelOpacity: newOpacity }));
+            }}
+            className="volume-slider"
+          />
+          <span className="vol-indicator">{novelOpacity * 10}%</span>
+        </div>
+
+        <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? 'Novel 对话框模糊度' : 'Novel Blur'}</label>
+          <input 
+            type="range" 
+            min="0" 
+            max="20" 
+            value={novelBlur} 
+            onChange={(e) => {
+              const newBlur = parseInt(e.target.value) || 0;
+              setSf(prev => ({ ...prev, novelBlur: newBlur }));
+            }}
+            className="volume-slider"
+          />
+          <span className="vol-indicator">{novelBlur}px</span>
         </div>
       </div>
       

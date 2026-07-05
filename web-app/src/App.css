@@ -222,6 +222,7 @@
   line-height: 1.8;
   max-height: 460px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .dialogue-speaker {
@@ -245,6 +246,7 @@
   line-height: 1.6;
   color: var(--color-text-bright);
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
   text-align: left;
   padding-right: 10px;
@@ -830,4 +832,44 @@
 .settings-footer-btn.quit-danger-btn:hover {
   background: rgba(224, 108, 117, 0.8) !important;
   border-color: rgba(224, 108, 117, 1) !important;
+}
+
+/* === Title Audio Toggle Button === */
+.title-audio-toggle:hover {
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary-hover) !important;
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(170, 59, 255, 0.4) !important;
+}
+
+/* === Visual Effects Animations === */
+
+.shake-effect {
+  animation: shake 0.12s infinite alternate;
+}
+
+@keyframes shake {
+  0% { transform: translate(2px, 1px) rotate(0deg); }
+  10% { transform: translate(-1px, -2px) rotate(-0.5deg); }
+  20% { transform: translate(-2px, 0px) rotate(0.5deg); }
+  30% { transform: translate(0px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(0.5deg); }
+  50% { transform: translate(-1px, 2px) rotate(-0.5deg); }
+  60% { transform: translate(-2px, 1px) rotate(0deg); }
+  70% { transform: translate(2px, 1px) rotate(-0.5deg); }
+  80% { transform: translate(-1px, -1px) rotate(0.5deg); }
+  90% { transform: translate(2px, 2px) rotate(0deg); }
+  100% { transform: translate(1px, -2px) rotate(-0.5deg); }
+}
+
+.screen-flash-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 15; /* sits above sprites and dialog boxes but below system modal panels */
+  pointer-events: none;
+  opacity: 0.9;
+  mix-blend-mode: normal;
 }

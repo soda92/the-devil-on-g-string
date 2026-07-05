@@ -152,4 +152,340 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     expect(engineState.dialogueText).toBe('这是第二句话。');
     expect(engineState.dialogueText).not.toContain('<br />这是第二句话。');
   });
+
+  it('closes active overlays on ESC key press', async () => {
+    const App = await getApp();
+    render(<App />);
+    
+    // Open Settings panel by clicking "游戏设置" button
+    const settingsBtn = screen.getByText(/游戏设置/i);
+    await act(async () => {
+      fireEvent.click(settingsBtn);
+    });
+    
+    // Check settings panel is rendered
+    expect(screen.getByText(/背景音乐音量/i)).toBeDefined();
+    
+    // Press ESC key
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+    });
+    
+    // Check settings panel is closed
+    await waitFor(() => {
+      expect(screen.queryByText(/语音设置/i)).toBeNull();
+    });
+  });
+
+  it('correctly respects title screen mute preference and isolates it from gameplay BGM', async () => {
+    // Enable muted status in mocked localStorage
+    mockLocalStorage.setItem('school_bgm_muted', 'true');
+
+    const App = await getApp();
+    render(<App />);
+
+    // Verify Title Screen rendered
+    expect(screen.getByText(/G弦上的魔王/i)).toBeDefined();
+
+    // Check that title screen BGM is selected but not playing (remains muted)
+    const audioState = window.quick_check().audio;
+    expect(audioState.bgm.src).toContain('bgm_01');
+
+    // Simulate going into gameplay via deep link to play bgm_test_01
+    const url = new URL('http://localhost:38942/?scen=g01&ptr=3');
+    window.history.replaceState({}, '', url.pathname + url.search);
+    
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/这是第一句话。/)).toBeDefined();
+    });
+
+    // The BGM player should now play the gameplay BGM (bgm_test_01) and ignore the title mute status
+    const gameplayBgmState = window.quick_check().audio;
+    expect(gameplayBgmState.bgm.src).toContain('bgm_test_01');
+    expect(mockPlay).toHaveBeenCalled();
+  });
+
+  it('triggers autosave on every dialogue progression step', async () => {
+    mockLocalStorage.setItem.mockClear();
+
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g01&ptr=3');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/这是第一句话。/)).toBeDefined();
+    });
+
+    // Check that current position is written to school_autosave
+    expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
+      'school_autosave',
+      expect.stringContaining('"pointer":4')
+    );
+  });
+
+  it('correctly adjusts separate AVG and Novel opacity and blur states on settings slider changes', async () => {
+    const App = await getApp();
+    render(<App />);
+    
+    // Open Settings panel
+    const settingsBtn = screen.getByText(/游戏设置/i);
+    await act(async () => {
+      fireEvent.click(settingsBtn);
+    });
+    
+    // Find all sliders (BGM, Voice/SE, AVG Opacity, AVG Blur, Novel Opacity, Novel Blur)
+    const sliders = screen.getAllByRole('slider');
+    expect(sliders.length).toBe(6);
+    
+    const avgOpacitySlider = sliders[2];
+    const avgBlurSlider = sliders[3];
+    const novelOpacitySlider = sliders[4];
+    const novelBlurSlider = sliders[5];
+    
+    // Change slider values
+    await act(async () => {
+      fireEvent.change(avgOpacitySlider, { target: { value: '5' } });
+      fireEvent.change(avgBlurSlider, { target: { value: '12' } });
+      fireEvent.change(novelOpacitySlider, { target: { value: '3' } });
+      fireEvent.change(novelBlurSlider, { target: { value: '6' } });
+    });
+    
+    // Check that state updated in window.quick_check()
+    const engineState = window.quick_check();
+    expect(engineState.sf.avgOpacity).toBe(5);
+    expect(engineState.sf.avgBlur).toBe(12);
+    expect(engineState.sf.novelOpacity).toBe(3);
+    expect(engineState.sf.novelBlur).toBe(6);
+  });
+
+  it('correctly scans g05 scenario to pointer 536 and plays only bgm_06', async () => {
+    const instructions = [];
+    for (let i = 0; i < 540; i++) {
+      if (i === 5) {
+        instructions.push({ type: 'command', name: 'bgm', args: { storage: 'bgm_25b' } });
+      } else if (i === 522) {
+        instructions.push({ type: 'command', name: 'fobgm', args: {} });
+      } else if (i === 529) {
+        instructions.push({ type: 'command', name: 'bgm', args: { storage: 'bgm_06' } });
+      } else if (i === 536) {
+        instructions.push({ type: 'text', text_jp: '目标句子。', text_en: 'Target sentence.' });
+      } else {
+        instructions.push({ type: 'comment', text: 'dummy' });
+      }
+    }
+
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ instructions })
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g05&ptr=536');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g05');
+      expect(diag.pointer).toBe(536);
+      expect(diag.audio.bgm.src).toContain('bgm_06');
+      expect(diag.audio.bgm.src).not.toContain('bgm_25b');
+    });
+  });
+
+  it('correctly processes chapter completion at g06 ptr 1470 and transition to next chapter', async () => {
+    // Construct g06 scenario end instructions
+    const g06Instructions = [];
+    for (let i = 0; i < 1470; i++) {
+      g06Instructions.push({ type: 'comment', text: 'dummy' });
+    }
+    // ptr 1470
+    g06Instructions.push({ type: 'page_break' }); // 1470
+    g06Instructions.push({ type: 'line_feed' });  // 1471
+    g06Instructions.push({ type: 'command', name: 'fobgm', args: {} }); // 1472
+    g06Instructions.push({ type: 'command', name: 'hide', args: {} }); // 1473
+    g06Instructions.push({ type: 'command', name: 'black', args: { time: 2000 } }); // 1474
+    g06Instructions.push({ type: 'eval', exp: 'tf.go_next_chapter=false' }); // 1475
+    g06Instructions.push({ type: 'eval', exp: 'sf.show_next_chapter=true' }); // 1476
+    g06Instructions.push({ type: 'command', name: 'save', args: { cond: '!tf.go_next_chapter', place: 150 } }); // 1477
+    g06Instructions.push({ type: 'command', name: 'jump', args: { cond: '!tf.go_next_chapter', storage: 'title.ks', target: '*title_init' } }); // 1478
+    g06Instructions.push({ type: 'eval', exp: 'sf.show_next_chapter=false' }); // 1479
+    g06Instructions.push({ type: 'command', name: 'jump', args: { storage: 'g07.ks' } }); // 1480
+
+    const g07Instructions = [
+      { type: 'command', name: 'bg', args: { storage: 'bg_test_g07' } },
+      { type: 'text', text_jp: '这是g07第一句话。', text_en: 'This is g07 first sentence.' }
+    ];
+
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/g06.json')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ instructions: g06Instructions }) });
+      }
+      if (url.includes('/scenarios/g07.json')) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({ instructions: g07Instructions }) });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g06&ptr=1470');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    // It should evaluate conditions, save to slot 150, and automatically jump to title screen
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.gameState).toBe('TITLE');
+      expect(diag.sf.show_next_chapter).toBe(true);
+    });
+
+    // Verify slot 150 was written to localStorage
+    const savedSlot = mockLocalStorage.getItem('school_save_slot_150');
+    expect(savedSlot).toBeDefined();
+
+    // The Title Screen should now render the "Next Chapter" button
+    const nextChapterBtn = screen.getByText(/进入下一章/i);
+    expect(nextChapterBtn).toBeDefined();
+
+    // Click "Enter Next Chapter"
+    await act(async () => {
+      fireEvent.click(nextChapterBtn);
+    });
+
+    // It should load slot 150, set tf.go_next_chapter = true, bypass title jump, and jump to g07
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g07');
+      expect(screen.getByText(/这是g07第一句话。/)).toBeDefined();
+    });
+  });
+
+  it('correctly rewinds to a history snapshot without duplicating the dialogue text', async () => {
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g01&ptr=3');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    // Wait for the scenario to load and align to pointer 4 (dialogue text "这是第一句话。" displayed)
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g01');
+      expect(diag.pointer).toBe(4);
+      expect(diag.dialogueText).toBe('这是第一句话。');
+    });
+
+    // Unlock audio
+    let textLayer = await screen.findByText('这是第一句话。');
+    await act(async () => {
+      fireEvent.click(textLayer);
+    });
+
+    // Wait a brief moment to let state update flush
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    // Re-query the text layer element to avoid detached DOM node issues
+    textLayer = await screen.findByText('这是第一句话。');
+    // Click to advance past page_break and load next text
+    await act(async () => {
+      fireEvent.click(textLayer);
+    });
+
+    // Wait until it reaches pointer 9 (dialogue text "这是第二句话。")
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.pointer).toBe(9);
+      expect(diag.dialogueText).toBe('这是第二句话。');
+    }, { timeout: 3000 });
+
+    // Click the "历史" (History) button in DialogueBox
+    const historyBtn = screen.getByText('历史');
+    await act(async () => {
+      fireEvent.click(historyBtn);
+    });
+
+    // Click the backlog entry for the first sentence
+    const backlogEntry = screen.getByText('这是第一句话。');
+    await act(async () => {
+      fireEvent.click(backlogEntry);
+    });
+
+    // Confirm the backlog jump
+    const confirmBtn = screen.getByText('确定');
+    await act(async () => {
+      fireEvent.click(confirmBtn);
+    });
+
+    // Expect the engine to rewind scenario to g01, pointer should align to Math.max(4, startIdx+1) = 4, dialogue text = '这是第一句话。'
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g01');
+      expect(diag.pointer).toBe(4);
+      expect(diag.dialogueText).toBe('这是第一句话。');
+    });
+
+    // Click the screen to advance. It should proceed to next instructions (page_break, line_feed, black, bg, text "这是第二句话。")
+    // and NOT duplicate the text "这是第一句话。这是第一句话。"
+    const rewoundTextLayer = await screen.findByText('这是第一句话。');
+    await act(async () => {
+      fireEvent.click(rewoundTextLayer);
+    });
+
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.pointer).toBe(9);
+      expect(diag.dialogueText).toBe('这是第二句话。');
+    });
+  });
+
+  it('clears character speaker name and voice on page_break to handle monologues correctly', async () => {
+    const customScenarioData = {
+      instructions: [
+        { type: 'command', name: 'nm', args: { t: '哈尔', s: 'har_voice_01' } },
+        { type: 'text', text_jp: '「恐怕是的。」', text_en: '“Probably yes.”' },
+        { type: 'page_break' },
+        { type: 'line_feed' },
+        { type: 'text', text_jp: '绕了一大圈是想说这些么。', text_en: 'Is that what they wanted to say?' }
+      ]
+    };
+
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(customScenarioData)
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    const App = await getApp();
+    const url = new URL('http://localhost:38942/?scen=g07&ptr=4');
+    window.history.replaceState({}, '', url.pathname + url.search);
+
+    render(<App />);
+
+    // Wait for scenario to load and align. Deep link pointing to index 4 (monologue text) executes index 4 text and advances pointer to 5.
+    // Page break at index 2 must clear speaker and voice.
+    await waitFor(() => {
+      const diag = window.quick_check();
+      expect(diag.scenario).toBe('g07');
+      expect(diag.pointer).toBe(5);
+      expect(diag.speaker).toBe('');
+      expect(diag.audio.voice.src).toBe('');
+    });
+  });
 });

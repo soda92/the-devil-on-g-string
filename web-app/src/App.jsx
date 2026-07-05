@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import gameConfig from './game_config.json';
 
 // --- Sub Components ---
 import TitleScreen from './components/TitleScreen';
@@ -23,12 +24,14 @@ export default function App() {
   // Screen scaling to fit browser viewport
   const [scale, setScale] = useState(1);
   const [cgViewerUrl, setCgViewerUrl] = useState(null);
+  const [debugOpen, setDebugOpen] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const scaleX = w / 800;
+      const targetWidth = debugOpen ? 1140 : 800;
+      const scaleX = w / targetWidth;
       const scaleY = h / 600;
       const newScale = Math.min(scaleX, scaleY, 1);
       setScale(newScale);
@@ -36,10 +39,25 @@ export default function App() {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, [debugOpen]);
+
+  // Keydown listener in App to toggle debug panel
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+        return;
+      }
+      if (e.key === 'd' || e.key === 'D') {
+        e.preventDefault();
+        setDebugOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // Initialize modular Audio Hook with localStorage values if available
-  const savedSfStr = localStorage.getItem('school_school_sf');
+  const savedSfStr = localStorage.getItem(`${gameConfig.storagePrefix || 'school'}_sf`);
   let initialVol = 8;
   let initialSeVol = 8;
   if (savedSfStr) {
@@ -54,6 +72,7 @@ export default function App() {
 
   // Initialize main KAG Engine interpreter state loop
   const runner = useKagRunner({
+    config: gameConfig,
     playBgm: audio.playBgm,
     stopBgm: audio.stopBgm,
     playSe: audio.playSe,
@@ -73,15 +92,28 @@ export default function App() {
     audio.voicePlayer.volume = sevol / 10;
   }, [runner.sf.vol, runner.sf.sevol]);
 
-  // Read URL search params on mount
+  // Read URL search params on mount, restoring from autosave if they match the URL scenario/pointer
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const scen = params.get('scen');
     const ptr = params.get('ptr');
     if (scen) {
       const parsedPtr = parseInt(ptr) || 0;
-      runner.setGameState('PLAYING');
-      runner.loadScenario(scen, null, parsedPtr);
+      const autoStr = localStorage.getItem('school_autosave');
+      let loadedFromAuto = false;
+      if (autoStr) {
+        try {
+          const autoData = JSON.parse(autoStr);
+          if (autoData.currentScenario === scen && autoData.pointer === parsedPtr) {
+            runner.loadSaveSlot(autoData);
+            loadedFromAuto = true;
+          }
+        } catch (e) {}
+      }
+      if (!loadedFromAuto) {
+        runner.setGameState('PLAYING');
+        runner.loadScenario(scen, null, parsedPtr);
+      }
     }
   }, []);
 
@@ -102,9 +134,50 @@ export default function App() {
     }
   }, [runner.currentScenario, runner.pointer, runner.gameState]);
 
+  // Handle ESC key to close active overlays
+  useEffect(() => {
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        if (runner.showHistory) {
+          runner.setShowHistory(false);
+        } else if (runner.showSettings) {
+          runner.setShowSettings(false);
+        } else if (runner.showSaveLoad) {
+          runner.setShowSaveLoad(null);
+        } else if (runner.showChoiceGraph) {
+          runner.setShowChoiceGraph(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [runner.showHistory, runner.showSettings, runner.showSaveLoad, runner.showChoiceGraph]);
+
+  const handleNextChapter = () => {
+    const saved = localStorage.getItem(`${runner.storagePrefix}_save_slot_150`);
+    if (saved) {
+      try {
+        const slotData = JSON.parse(saved);
+        runner.setTf({ go_next_chapter: true });
+        runner.loadSaveSlot(slotData);
+      } catch (e) {
+        console.error("Failed to parse next chapter save slot", e);
+      }
+    }
+  };
+
   return (
-    <div className="game-container" style={{ transform: `scale(${scale})` }}>
-      <div className="game-screen shadow-premium">
+    <div 
+      className="game-container" 
+      style={{ 
+        transform: `scale(${scale})`,
+        display: 'flex',
+        gap: '20px',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}
+    >
+      <div className={`game-screen shadow-premium ${runner.quakeActive ? 'shake-effect' : ''}`}>
         
         {/* === TITLE SCREEN VIEW === */}
         {runner.gameState === 'TITLE' && (
@@ -122,6 +195,10 @@ export default function App() {
             hasHistory={runner.historyLog.length > 0}
             onRewind={runner.rewindToLastScene}
             onShowFlowchart={() => runner.setShowChoiceGraph(true)}
+            isBgmPlaying={audio.isBgmPlaying}
+            onToggleBgm={audio.toggleBgm}
+            showNextChapter={runner.sf.show_next_chapter === 1 || runner.sf.show_next_chapter === true || runner.sf.show_next_chapter === 'true'}
+            onNextChapter={handleNextChapter}
           />
         )}
 
@@ -146,7 +223,6 @@ export default function App() {
             setShowSaveLoad={(mode) => {
               if (!runner.isAudioUnlocked) {
                 runner.setIsAudioUnlocked(true);
-                audio.playBgm('bgm_01');
               }
               runner.setShowSaveLoad(mode);
             }}
@@ -203,6 +279,7 @@ export default function App() {
               runner.setIsFastForward(nextSkip);
               runner.setIsAutoMode(false);
             }}
+            sf={runner.sf}
           />
         )}
 
@@ -237,6 +314,14 @@ export default function App() {
             setSf={runner.updateSf}
             onBack={runner.quitToTitle}
             isGameplay={false}
+          />
+        )}
+
+        {/* === SCREEN FLASH VISUAL EFFECT === */}
+        {runner.flashActive && (
+          <div 
+            className="screen-flash-overlay" 
+            style={{ backgroundColor: runner.flashActive }}
           />
         )}
 
@@ -308,7 +393,10 @@ export default function App() {
           />
         )}
 
-        {/* === DEBUG PANEL OVERLAY === */}
+      </div>
+
+      {/* === DEBUG PANEL OVERLAY === */}
+      {debugOpen && (
         <DebugPanel 
           currentScenario={runner.currentScenario}
           pointer={runner.pointer}
@@ -322,9 +410,10 @@ export default function App() {
           background={runner.background}
           dialogueMode={runner.dialogueMode}
           speaker={runner.speaker}
+          bgmPlayer={audio.bgmPlayer}
+          onClose={() => setDebugOpen(false)}
         />
-
-      </div>
+      )}
     </div>
   );
 }
