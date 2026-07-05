@@ -119,6 +119,7 @@ export function useKagRunner({
       novelBlur: 8,
       vAlign: 'TOP',
       hAlign: 'LEFT',
+      immerseMode: false,
       ...(config?.defaultSf || {})
     };
     if (saved) {
@@ -1635,6 +1636,14 @@ export function useKagRunner({
       if (DEFAULT_SHORTCUTS.QUIT_TO_TITLE.includes(code)) {
         e.preventDefault();
         quitToTitle();
+        return;
+      }
+
+      // Toggle immerse mode
+      if (DEFAULT_SHORTCUTS.TOGGLE_IMMERSE.includes(code)) {
+        e.preventDefault();
+        if (!isAudioUnlocked) setIsAudioUnlocked(true);
+        updateSf(prev => ({ ...prev, immerseMode: !prev.immerseMode }));
         return;
       }
 

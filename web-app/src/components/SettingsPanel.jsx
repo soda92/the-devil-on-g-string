@@ -86,6 +86,18 @@ export default function SettingsPanel({
         </div>
 
         <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? '字幕沉浸模式 (快捷键: I)' : 'Immersive Subtitle Mode (Key: I)'}</label>
+          <div className="settings-control-buttons">
+            <button className={`control-btn ${sf.immerseMode ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, immerseMode: true }))}>
+              {language === 'JP' ? '开启' : 'Enabled'}
+            </button>
+            <button className={`control-btn ${!sf.immerseMode ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, immerseMode: false }))}>
+              {language === 'JP' ? '关闭' : 'Disabled'}
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-row">
           <label className="settings-label">{language === 'JP' ? '背景音乐音量' : 'Music Volume'}</label>
           <input 
             type="range" 

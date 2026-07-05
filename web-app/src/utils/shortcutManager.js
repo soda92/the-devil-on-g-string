@@ -9,7 +9,8 @@ export const DEFAULT_SHORTCUTS = {
   TOGGLE_AUTO: ['KeyA'],
   TOGGLE_SETTINGS: ['Semicolon'],
   QUIT_TO_TITLE: ['KeyM'],
-  ADVANCE_TEXT: ['Enter']
+  ADVANCE_TEXT: ['Enter'],
+  TOGGLE_IMMERSE: ['KeyI']
 };
 
 // --- Fullscreen API Handler ---
