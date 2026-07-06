@@ -740,11 +740,76 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     });
     expect(screen.queryByText('语言 / Language')).toBeNull();
 
-    // 4. Test Quit to title with KeyM
+    // 4. Test Quit to title with KeyQ
     await act(async () => {
-      fireEvent.keyDown(window, { code: 'KeyM' });
+      fireEvent.keyDown(window, { code: 'KeyQ' });
     });
     expect(window.quick_check().gameState).toBe('TITLE');
     expect(screen.queryByText('开始游戏')).not.toBeNull();
+  });
+
+  it('clears dialogue textbox in AVG mode after page_break or wait_click', async () => {
+    const avgMockScenario = {
+      instructions: [
+        { type: 'command', name: 'avg', args: {} },
+        { type: 'text', text_jp: '这是第一句。', text_en: 'This is first.' },
+        { type: 'wait_click' },
+        { type: 'text', text_jp: '这是第二句。', text_en: 'This is second.' },
+        { type: 'page_break' },
+        { type: 'text', text_jp: '这是第三句。', text_en: 'This is third.' }
+      ]
+    };
+
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(avgMockScenario)
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    const App = await getApp();
+    render(<App />);
+
+    const startBtn = screen.getByText(/开始游戏/i) || screen.getByText(/Start Game/i);
+    await act(async () => {
+      fireEvent.click(startBtn);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('这是第一句。')).not.toBeNull();
+    });
+
+    // Advance past wait_click
+    let textLayer = screen.getByText('这是第一句。');
+    await act(async () => {
+      fireEvent.click(textLayer); // Unlock audio
+    });
+    await act(async () => {
+      fireEvent.click(textLayer); // Advance
+    });
+
+    // Verify textbox cleared and only shows second sentence
+    await waitFor(() => {
+      expect(screen.queryByText('这是第二句。')).not.toBeNull();
+      expect(screen.queryByText('这是第一句。')).toBeNull();
+    });
+
+    // Advance past page_break
+    textLayer = screen.getByText('这是第二句。');
+    await act(async () => {
+      fireEvent.click(textLayer); // Advance
+    });
+
+    // Verify textbox cleared and only shows third sentence
+    await waitFor(() => {
+      expect(screen.queryByText('这是第三句。')).not.toBeNull();
+      expect(screen.queryByText('这是第二句。')).toBeNull();
+    });
+
+    global.fetch = originalFetch;
   });
 });

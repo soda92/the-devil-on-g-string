@@ -160,6 +160,8 @@ export function useKagRunner({
   const textTimerRef = useRef(null);
   const handleScreenClickRef = useRef(null);
   const currentSpeakerRef = useRef({ jp: '', en: '' });
+  const hasNmCommandRef = useRef(false);
+  const hasWaitedClickRef = useRef(false);
 
   // Update Refs to keep useEffect loop runner closures in sync
   const updateDialogueText = (val) => {
@@ -363,6 +365,7 @@ export function useKagRunner({
         let initialSpeaker = '';
         let initialDialogueMode = 'avg';
         let initialVoice = '';
+        let hasNm = false;
         
         for (let i = 0; i < startIdx; i++) {
           const inst = data.instructions[i];
@@ -370,6 +373,12 @@ export function useKagRunner({
             if (inst.type === 'page_break' || inst.type === 'clear_text') {
               initialSpeaker = '';
               initialVoice = '';
+              hasNm = false;
+            } else if (inst.type === 'text') {
+              if (!hasNm) {
+                initialSpeaker = '';
+              }
+              hasNm = false;
             } else if (inst.type === 'command') {
               const args = inst.args || {};
             if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm' || inst.name === 'fibgm' || inst.name === 'xbgm') {
@@ -455,6 +464,7 @@ export function useKagRunner({
             } else if (inst.name === 'name' || inst.name === 'nm') {
               initialSpeaker = args.txt || args.t || '';
               initialVoice = args.s || '';
+              hasNm = true;
             } else if (inst.name === 'novel') {
               initialDialogueMode = 'novel';
             } else if (inst.name === 'avg' || inst.name === 'avg_with_name') {
@@ -469,10 +479,16 @@ export function useKagRunner({
         setSprites(initialSprites);
         spritesRef.current = initialSprites;
         setDialogueMode(initialDialogueMode);
+        
+        hasNmCommandRef.current = hasNm;
+        
         if (initialSpeaker) {
           const resolvedSp = resolveCharacterName(initialSpeaker, 'JP', config?.characterNames);
           setSpeaker(resolvedSp);
           currentSpeakerRef.current = { jp: resolvedSp, en: resolveCharacterName(resolvedSp, 'EN', config?.characterNames) };
+        } else {
+          setSpeaker('');
+          currentSpeakerRef.current = { jp: '', en: '' };
         }
         initialVoiceRef.current = initialVoice;
         setCurrentVoice(initialVoice);
@@ -819,6 +835,7 @@ export function useKagRunner({
             const enName = resolveCharacterName(args.txt_en || args.t_en || args.t || '', 'EN', config?.characterNames);
             currentSpeakerRef.current = { jp: jpName, en: enName };
             setSpeaker(language === 'JP' ? jpName : enName);
+            hasNmCommandRef.current = true;
             if (inst.name === 'nm' && args.s) {
               playVoice(args.s);
               currentVoiceRef.current = args.s;
@@ -879,9 +896,21 @@ export function useKagRunner({
           break;
           
         case 'text':
+          if (!hasNmCommandRef.current) {
+            setSpeaker('');
+            currentSpeakerRef.current = { jp: '', en: '' };
+          }
+          hasNmCommandRef.current = false;
+          
           setCurrentVoice(currentVoiceRef.current || '');
           const displayTxt = language === 'JP' ? inst.text_jp : inst.text_en;
-          const prevDiag = dialogueTextRef.current;
+          
+          let prevDiag = dialogueTextRef.current;
+          if (dialogueMode === 'avg' && hasWaitedClickRef.current) {
+            prevDiag = '';
+          }
+          hasWaitedClickRef.current = false;
+          
           let targetFullText;
           if (dialogueMode === 'novel' && prevDiag !== '') {
             const separator = (prevDiag.endsWith('<br />') || prevDiag.endsWith('<br/>')) ? '' : '<br />';
@@ -943,11 +972,17 @@ export function useKagRunner({
           break;
           
         case 'page_break':
-          setTypewriterText('');
-          updateDialogueText('');
-          setSpeaker('');
-          currentSpeakerRef.current = { jp: '', en: '' };
-          currentVoiceRef.current = null;
+          if (p - 1 !== pointer) {
+            p = p - 1;
+            shouldBlock = true;
+          } else {
+            setTypewriterText('');
+            updateDialogueText('');
+            setSpeaker('');
+            currentSpeakerRef.current = { jp: '', en: '' };
+            currentVoiceRef.current = null;
+            hasNmCommandRef.current = false;
+          }
           break;
           
         case 'clear_text':
@@ -956,6 +991,7 @@ export function useKagRunner({
           setSpeaker('');
           currentSpeakerRef.current = { jp: '', en: '' };
           currentVoiceRef.current = null;
+          hasNmCommandRef.current = false;
           break;
           
         case 'line_feed':
@@ -1084,6 +1120,7 @@ export function useKagRunner({
 
     if (isFastForward) {
       const timer = setTimeout(() => {
+        hasWaitedClickRef.current = true;
         setIsWaiting(false);
       }, 80);
       return () => clearTimeout(timer);
@@ -1093,6 +1130,7 @@ export function useKagRunner({
       const charCount = typewriterText.length;
       const readDelay = Math.max(1200, charCount * 70); 
       const timer = setTimeout(() => {
+        hasWaitedClickRef.current = true;
         setIsWaiting(false);
       }, readDelay);
       return () => clearTimeout(timer);
@@ -1189,6 +1227,7 @@ export function useKagRunner({
     }
     
     if (isWaiting) {
+      hasWaitedClickRef.current = true;
       setIsWaiting(false);
     }
   };
