@@ -812,4 +812,57 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     global.fetch = originalFetch;
   });
+
+  it('correctly processes choice selections via exlink and showexlink', async () => {
+    const choiceMockScenario = {
+      instructions: [
+        { type: 'command', name: 'exlink', args: { txt: '选项一', target: '*target_label_01', exp: 'f.flag_tubaki+=1' } },
+        { type: 'command', name: 'exlink', args: { txt: '选项二', target: '*target_label_02' } },
+        { type: 'command', name: 'showexlink', args: {} },
+        { type: 'label', name: 'target_label_01' },
+        { type: 'text', text_jp: '来到了路线一。', text_en: 'Route 1.' },
+        { type: 'label', name: 'target_label_02' },
+        { type: 'text', text_jp: '来到了路线二。', text_en: 'Route 2.' }
+      ]
+    };
+
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(choiceMockScenario)
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    const App = await getApp();
+    render(<App />);
+
+    const startBtn = screen.getByText(/开始游戏/i) || screen.getByText(/Start Game/i);
+    await act(async () => {
+      fireEvent.click(startBtn);
+    });
+
+    let opt1, opt2;
+    await waitFor(() => {
+      opt1 = screen.getByText('选项一');
+      opt2 = screen.getByText('选项二');
+      expect(opt1).not.toBeNull();
+      expect(opt2).not.toBeNull();
+    });
+
+    await act(async () => {
+      fireEvent.click(opt1);
+    });
+
+    expect(window.quick_check().f.flag_tubaki).toBe(1);
+    await waitFor(() => {
+      expect(screen.queryByText('来到了路线一。')).not.toBeNull();
+      expect(screen.queryByText('来到了路线二。')).toBeNull();
+    });
+
+    global.fetch = originalFetch;
+  });
 });

@@ -642,6 +642,7 @@ export function useKagRunner({
     let newTf = { ...tfRef.current };
     let tempSprites = { ...spritesRef.current };
     let tempBackground = backgroundRef.current;
+    let collectedOptions = [];
 
     while (p < scenarioData.length && !shouldBlock) {
       const inst = scenarioData[p];
@@ -870,6 +871,46 @@ export function useKagRunner({
             setDialogueMode('avg');
             setTypewriterText('');
             updateDialogueText('');
+          } else if (inst.name === 'exlink') {
+            const txtJp = args.txt || '';
+            const txtEn = args.txt_en || txtJp;
+            collectedOptions.push({
+              text_jp: txtJp,
+              text_en: txtEn,
+              target: args.target ? args.target.replace('*', '') : '',
+              exp: args.exp || null
+            });
+          } else if (inst.name === 'showexlink') {
+            let finalOptions = collectedOptions;
+            if (finalOptions.length === 0) {
+              let searchP = p - 2;
+              while (searchP >= 0) {
+                const prevInst = scenarioData[searchP];
+                if (!prevInst) break;
+                if (prevInst.type === 'command' && prevInst.name === 'exlink') {
+                  const prevArgs = prevInst.args || {};
+                  const prevTxtJp = prevArgs.txt || '';
+                  const prevTxtEn = prevArgs.txt_en || prevTxtJp;
+                  finalOptions.unshift({
+                    text_jp: prevTxtJp,
+                    text_en: prevTxtEn,
+                    target: prevArgs.target ? prevArgs.target.replace('*', '') : '',
+                    exp: prevArgs.exp || null
+                  });
+                  searchP--;
+                } else if (prevInst.type === 'line_feed' || prevInst.type === 'comment' || prevInst.type === 'label') {
+                  searchP--;
+                } else {
+                  break;
+                }
+              }
+            }
+            if (finalOptions.length > 0) {
+              setShowOptions(finalOptions);
+              shouldBlock = true;
+              setIsFastForward(false);
+              isFastForwardRef.current = false;
+            }
           } else if (inst.name === 'jump') {
             const storage = args.storage ? args.storage.replace('.ks', '') : currentScenario;
             const target = args.target ? args.target.replace('*', '') : null;
