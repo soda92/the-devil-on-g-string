@@ -7,10 +7,10 @@ export default function ChoiceGraphModal({ onClose, f, language, onJumpToChoice 
   
   // G-String heroine route flags mapping
   const routes = [
-    { nameJp: "美轮椿姬", nameEn: "Tsubaki", val: f.flag_tubaki || 0, max: 2, color: "#ec4899" },
-    { nameJp: "美波花音", nameEn: "Kanon", val: f.flag_kanon || 0, max: 1, color: "#3b82f6" },
-    { nameJp: "白鸟水羽", nameEn: "Mizuha", val: f.flag_mizuha || 0, max: 1, color: "#eab308" },
-    { nameJp: "宇佐美哈尔", nameEn: "Haru", val: f.flag_haru || 0, max: 2, color: "#8b5cf6" }
+    { nameJp: "美轮椿姬", nameEn: "Tsubaki", val: f.flag_tubaki || 0, max: 4, color: "#ec4899" },
+    { nameJp: "美波花音", nameEn: "Kanon", val: f.flag_kanon || 0, max: 3, color: "#3b82f6" },
+    { nameJp: "白鸟水羽", nameEn: "Mizuha", val: f.flag_mizuha || 0, max: 2, color: "#eab308" },
+    { nameJp: "宇佐美哈尔", nameEn: "Haru", val: f.flag_haru || 0, max: 3, color: "#8b5cf6" }
   ];
 
   return (
@@ -227,7 +227,7 @@ export default function ChoiceGraphModal({ onClose, f, language, onJumpToChoice 
                       </div>
                       <div className="node-options">
                         {node.options.map((opt, oIdx) => {
-                          const isSelected = opt.target === node.selectedOption.target;
+                          const isSelected = opt.jp === node.selectedOption.jp && opt.target === node.selectedOption.target;
                           const optText = language === 'JP' ? opt.jp : opt.en;
                           return (
                             <div key={oIdx} className={`option-row ${isSelected ? 'selected' : ''}`}>

@@ -295,6 +295,8 @@ func runAnalysis() {
 	sfRegex := regexp.MustCompile(`\bsf\.([a-zA-Z0-9_]+)`)
 	fFlags := make(map[string]int)
 	sfFlags := make(map[string]int)
+	fIncrements := make(map[string]int)
+	incrementRegex := regexp.MustCompile(`\bf\.(flag_[a-zA-Z0-9_]+)\s*(?:\+=|\+\+|=)`)
 
 	for _, file := range files {
 		if !file.IsDir() && len(file.Name()) > 5 && file.Name()[len(file.Name())-5:] == ".json" {
@@ -316,6 +318,12 @@ func runAnalysis() {
 			for _, match := range sfMatches {
 				if len(match) > 1 {
 					sfFlags[match[1]]++
+				}
+			}
+			incMatches := incrementRegex.FindAllStringSubmatch(content, -1)
+			for _, match := range incMatches {
+				if len(match) > 1 {
+					fIncrements[match[1]]++
 				}
 			}
 
@@ -389,6 +397,17 @@ func runAnalysis() {
 		for i, f := range unhandled {
 			fmt.Printf("%3d. %-20s: %5d\n", i+1, f.Name, f.Count)
 		}
+	}
+
+	// Print Discovered Heroine Route Flag Max Values
+	var incList []CmdFreq
+	for name, count := range fIncrements {
+		incList = append(incList, CmdFreq{Name: name, Count: count})
+	}
+	sortFrequencies(incList)
+	fmt.Println("\n=== HEROINE ROUTE MAXIMUM POINTS (Scanned Increments) ===")
+	for i, f := range incList {
+		fmt.Printf("%3d. f.%-25s: %2d\n", i+1, f.Name, f.Count)
 	}
 
 	// Print Discovered Game Flags
