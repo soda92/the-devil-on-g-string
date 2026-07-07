@@ -382,6 +382,7 @@ export default function App() {
             onClose={() => runner.setShowChoiceGraph(false)}
             f={runner.f}
             language={runner.language}
+            currentScenario={runner.currentScenario}
             onJumpToChoice={runner.jumpToChoiceSnapshot}
           />
         )}

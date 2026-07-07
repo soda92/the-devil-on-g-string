@@ -865,4 +865,47 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     global.fetch = originalFetch;
   });
+
+  it('displays locked/bypassed badges in ChoiceGraphModal when active on a heroine route', async () => {
+    const mockScenario = {
+      instructions: [
+        { type: 'text', text_jp: '在椿姬线第一天。', text_en: 'Tsubaki route day 1.' }
+      ]
+    };
+
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockScenario)
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    window.history.pushState({}, '', '/?scen=gt01&ptr=0');
+
+    const App = await getApp();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('在椿姬线第一天。')).not.toBeNull();
+    });
+
+    const routeBtn = screen.getByText('路线');
+    await act(async () => {
+      fireEvent.click(routeBtn);
+    });
+
+    expect(screen.queryByText('路线进度与选择历史') || screen.queryByText('Route Flowchart / Choices')).not.toBeNull();
+
+    const activeBadge = screen.queryByText('💖 选中') || screen.queryByText('💖 Active');
+    expect(activeBadge).not.toBeNull();
+
+    const bypassedBadges = screen.queryAllByText('🔒 关闭').concat(screen.queryAllByText('🔒 Bypassed'));
+    expect(bypassedBadges.length).toBe(3);
+
+    global.fetch = originalFetch;
+  });
 });

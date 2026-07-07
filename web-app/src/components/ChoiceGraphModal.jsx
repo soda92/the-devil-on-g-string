@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function ChoiceGraphModal({ onClose, f, language, onJumpToChoice }) {
+export default function ChoiceGraphModal({ onClose, f, language, currentScenario, onJumpToChoice }) {
   const [confirmChoiceIdx, setConfirmChoiceIdx] = useState(null);
   
   const choices = f.choicesHistory || [];
@@ -12,6 +12,26 @@ export default function ChoiceGraphModal({ onClose, f, language, onJumpToChoice 
     { nameJp: "白鸟水羽", nameEn: "Mizuha", val: f.flag_mizuha || 0, max: 2, color: "#eab308" },
     { nameJp: "宇佐美哈尔", nameEn: "Haru", val: f.flag_haru || 0, max: 3, color: "#8b5cf6" }
   ];
+
+  const getActiveRoute = () => {
+    if (!currentScenario) return null;
+    const scen = currentScenario.toLowerCase();
+    if (scen.startsWith('gt') || scen.startsWith('gth') || scen === 'gted') return 'Tsubaki';
+    if (scen.startsWith('gk') || scen.startsWith('gkh') || scen === 'gked') return 'Kanon';
+    if (scen.startsWith('gm') || scen.startsWith('gmh') || scen === 'gmed') return 'Mizuha';
+    if (f.tubaki_clear) return 'Tsubaki';
+    if (f.kanon_clear) return 'Kanon';
+    if (f.mizuha_clear) return 'Mizuha';
+    if (scen.startsWith('g')) {
+      const numPart = scen.substring(1);
+      const num = parseInt(numPart, 10);
+      if (!isNaN(num) && num >= 43 && num <= 55) return 'Haru';
+    }
+    if (f.game_clear) return 'Haru';
+    return null;
+  };
+
+  const activeRouteName = getActiveRoute();
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -53,11 +73,47 @@ export default function ChoiceGraphModal({ onClose, f, language, onJumpToChoice 
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
+            padding: 10px 8px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
           }
-          .route-bar-label {
-            font-size: 13px;
-            color: var(--color-text-bright);
-            margin-bottom: 6px;
+          .route-bar-card.active {
+            border-color: #f59e0b;
+            background: rgba(245, 158, 11, 0.04);
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+            animation: pulse-border 2s infinite ease-in-out;
+          }
+          .route-bar-card.bypassed {
+            opacity: 0.35;
+            filter: grayscale(70%);
+          }
+          .route-badge {
+            position: absolute;
+            top: -12px;
+            font-size: 8px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+          }
+          .route-badge.active-badge {
+            background: #f59e0b;
+            color: #000;
+          }
+          .route-badge.bypassed-badge {
+            background: #475569;
+            color: #cbd5e1;
+          }
+          @keyframes pulse-border {
+            0% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.15); }
+            50% { box-shadow: 0 0 16px rgba(245, 158, 11, 0.35); }
+            100% { box-shadow: 0 0 8px rgba(245, 158, 11, 0.15); }
           }
           .route-bar-track {
             width: 100%;
@@ -191,21 +247,41 @@ export default function ChoiceGraphModal({ onClose, f, language, onJumpToChoice 
             {language === 'JP' ? '女主角路线进度' : 'Heroine Route Status'}
           </div>
           <div className="route-bars-grid">
-            {routes.map((r, i) => (
-              <div key={i} className="route-bar-card">
-                <span className="route-bar-label">{language === 'JP' ? r.nameJp : r.nameEn}</span>
-                <div className="route-bar-track">
-                  <div 
-                    className="route-bar-fill" 
-                    style={{ 
-                      width: `${(r.val / r.max) * 100}%`,
-                      backgroundColor: r.color 
-                    }} 
-                  />
+            {routes.map((r, i) => {
+              const activeRoute = getActiveRoute();
+              const isThisActive = activeRoute === r.nameEn;
+              const isOthersActive = activeRoute !== null && activeRoute !== r.nameEn;
+              
+              let cardClass = "route-bar-card";
+              if (isThisActive) cardClass += " active";
+              if (isOthersActive) cardClass += " bypassed";
+              
+              return (
+                <div key={i} className={cardClass}>
+                  {isThisActive && (
+                    <span className="route-badge active-badge">
+                      {language === 'JP' ? '💖 选中' : '💖 Active'}
+                    </span>
+                  )}
+                  {isOthersActive && (
+                    <span className="route-badge bypassed-badge">
+                      {language === 'JP' ? '🔒 关闭' : '🔒 Bypassed'}
+                    </span>
+                  )}
+                  <span className="route-bar-label">{language === 'JP' ? r.nameJp : r.nameEn}</span>
+                  <div className="route-bar-track">
+                    <div 
+                      className="route-bar-fill" 
+                      style={{ 
+                        width: `${(r.val / r.max) * 100}%`,
+                        backgroundColor: isOthersActive ? '#475569' : r.color 
+                      }} 
+                    />
+                  </div>
+                  <span className="route-bar-value">{r.val} / {r.max}</span>
                 </div>
-                <span className="route-bar-value">{r.val} / {r.max}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
