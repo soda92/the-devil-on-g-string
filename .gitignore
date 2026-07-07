@@ -13,6 +13,8 @@ G弦上的魔王-server
 compiled_scenarios
 web-app/public/scenarios
 
+*.upx
+
 the-devil-on-g-string*
 saves.json.old
 saves.db
