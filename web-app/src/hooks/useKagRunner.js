@@ -287,36 +287,32 @@ export function useKagRunner({
             });
           }
           if (state && state.slots) {
-            // Merge backend slots into saveSlots state
-            setSaveSlots(prev => {
-              const merged = { ...prev, ...state.slots };
-              return merged;
-            });
-            // Write backend slots to localStorage, respecting timestamps to avoid overwriting newer local saves
-            Object.entries(state.slots).forEach(([slotId, slotData]) => {
-              if (slotData) {
-                const key = slotId === 'autosave' ? `${storagePrefix}_autosave` : `${storagePrefix}_save_slot_${slotId}`;
-                const parsedData = typeof slotData === 'string' ? JSON.parse(slotData) : slotData;
-                
-                // Check if local storage has a newer version
-                const localStr = localStorage.getItem(key);
-                let keepLocal = false;
-                if (localStr) {
-                  try {
-                    const localData = JSON.parse(localStr);
-                    const localTS = localData.timestamp || 0;
-                    const remoteTS = parsedData.timestamp || 0;
-                    if (localTS > remoteTS) {
-                      keepLocal = true;
-                    }
-                  } catch (e) {}
-                }
-                
-                if (!keepLocal) {
-                  localStorage.setItem(key, JSON.stringify(parsedData));
-                }
+            setSaveSlots(state.slots);
+            const activeSlots = state.slots || {};
+
+            // Sync autosave
+            const autosaveKey = `${storagePrefix}_autosave`;
+            if (activeSlots.autosave) {
+              localStorage.setItem(autosaveKey, JSON.stringify(activeSlots.autosave));
+            } else {
+              localStorage.removeItem(autosaveKey);
+            }
+
+            // Sync manual slots
+            for (let i = 0; i < 24; i++) {
+              const key = `${storagePrefix}_save_slot_${i}`;
+              if (activeSlots[i]) {
+                localStorage.setItem(key, JSON.stringify(activeSlots[i]));
+              } else {
+                localStorage.removeItem(key);
               }
-            });
+            }
+          } else {
+            setSaveSlots({});
+            localStorage.removeItem(`${storagePrefix}_autosave`);
+            for (let i = 0; i < 24; i++) {
+              localStorage.removeItem(`${storagePrefix}_save_slot_${i}`);
+            }
           }
         }
       } catch (e) {
