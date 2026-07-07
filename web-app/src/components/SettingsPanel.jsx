@@ -47,6 +47,18 @@ export default function SettingsPanel({
         </div>
 
         <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? '快进模式 (Skip Mode)' : 'Skip Mode'}</label>
+          <div className="settings-control-buttons">
+            <button className={`control-btn ${sf.skipMode !== 'READ_ONLY' ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, skipMode: 'ALL' }))}>
+              {language === 'JP' ? '全部文字' : 'All Text'}
+            </button>
+            <button className={`control-btn ${sf.skipMode === 'READ_ONLY' ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, skipMode: 'READ_ONLY' }))}>
+              {language === 'JP' ? '仅已读文字' : 'Read Text Only'}
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-row">
           <label className="settings-label">{language === 'JP' ? '鼠标滚轮开启历史' : 'Scroll Wheel History'}</label>
           <div className="settings-control-buttons">
             <button className={`control-btn ${!sf.disableWheelHistory ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, disableWheelHistory: false }))}>

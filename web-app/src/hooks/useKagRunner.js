@@ -937,6 +937,23 @@ export function useKagRunner({
           break;
           
         case 'text':
+          const currentPtr = p - 1;
+          if (newSf.readScenarios === undefined) {
+            newSf.readScenarios = {};
+          }
+          if (!newSf.readScenarios[currentScenario]) {
+            newSf.readScenarios[currentScenario] = {};
+          }
+          
+          const isRead = newSf.readScenarios[currentScenario][currentPtr] === true;
+          
+          if (isFastForwardRef.current && newSf.skipMode === 'READ_ONLY' && !isRead) {
+            setIsFastForward(false);
+            isFastForwardRef.current = false;
+          }
+          
+          newSf.readScenarios[currentScenario][currentPtr] = true;
+
           if (!hasNmCommandRef.current) {
             setSpeaker('');
             currentSpeakerRef.current = { jp: '', en: '' };
@@ -994,13 +1011,7 @@ export function useKagRunner({
                 snapshot
               }
             ];
-            // Strip snapshots older than 150 entries to keep memory and saves lightweight
-            return newHistory.map((item, idx) => {
-              if (idx < newHistory.length - 150 && item.snapshot) {
-                return { ...item, snapshot: null };
-              }
-              return item;
-            });
+            return newHistory;
           });
           currentVoiceRef.current = null;
           shouldBlock = true;

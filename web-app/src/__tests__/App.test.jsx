@@ -908,4 +908,63 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     global.fetch = originalFetch;
   });
+
+  it('correctly halts fast-forwarding when encountering unread text in READ_ONLY skip mode', async () => {
+    const mockScenario = {
+      instructions: [
+        { type: 'text', text_jp: '第一句已读。', text_en: 'First read.' },
+        { type: 'text', text_jp: '第二句未读。', text_en: 'Second unread.' }
+      ]
+    };
+
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockScenario)
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    const App = await getApp();
+    render(<App />);
+
+    const startBtn = screen.getByText(/开始游戏/i) || screen.getByText(/Start Game/i);
+    await act(async () => {
+      fireEvent.click(startBtn);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('第一句已读。')).not.toBeNull();
+    });
+
+    const quickCheck = window.quick_check();
+    expect(quickCheck.sf.readScenarios).toBeDefined();
+    expect(quickCheck.sf.readScenarios['g01']['0']).toBe(true);
+    expect(quickCheck.sf.readScenarios['g01']['1']).toBeUndefined();
+
+    await act(async () => {
+      window.quick_check().sf.skipMode = 'READ_ONLY';
+    });
+
+    await act(async () => {
+      window.quick_check().pointer = 0;
+    });
+
+    const skipBtn = screen.getByText('快进');
+    await act(async () => {
+      fireEvent.click(skipBtn);
+    });
+
+    expect(window.quick_check().isFastForward).toBe(true);
+
+    await waitFor(() => {
+      expect(window.quick_check().isFastForward).toBe(false);
+      expect(screen.queryByText('第二句未读。')).not.toBeNull();
+    });
+
+    global.fetch = originalFetch;
+  });
 });
