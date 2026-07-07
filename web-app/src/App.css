@@ -423,8 +423,11 @@
   flex-direction: column;
   gap: 25px;
   width: 500px;
+  max-height: 380px;
+  overflow-y: auto;
   margin-bottom: 30px;
   padding: 20px;
+  padding-right: 15px;
   background: rgba(15, 10, 30, 0.4);
   border-radius: 8px;
 }
@@ -880,3 +883,68 @@
   opacity: 0.9;
   mix-blend-mode: normal;
 }
+
+/* === CC Subtitle / Immerse Mode Styles === */
+.dialogue-box-layer.immerse-mode {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  WebkitBackdropFilter: none !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 10px 20px !important;
+  pointer-events: none !important;
+}
+
+.dialogue-box-layer.immerse-mode .dialogue-text {
+  background: rgba(0, 0, 0, 0.75) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 8px !important;
+  padding: 10px 25px !important;
+  width: auto !important;
+  max-width: 90% !important;
+  flex: none !important;
+  text-align: center !important;
+  color: #ffffff !important;
+  font-size: 20px !important;
+  text-shadow: 1px 1px 2px #000 !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6) !important;
+  line-height: 1.5 !important;
+  position: relative !important;
+  pointer-events: auto !important;
+}
+
+.cc-speaker {
+  color: #a8ffb2;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.cc-snowflake-cursor {
+  display: inline-block;
+  color: #a6e3e9; /* soft winter ice color */
+  animation: cc-snowflake-spin-pulse 2s infinite linear;
+  vertical-align: middle;
+  margin-left: 6px;
+  user-select: none;
+}
+
+@keyframes cc-snowflake-spin-pulse {
+  0% {
+    transform: rotate(0deg) scale(0.85);
+    opacity: 0.4;
+    filter: drop-shadow(0 0 0px rgba(166, 227, 233, 0));
+  }
+  50% {
+    transform: rotate(180deg) scale(1.15);
+    opacity: 1;
+    filter: drop-shadow(0 0 4px rgba(166, 227, 233, 0.8));
+  }
+  100% {
+    transform: rotate(360deg) scale(0.85);
+    opacity: 0.4;
+    filter: drop-shadow(0 0 0px rgba(166, 227, 233, 0));
+  }
+}
+

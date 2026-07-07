@@ -9,7 +9,9 @@ export default function SettingsPanel({
   isGameplay, 
   onSave, 
   onLoad, 
-  onQuit 
+  onQuit,
+  username = 'default',
+  onSwitchUser
 }) {
   const vol = sf.vol !== undefined && !isNaN(sf.vol) ? sf.vol : 8;
   const sevol = sf.sevol !== undefined && !isNaN(sf.sevol) ? sf.sevol : 8;
@@ -23,6 +25,16 @@ export default function SettingsPanel({
       <h2 className="screen-title">{language === 'JP' ? '设置' : 'SETTINGS'}</h2>
       
       <div className="settings-options-container">
+        <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? '当前用户 / Profile' : 'Current Profile'}</label>
+          <div className="settings-control-buttons" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ color: '#ce9178', fontWeight: 'bold', minWidth: '80px' }}>👤 {username}</span>
+            <button className="control-btn" onClick={onSwitchUser}>
+              {language === 'JP' ? '切换用户' : 'Switch User'}
+            </button>
+          </div>
+        </div>
+
         <div className="settings-row">
           <label className="settings-label">{language === 'JP' ? '语言 / Language' : 'Language / 语言'}</label>
           <div className="settings-control-buttons">
@@ -47,12 +59,63 @@ export default function SettingsPanel({
         </div>
 
         <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? '快进模式 (Skip Mode)' : 'Skip Mode'}</label>
+          <div className="settings-control-buttons">
+            <button className={`control-btn ${sf.skipMode !== 'READ_ONLY' ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, skipMode: 'ALL' }))}>
+              {language === 'JP' ? '全部文字' : 'All Text'}
+            </button>
+            <button className={`control-btn ${sf.skipMode === 'READ_ONLY' ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, skipMode: 'READ_ONLY' }))}>
+              {language === 'JP' ? '仅已读文字' : 'Read Text Only'}
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-row">
           <label className="settings-label">{language === 'JP' ? '鼠标滚轮开启历史' : 'Scroll Wheel History'}</label>
           <div className="settings-control-buttons">
             <button className={`control-btn ${!sf.disableWheelHistory ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, disableWheelHistory: false }))}>
               {language === 'JP' ? '开启' : 'Enabled'}
             </button>
             <button className={`control-btn ${sf.disableWheelHistory ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, disableWheelHistory: true }))}>
+              {language === 'JP' ? '关闭' : 'Disabled'}
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? '对话框文字垂直对齐' : 'Text Vertical Align'}</label>
+          <div className="settings-control-buttons">
+            <button className={`control-btn ${sf.vAlign === 'TOP' || !sf.vAlign ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, vAlign: 'TOP' }))}>
+              {language === 'JP' ? '靠上' : 'Top'}
+            </button>
+            <button className={`control-btn ${sf.vAlign === 'CENTER' ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, vAlign: 'CENTER' }))}>
+              {language === 'JP' ? '居中' : 'Center'}
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? '对话框文字水平对齐' : 'Text Horizontal Align'}</label>
+          <div className="settings-control-buttons">
+            <button className={`control-btn ${sf.hAlign === 'LEFT' || !sf.hAlign ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, hAlign: 'LEFT' }))}>
+              {language === 'JP' ? '靠左' : 'Left'}
+            </button>
+            <button className={`control-btn ${sf.hAlign === 'CENTER' ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, hAlign: 'CENTER' }))}>
+              {language === 'JP' ? '居中' : 'Center'}
+            </button>
+            <button className={`control-btn ${sf.hAlign === 'RIGHT' ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, hAlign: 'RIGHT' }))}>
+              {language === 'JP' ? '靠右' : 'Right'}
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? '字幕沉浸模式 (快捷键: I)' : 'Immersive Subtitle Mode (Key: I)'}</label>
+          <div className="settings-control-buttons">
+            <button className={`control-btn ${sf.immerseMode ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, immerseMode: true }))}>
+              {language === 'JP' ? '开启' : 'Enabled'}
+            </button>
+            <button className={`control-btn ${!sf.immerseMode ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, immerseMode: false }))}>
               {language === 'JP' ? '关闭' : 'Disabled'}
             </button>
           </div>

@@ -25,6 +25,8 @@ export default function App() {
   const [scale, setScale] = useState(1);
   const [cgViewerUrl, setCgViewerUrl] = useState(null);
   const [debugOpen, setDebugOpen] = useState(false);
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [newUsernameInput, setNewUsernameInput] = useState('');
 
   useEffect(() => {
     const handleResize = () => {
@@ -80,7 +82,8 @@ export default function App() {
     currentVoiceRef: audio.currentVoiceRef,
     bgmPlayer: audio.bgmPlayer,
     sePlayer: audio.sePlayer,
-    voicePlayer: audio.voicePlayer
+    voicePlayer: audio.voicePlayer,
+    toggleBgm: audio.toggleBgm
   });
 
   // Re-sync volume changes when sf settings are updated live in settings panel
@@ -282,6 +285,7 @@ export default function App() {
               runner.setIsAutoMode(false);
             }}
             sf={runner.sf}
+            updateSf={runner.updateSf}
           />
         )}
 
@@ -316,6 +320,11 @@ export default function App() {
             setSf={runner.updateSf}
             onBack={runner.quitToTitle}
             isGameplay={false}
+            username={runner.username}
+            onSwitchUser={() => {
+              setNewUsernameInput(runner.username);
+              setShowUserModal(true);
+            }}
           />
         )}
 
@@ -349,6 +358,11 @@ export default function App() {
                 setSf={runner.updateSf}
                 onBack={() => runner.setShowSettings(false)}
                 isGameplay={true}
+                username={runner.username}
+                onSwitchUser={() => {
+                  setNewUsernameInput(runner.username);
+                  setShowUserModal(true);
+                }}
                 onSave={() => {
                   runner.setShowSettings(false);
                   runner.setShowSaveLoad('SAVE');
@@ -380,6 +394,7 @@ export default function App() {
             onClose={() => runner.setShowChoiceGraph(false)}
             f={runner.f}
             language={runner.language}
+            currentScenario={runner.currentScenario}
             onJumpToChoice={runner.jumpToChoiceSnapshot}
           />
         )}
@@ -398,6 +413,100 @@ export default function App() {
             }}
             autoFocusSearch={runner.historySearchFocused}
           />
+        )}
+
+        {/* === SESSION CONFLICT LOCKOUT OVERLAY === */}
+        {runner.sessionConflict && (
+          <div className="modal-overlay session-conflict-overlay glass-panel" style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            zIndex: 9999,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(20px)',
+            color: '#fff',
+            textAlign: 'center',
+            padding: '20px'
+          }}>
+            <h2 style={{ color: '#e06c75', fontSize: '2rem', marginBottom: '15px' }}>
+              ⚠️ {runner.language === 'JP' ? '会话冲突' : 'Session Conflict'}
+            </h2>
+            <p style={{ fontSize: '1.1rem', marginBottom: '30px', color: '#abb2bf', maxWidth: '400px', lineHeight: '1.6' }}>
+              {runner.language === 'JP' 
+                ? `用户 "${runner.username}" 已在另一个浏览器窗口中登录并处于活跃状态。为了防止存档损坏，该窗口的操作已被暂停。`
+                : `User "${runner.username}" is already active in another browser window. This session has been suspended to prevent save data corruption.`}
+            </p>
+            <div style={{ display: 'flex', gap: '15px' }}>
+              <button className="control-btn active" onClick={() => window.location.reload()}>
+                {runner.language === 'JP' ? '刷新此窗口' : 'Refresh This Tab'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* === USER PROFILE SWITCHER MODAL === */}
+        {showUserModal && (
+          <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
+            <div className="glass-panel save-load-modal" onClick={(e) => e.stopPropagation()} style={{
+              width: '400px',
+              padding: '30px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px'
+            }}>
+              <h3 className="modal-title" style={{ margin: 0, fontSize: '1.5rem', color: '#61afef' }}>
+                👤 {runner.language === 'JP' ? '切换用户配置文件' : 'Switch User Profile'}
+              </h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontSize: '0.9rem', color: '#abb2bf' }}>
+                  {runner.language === 'JP' ? '当前激活的用户:' : 'Currently active:'} <strong>{runner.username}</strong>
+                </label>
+                <input 
+                  type="text"
+                  placeholder={runner.language === 'JP' ? '输入用户名...' : 'Enter profile name...'}
+                  value={newUsernameInput}
+                  onChange={(e) => setNewUsernameInput(e.target.value)}
+                  style={{
+                    padding: '10px 15px',
+                    borderRadius: '8px',
+                    border: '1px solid #4b5263',
+                    backgroundColor: '#282c34',
+                    color: '#fff',
+                    outline: 'none',
+                    fontSize: '1rem'
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newUsernameInput.trim()) {
+                      runner.setUsername(newUsernameInput.trim());
+                      setShowUserModal(false);
+                    }
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <button className="control-btn" onClick={() => setShowUserModal(false)}>
+                  {runner.language === 'JP' ? '取消' : 'Cancel'}
+                </button>
+                <button 
+                  className="control-btn active"
+                  disabled={!newUsernameInput.trim()}
+                  onClick={() => {
+                    if (newUsernameInput.trim()) {
+                      runner.setUsername(newUsernameInput.trim());
+                      setShowUserModal(false);
+                    }
+                  }}
+                >
+                  {runner.language === 'JP' ? '确认切换' : 'Confirm'}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
       </div>

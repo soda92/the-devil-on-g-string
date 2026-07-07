@@ -740,11 +740,231 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     });
     expect(screen.queryByText('语言 / Language')).toBeNull();
 
-    // 4. Test Quit to title with KeyM
+    // 4. Test Quit to title with KeyQ
     await act(async () => {
-      fireEvent.keyDown(window, { code: 'KeyM' });
+      fireEvent.keyDown(window, { code: 'KeyQ' });
     });
     expect(window.quick_check().gameState).toBe('TITLE');
     expect(screen.queryByText('开始游戏')).not.toBeNull();
+  });
+
+  it('clears dialogue textbox in AVG mode after page_break or wait_click', async () => {
+    const avgMockScenario = {
+      instructions: [
+        { type: 'command', name: 'avg', args: {} },
+        { type: 'text', text_jp: '这是第一句。', text_en: 'This is first.' },
+        { type: 'wait_click' },
+        { type: 'text', text_jp: '这是第二句。', text_en: 'This is second.' },
+        { type: 'page_break' },
+        { type: 'text', text_jp: '这是第三句。', text_en: 'This is third.' }
+      ]
+    };
+
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(avgMockScenario)
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    const App = await getApp();
+    render(<App />);
+
+    const startBtn = screen.getByText(/开始游戏/i) || screen.getByText(/Start Game/i);
+    await act(async () => {
+      fireEvent.click(startBtn);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('这是第一句。')).not.toBeNull();
+    });
+
+    // Advance past wait_click
+    let textLayer = screen.getByText('这是第一句。');
+    await act(async () => {
+      fireEvent.click(textLayer); // Unlock audio
+    });
+    await act(async () => {
+      fireEvent.click(textLayer); // Advance
+    });
+
+    // Verify textbox cleared and only shows second sentence
+    await waitFor(() => {
+      expect(screen.queryByText('这是第二句。')).not.toBeNull();
+      expect(screen.queryByText('这是第一句。')).toBeNull();
+    });
+
+    // Advance past page_break
+    textLayer = screen.getByText('这是第二句。');
+    await act(async () => {
+      fireEvent.click(textLayer); // Advance
+    });
+
+    // Verify textbox cleared and only shows third sentence
+    await waitFor(() => {
+      expect(screen.queryByText('这是第三句。')).not.toBeNull();
+      expect(screen.queryByText('这是第二句。')).toBeNull();
+    });
+
+    global.fetch = originalFetch;
+  });
+
+  it('correctly processes choice selections via exlink and showexlink', async () => {
+    const choiceMockScenario = {
+      instructions: [
+        { type: 'command', name: 'exlink', args: { txt: '选项一', target: '*target_label_01', exp: 'f.flag_tubaki+=1' } },
+        { type: 'command', name: 'exlink', args: { txt: '选项二', target: '*target_label_02' } },
+        { type: 'command', name: 'showexlink', args: {} },
+        { type: 'label', name: 'target_label_01' },
+        { type: 'text', text_jp: '来到了路线一。', text_en: 'Route 1.' },
+        { type: 'label', name: 'target_label_02' },
+        { type: 'text', text_jp: '来到了路线二。', text_en: 'Route 2.' }
+      ]
+    };
+
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(choiceMockScenario)
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    const App = await getApp();
+    render(<App />);
+
+    const startBtn = screen.getByText(/开始游戏/i) || screen.getByText(/Start Game/i);
+    await act(async () => {
+      fireEvent.click(startBtn);
+    });
+
+    let opt1, opt2;
+    await waitFor(() => {
+      opt1 = screen.getByText('选项一');
+      opt2 = screen.getByText('选项二');
+      expect(opt1).not.toBeNull();
+      expect(opt2).not.toBeNull();
+    });
+
+    await act(async () => {
+      fireEvent.click(opt1);
+    });
+
+    expect(window.quick_check().f.flag_tubaki).toBe(1);
+    await waitFor(() => {
+      expect(screen.queryByText('来到了路线一。')).not.toBeNull();
+      expect(screen.queryByText('来到了路线二。')).toBeNull();
+    });
+
+    global.fetch = originalFetch;
+  });
+
+  it('displays locked/bypassed badges in ChoiceGraphModal when active on a heroine route', async () => {
+    const mockScenario = {
+      instructions: [
+        { type: 'text', text_jp: '在椿姬线第一天。', text_en: 'Tsubaki route day 1.' }
+      ]
+    };
+
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockScenario)
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    window.history.pushState({}, '', '/?scen=gt01&ptr=0');
+
+    const App = await getApp();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('在椿姬线第一天。')).not.toBeNull();
+    });
+
+    const routeBtn = screen.getByText('路线');
+    await act(async () => {
+      fireEvent.click(routeBtn);
+    });
+
+    expect(screen.queryByText('路线进度与选择历史') || screen.queryByText('Route Flowchart / Choices')).not.toBeNull();
+
+    const activeBadge = screen.queryByText('💖 选中') || screen.queryByText('💖 Active');
+    expect(activeBadge).not.toBeNull();
+
+    const bypassedBadges = screen.queryAllByText('🔒 关闭').concat(screen.queryAllByText('🔒 Bypassed'));
+    expect(bypassedBadges.length).toBe(3);
+
+    global.fetch = originalFetch;
+  });
+
+  it('correctly halts fast-forwarding when encountering unread text in READ_ONLY skip mode', async () => {
+    const mockScenario = {
+      instructions: [
+        { type: 'text', text_jp: '第一句已读。', text_en: 'First read.' },
+        { type: 'text', text_jp: '第二句未读。', text_en: 'Second unread.' }
+      ]
+    };
+
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockScenario)
+        });
+      }
+      return Promise.resolve({ ok: false, status: 404 });
+    });
+
+    const App = await getApp();
+    render(<App />);
+
+    const startBtn = screen.getByText(/开始游戏/i) || screen.getByText(/Start Game/i);
+    await act(async () => {
+      fireEvent.click(startBtn);
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('第一句已读。')).not.toBeNull();
+    });
+
+    const quickCheck = window.quick_check();
+    expect(quickCheck.sf.readScenarios).toBeDefined();
+    expect(quickCheck.sf.readScenarios['g01']['0']).toBe(true);
+    expect(quickCheck.sf.readScenarios['g01']['1']).toBeUndefined();
+
+    await act(async () => {
+      window.quick_check().sf.skipMode = 'READ_ONLY';
+    });
+
+    await act(async () => {
+      window.quick_check().pointer = 0;
+    });
+
+    const skipBtn = screen.getByText('快进');
+    await act(async () => {
+      fireEvent.click(skipBtn);
+    });
+
+    expect(window.quick_check().isFastForward).toBe(true);
+
+    await waitFor(() => {
+      expect(window.quick_check().isFastForward).toBe(false);
+      expect(screen.queryByText('第二句未读。')).not.toBeNull();
+    });
+
+    global.fetch = originalFetch;
   });
 });

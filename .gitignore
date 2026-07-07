@@ -14,6 +14,9 @@ compiled_scenarios
 web-app/public/scenarios
 
 the-devil-on-g-string*
+saves.json.old
+saves.db
+saves.json.bak
 
 file_map.json
 gallery_items.json

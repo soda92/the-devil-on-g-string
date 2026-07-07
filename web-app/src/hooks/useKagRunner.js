@@ -44,9 +44,63 @@ export function useKagRunner({
   currentVoiceRef,
   bgmPlayer,
   sePlayer,
-  voicePlayer
+  voicePlayer,
+  toggleBgm
 }) {
   const storagePrefix = config?.storagePrefix || 'school';
+
+  const [username, setUsernameState] = useState(() => localStorage.getItem('school_username') || 'default');
+
+  const setUsername = (newUsername) => {
+    localStorage.setItem('school_username', newUsername);
+    setUsernameState(newUsername);
+  };
+
+  const clientIdRef = useRef(null);
+  if (!clientIdRef.current) {
+    let id = typeof window !== 'undefined' ? sessionStorage.getItem('session_client_id') : null;
+    if (!id) {
+      id = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substring(2) + Date.now().toString(36);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('session_client_id', id);
+      }
+    }
+    clientIdRef.current = id;
+  }
+
+  const [sessionConflict, setSessionConflict] = useState(false);
+
+  // Heartbeat loop to detect concurrent sessions
+  useEffect(() => {
+    const sendHeartbeat = async () => {
+      try {
+        const response = await fetch('/api/heartbeat', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Username': username
+          },
+          body: JSON.stringify({ clientId: clientIdRef.current })
+        });
+        if (response.ok) {
+          const res = await response.json();
+          if (res.status === 'conflict') {
+            setSessionConflict(true);
+          } else {
+            setSessionConflict(false);
+          }
+        }
+      } catch (e) {
+        console.warn("Heartbeat failed", e);
+      }
+    };
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 3000);
+    return () => clearInterval(interval);
+  }, [username]);
 
   const [language, setLanguage] = useState('JP');
   const [gameState, setGameState] = useState('TITLE');
@@ -117,6 +171,9 @@ export function useKagRunner({
       avgBlur: 16,
       novelOpacity: 8,
       novelBlur: 8,
+      vAlign: 'TOP',
+      hAlign: 'LEFT',
+      immerseMode: false,
       ...(config?.defaultSf || {})
     };
     if (saved) {
@@ -156,6 +213,8 @@ export function useKagRunner({
   const textTimerRef = useRef(null);
   const handleScreenClickRef = useRef(null);
   const currentSpeakerRef = useRef({ jp: '', en: '' });
+  const hasNmCommandRef = useRef(false);
+  const hasWaitedClickRef = useRef(false);
 
   // Update Refs to keep useEffect loop runner closures in sync
   const updateDialogueText = (val) => {
@@ -191,7 +250,12 @@ export function useKagRunner({
   useEffect(() => {
     const init = async () => {
       try {
-        const response = await fetch('/api/state');
+        const response = await fetch('/api/state', {
+          headers: { 
+            'X-Username': username,
+            'X-Client-ID': clientIdRef.current
+          }
+        });
         if (response.ok) {
           const state = await response.json();
           if (state && state.f) setF(prev => ({ ...prev, ...state.f }));
@@ -211,7 +275,11 @@ export function useKagRunner({
               if (needsBackendSave) {
                 fetch('/api/save-sf', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Username': username,
+                    'X-Client-ID': clientIdRef.current
+                  },
                   body: JSON.stringify({ sf: next })
                 }).catch(e => console.warn("Failed to auto-save default SF to backend", e));
               }
@@ -219,36 +287,32 @@ export function useKagRunner({
             });
           }
           if (state && state.slots) {
-            // Merge backend slots into saveSlots state
-            setSaveSlots(prev => {
-              const merged = { ...prev, ...state.slots };
-              return merged;
-            });
-            // Write backend slots to localStorage, respecting timestamps to avoid overwriting newer local saves
-            Object.entries(state.slots).forEach(([slotId, slotData]) => {
-              if (slotData) {
-                const key = slotId === 'autosave' ? `${storagePrefix}_autosave` : `${storagePrefix}_save_slot_${slotId}`;
-                const parsedData = typeof slotData === 'string' ? JSON.parse(slotData) : slotData;
-                
-                // Check if local storage has a newer version
-                const localStr = localStorage.getItem(key);
-                let keepLocal = false;
-                if (localStr) {
-                  try {
-                    const localData = JSON.parse(localStr);
-                    const localTS = localData.timestamp || 0;
-                    const remoteTS = parsedData.timestamp || 0;
-                    if (localTS > remoteTS) {
-                      keepLocal = true;
-                    }
-                  } catch (e) {}
-                }
-                
-                if (!keepLocal) {
-                  localStorage.setItem(key, JSON.stringify(parsedData));
-                }
+            setSaveSlots(state.slots);
+            const activeSlots = state.slots || {};
+
+            // Sync autosave
+            const autosaveKey = `${storagePrefix}_autosave`;
+            if (activeSlots.autosave) {
+              localStorage.setItem(autosaveKey, JSON.stringify(activeSlots.autosave));
+            } else {
+              localStorage.removeItem(autosaveKey);
+            }
+
+            // Sync manual slots
+            for (let i = 0; i < 24; i++) {
+              const key = `${storagePrefix}_save_slot_${i}`;
+              if (activeSlots[i]) {
+                localStorage.setItem(key, JSON.stringify(activeSlots[i]));
+              } else {
+                localStorage.removeItem(key);
               }
-            });
+            }
+          } else {
+            setSaveSlots({});
+            localStorage.removeItem(`${storagePrefix}_autosave`);
+            for (let i = 0; i < 24; i++) {
+              localStorage.removeItem(`${storagePrefix}_save_slot_${i}`);
+            }
           }
         }
       } catch (e) {
@@ -258,14 +322,18 @@ export function useKagRunner({
       }
     };
     init();
-  }, []);
+  }, [username]);
 
   const updateSf = (updater) => {
     setSf(prev => {
       const nextSf = typeof updater === 'function' ? updater(prev) : updater;
       fetch('/api/save-sf', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Username': username,
+          'X-Client-ID': clientIdRef.current
+        },
         body: JSON.stringify(nextSf)
       }).catch(err => console.error("Failed to save SF to backend", err));
       localStorage.setItem(`${storagePrefix}_sf`, JSON.stringify(nextSf));
@@ -359,6 +427,7 @@ export function useKagRunner({
         let initialSpeaker = '';
         let initialDialogueMode = 'avg';
         let initialVoice = '';
+        let hasNm = false;
         
         for (let i = 0; i < startIdx; i++) {
           const inst = data.instructions[i];
@@ -366,6 +435,12 @@ export function useKagRunner({
             if (inst.type === 'page_break' || inst.type === 'clear_text') {
               initialSpeaker = '';
               initialVoice = '';
+              hasNm = false;
+            } else if (inst.type === 'text') {
+              if (!hasNm) {
+                initialSpeaker = '';
+              }
+              hasNm = false;
             } else if (inst.type === 'command') {
               const args = inst.args || {};
             if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm' || inst.name === 'fibgm' || inst.name === 'xbgm') {
@@ -451,6 +526,7 @@ export function useKagRunner({
             } else if (inst.name === 'name' || inst.name === 'nm') {
               initialSpeaker = args.txt || args.t || '';
               initialVoice = args.s || '';
+              hasNm = true;
             } else if (inst.name === 'novel') {
               initialDialogueMode = 'novel';
             } else if (inst.name === 'avg' || inst.name === 'avg_with_name') {
@@ -465,10 +541,16 @@ export function useKagRunner({
         setSprites(initialSprites);
         spritesRef.current = initialSprites;
         setDialogueMode(initialDialogueMode);
+        
+        hasNmCommandRef.current = hasNm;
+        
         if (initialSpeaker) {
           const resolvedSp = resolveCharacterName(initialSpeaker, 'JP', config?.characterNames);
           setSpeaker(resolvedSp);
           currentSpeakerRef.current = { jp: resolvedSp, en: resolveCharacterName(resolvedSp, 'EN', config?.characterNames) };
+        } else {
+          setSpeaker('');
+          currentSpeakerRef.current = { jp: '', en: '' };
         }
         initialVoiceRef.current = initialVoice;
         setCurrentVoice(initialVoice);
@@ -598,7 +680,11 @@ export function useKagRunner({
     autosaveTimeoutRef.current = setTimeout(() => {
       fetch('/api/save-slot', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Username': username,
+          'X-Client-ID': clientIdRef.current
+        },
         body: JSON.stringify({ slot: 'autosave', data: saveData })
       }).catch(e => console.error("Failed to auto-save to backend", e));
     }, 2000);
@@ -622,6 +708,7 @@ export function useKagRunner({
     let newTf = { ...tfRef.current };
     let tempSprites = { ...spritesRef.current };
     let tempBackground = backgroundRef.current;
+    let collectedOptions = [];
 
     while (p < scenarioData.length && !shouldBlock) {
       const inst = scenarioData[p];
@@ -815,6 +902,7 @@ export function useKagRunner({
             const enName = resolveCharacterName(args.txt_en || args.t_en || args.t || '', 'EN', config?.characterNames);
             currentSpeakerRef.current = { jp: jpName, en: enName };
             setSpeaker(language === 'JP' ? jpName : enName);
+            hasNmCommandRef.current = true;
             if (inst.name === 'nm' && args.s) {
               playVoice(args.s);
               currentVoiceRef.current = args.s;
@@ -849,6 +937,46 @@ export function useKagRunner({
             setDialogueMode('avg');
             setTypewriterText('');
             updateDialogueText('');
+          } else if (inst.name === 'exlink') {
+            const txtJp = args.txt || '';
+            const txtEn = args.txt_en || txtJp;
+            collectedOptions.push({
+              text_jp: txtJp,
+              text_en: txtEn,
+              target: args.target ? args.target.replace('*', '') : '',
+              exp: args.exp || null
+            });
+          } else if (inst.name === 'showexlink') {
+            let finalOptions = collectedOptions;
+            if (finalOptions.length === 0) {
+              let searchP = p - 2;
+              while (searchP >= 0) {
+                const prevInst = scenarioData[searchP];
+                if (!prevInst) break;
+                if (prevInst.type === 'command' && prevInst.name === 'exlink') {
+                  const prevArgs = prevInst.args || {};
+                  const prevTxtJp = prevArgs.txt || '';
+                  const prevTxtEn = prevArgs.txt_en || prevTxtJp;
+                  finalOptions.unshift({
+                    text_jp: prevTxtJp,
+                    text_en: prevTxtEn,
+                    target: prevArgs.target ? prevArgs.target.replace('*', '') : '',
+                    exp: prevArgs.exp || null
+                  });
+                  searchP--;
+                } else if (prevInst.type === 'line_feed' || prevInst.type === 'comment' || prevInst.type === 'label') {
+                  searchP--;
+                } else {
+                  break;
+                }
+              }
+            }
+            if (finalOptions.length > 0) {
+              setShowOptions(finalOptions);
+              shouldBlock = true;
+              setIsFastForward(false);
+              isFastForwardRef.current = false;
+            }
           } else if (inst.name === 'jump') {
             const storage = args.storage ? args.storage.replace('.ks', '') : currentScenario;
             const target = args.target ? args.target.replace('*', '') : null;
@@ -875,9 +1003,38 @@ export function useKagRunner({
           break;
           
         case 'text':
+          const currentPtr = p - 1;
+          if (newSf.readScenarios === undefined) {
+            newSf.readScenarios = {};
+          }
+          if (!newSf.readScenarios[currentScenario]) {
+            newSf.readScenarios[currentScenario] = {};
+          }
+          
+          const isRead = newSf.readScenarios[currentScenario][currentPtr] === true;
+          
+          if (isFastForwardRef.current && newSf.skipMode === 'READ_ONLY' && !isRead) {
+            setIsFastForward(false);
+            isFastForwardRef.current = false;
+          }
+          
+          newSf.readScenarios[currentScenario][currentPtr] = true;
+
+          if (!hasNmCommandRef.current) {
+            setSpeaker('');
+            currentSpeakerRef.current = { jp: '', en: '' };
+          }
+          hasNmCommandRef.current = false;
+          
           setCurrentVoice(currentVoiceRef.current || '');
           const displayTxt = language === 'JP' ? inst.text_jp : inst.text_en;
-          const prevDiag = dialogueTextRef.current;
+          
+          let prevDiag = dialogueTextRef.current;
+          if (dialogueMode === 'avg' && hasWaitedClickRef.current) {
+            prevDiag = '';
+          }
+          hasWaitedClickRef.current = false;
+          
           let targetFullText;
           if (dialogueMode === 'novel' && prevDiag !== '') {
             const separator = (prevDiag.endsWith('<br />') || prevDiag.endsWith('<br/>')) ? '' : '<br />';
@@ -920,13 +1077,7 @@ export function useKagRunner({
                 snapshot
               }
             ];
-            // Strip snapshots older than 150 entries to keep memory and saves lightweight
-            return newHistory.map((item, idx) => {
-              if (idx < newHistory.length - 150 && item.snapshot) {
-                return { ...item, snapshot: null };
-              }
-              return item;
-            });
+            return newHistory;
           });
           currentVoiceRef.current = null;
           shouldBlock = true;
@@ -939,11 +1090,17 @@ export function useKagRunner({
           break;
           
         case 'page_break':
-          setTypewriterText('');
-          updateDialogueText('');
-          setSpeaker('');
-          currentSpeakerRef.current = { jp: '', en: '' };
-          currentVoiceRef.current = null;
+          if (p - 1 !== pointer) {
+            p = p - 1;
+            shouldBlock = true;
+          } else {
+            setTypewriterText('');
+            updateDialogueText('');
+            setSpeaker('');
+            currentSpeakerRef.current = { jp: '', en: '' };
+            currentVoiceRef.current = null;
+            hasNmCommandRef.current = false;
+          }
           break;
           
         case 'clear_text':
@@ -952,6 +1109,7 @@ export function useKagRunner({
           setSpeaker('');
           currentSpeakerRef.current = { jp: '', en: '' };
           currentVoiceRef.current = null;
+          hasNmCommandRef.current = false;
           break;
           
         case 'line_feed':
@@ -1080,6 +1238,7 @@ export function useKagRunner({
 
     if (isFastForward) {
       const timer = setTimeout(() => {
+        hasWaitedClickRef.current = true;
         setIsWaiting(false);
       }, 80);
       return () => clearTimeout(timer);
@@ -1089,6 +1248,7 @@ export function useKagRunner({
       const charCount = typewriterText.length;
       const readDelay = Math.max(1200, charCount * 70); 
       const timer = setTimeout(() => {
+        hasWaitedClickRef.current = true;
         setIsWaiting(false);
       }, readDelay);
       return () => clearTimeout(timer);
@@ -1185,6 +1345,7 @@ export function useKagRunner({
     }
     
     if (isWaiting) {
+      hasWaitedClickRef.current = true;
       setIsWaiting(false);
     }
   };
@@ -1371,7 +1532,11 @@ export function useKagRunner({
     
     fetch('/api/save-slot', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Username': username,
+        'X-Client-ID': clientIdRef.current
+      },
       body: JSON.stringify({ slot: String(slotIdx), data: saveData })
     }).catch(e => console.error("Failed to save slot to backend", e));
 
@@ -1636,6 +1801,23 @@ export function useKagRunner({
         return;
       }
 
+      // Toggle immerse mode
+      if (DEFAULT_SHORTCUTS.TOGGLE_IMMERSE.includes(code)) {
+        e.preventDefault();
+        if (!isAudioUnlocked) setIsAudioUnlocked(true);
+        updateSf(prev => ({ ...prev, immerseMode: !prev.immerseMode }));
+        return;
+      }
+
+      // Toggle mute/unmute
+      if (DEFAULT_SHORTCUTS.TOGGLE_MUTE.includes(code)) {
+        e.preventDefault();
+        if (toggleBgm) {
+          toggleBgm();
+        }
+        return;
+      }
+
       // 5. Toggle text visibility
       if (DEFAULT_SHORTCUTS.TOGGLE_TEXT.includes(code)) {
         e.preventDefault();
@@ -1655,7 +1837,7 @@ export function useKagRunner({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [gameState, showSaveLoad, showSettings, showChoiceGraph, showHistory, isAudioUnlocked]);
+  }, [gameState, showSaveLoad, showSettings, showChoiceGraph, showHistory, isAudioUnlocked, toggleBgm]);
 
   const replayCurrentVoice = () => {
     if (currentVoice) {
@@ -1724,6 +1906,9 @@ export function useKagRunner({
     setIsAudioUnlocked,
     quakeActive,
     flashActive,
-    storagePrefix
+    storagePrefix,
+    username,
+    setUsername,
+    sessionConflict
   };
 }

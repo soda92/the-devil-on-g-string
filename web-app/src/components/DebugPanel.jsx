@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import scenarioNames from '../scenario_names.json';
 import { resolveAsset } from '../utils/gameUtils';
 
@@ -19,13 +19,19 @@ export default function DebugPanel({
   playVoice,
   onClose
 }) {
-  const [tab, setTab] = useState('debug'); // 'debug' or 'dialogues'
+  // Remember the active tab in localStorage across panel opens/closes
+  const [tab, setTab] = useState(() => {
+    return localStorage.getItem('debug_panel_active_tab') || 'debug';
+  });
+  
   const [selectedScenario, setSelectedScenario] = useState(currentScenario);
   const [targetPointer, setTargetPointer] = useState(pointer);
   const [customVarName, setCustomVarName] = useState('');
   const [customVarValue, setCustomVarValue] = useState('');
   const [bgmState, setBgmState] = useState({ src: 'None', paused: true, volume: 1, muted: false });
   const [searchQuery, setSearchQuery] = useState('');
+
+  const activeCardRef = useRef(null);
 
   // Update selectedScenario and targetPointer when props change
   useEffect(() => {
@@ -35,6 +41,25 @@ export default function DebugPanel({
   useEffect(() => {
     setTargetPointer(pointer);
   }, [pointer]);
+
+  // Clear search query when the scenario changes to ensure dialogues are visible
+  useEffect(() => {
+    setSearchQuery('');
+  }, [currentScenario]);
+
+  // Auto-scroll active dialogue into view. Includes scenarioData in dependency array
+  // to ensure centering happens once the async scenario load finishes.
+  useEffect(() => {
+    if (tab === 'dialogues' && activeCardRef.current) {
+      const timer = setTimeout(() => {
+        activeCardRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [tab, pointer, scenarioData]);
 
   useEffect(() => {
     if (!bgmPlayer) return;
@@ -58,6 +83,11 @@ export default function DebugPanel({
       bgmPlayer.removeEventListener('volumechange', updateStatus);
     };
   }, [bgmPlayer]);
+
+  const handleTabChange = (newTab) => {
+    setTab(newTab);
+    localStorage.setItem('debug_panel_active_tab', newTab);
+  };
 
   const handleJump = () => {
     loadScenario(selectedScenario, null, parseInt(targetPointer) || 0);
@@ -153,7 +183,7 @@ export default function DebugPanel({
       {/* Tabs */}
       <div style={{ display: 'flex', gap: '5px', marginBottom: '12px', flexShrink: 0 }}>
         <button 
-          onClick={() => setTab('debug')} 
+          onClick={() => handleTabChange('debug')} 
           style={{
             flex: 1,
             background: tab === 'debug' ? '#ff4444' : '#222',
@@ -170,7 +200,7 @@ export default function DebugPanel({
           Runner & Vars
         </button>
         <button 
-          onClick={() => setTab('dialogues')} 
+          onClick={() => handleTabChange('dialogues')} 
           style={{
             flex: 1,
             background: tab === 'dialogues' ? '#ff4444' : '#222',
@@ -337,15 +367,15 @@ export default function DebugPanel({
         </div>
       ) : (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Search box */}
-          <div style={{ marginBottom: '10px', flexShrink: 0 }}>
+          {/* Search box & Sync button */}
+          <div style={{ marginBottom: '10px', flexShrink: 0, display: 'flex', gap: '5px' }}>
             <input 
               type="text" 
               placeholder="Search dialogues, speakers, pointers..." 
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
-                width: '100%', 
+                flex: 1,
                 background: '#222', 
                 color: '#fff', 
                 border: '1px solid #444', 
@@ -356,6 +386,34 @@ export default function DebugPanel({
                 fontFamily: 'sans-serif'
               }}
             />
+            <button 
+              onClick={() => {
+                setSearchQuery(''); // Clear search so the active card is always visible
+                setTimeout(() => {
+                  activeCardRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                  });
+                }, 50);
+              }}
+              style={{
+                background: '#444',
+                color: '#fff',
+                border: '1px solid #555',
+                borderRadius: '4px',
+                padding: '0 8px',
+                cursor: 'pointer',
+                fontSize: '11px',
+                fontWeight: 'bold',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.2s'
+              }}
+              title="Sync to current line"
+            >
+              🎯 Sync
+            </button>
           </div>
 
           {/* Dialog list container */}
@@ -375,6 +433,7 @@ export default function DebugPanel({
                 return (
                   <div 
                     key={d.ptr}
+                    ref={isCurrent ? activeCardRef : null}
                     style={{
                       background: isCurrent ? 'rgba(255, 68, 68, 0.12)' : 'rgba(255, 255, 255, 0.03)',
                       border: isCurrent ? '1px solid #ff4444' : '1px solid rgba(255, 255, 255, 0.08)',

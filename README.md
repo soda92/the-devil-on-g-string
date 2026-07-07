@@ -23,6 +23,9 @@ This project completely rewrites the original engine player, replacing it with a
     *   `Space`: Toggles dialogue textbox visibility (to admire backgrounds and character sprites).
     *   `Enter` / `NumpadEnter`: Advances dialogue, or makes the textbox visible again if hidden.
     *   `Escape`: Closes any active overlay (Settings, Save/Load slot selector, History backlog, or Flowchart).
+    *   `I`: Toggles Immersive Subtitle (CC) Mode.
+    *   `Q`: Quits to title menu.
+    *   `M`: Mutes/unmutes background music.
 
 ---
 
@@ -39,6 +42,9 @@ This project completely rewrites the original engine player, replacing it with a
     *   `空格键 (Space)`: 隐藏/显示对话框（便于观赏背景 CG 及角色立绘）。
     *   `回车键 (Enter)`: 推进对话，或者在对话框处于隐藏状态时重新将其显示。
     *   `ESC 键 (Escape)`: 关闭当前打开的任何覆盖层模态框（系统设置、保存/读取存档、历史记录或路线图）。
+    *   `I 键`: 开启/关闭字幕沉浸模式。
+    *   `Q 键`: 返回主菜单。
+    *   `M 键`: 静音/恢复背景音乐。
 
 ---
 
