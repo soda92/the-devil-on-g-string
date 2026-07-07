@@ -58,9 +58,16 @@ export function useKagRunner({
 
   const clientIdRef = useRef(null);
   if (!clientIdRef.current) {
-    clientIdRef.current = typeof crypto !== 'undefined' && crypto.randomUUID
-      ? crypto.randomUUID()
-      : Math.random().toString(36).substring(2) + Date.now().toString(36);
+    let id = typeof window !== 'undefined' ? sessionStorage.getItem('session_client_id') : null;
+    if (!id) {
+      id = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substring(2) + Date.now().toString(36);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('session_client_id', id);
+      }
+    }
+    clientIdRef.current = id;
   }
 
   const [sessionConflict, setSessionConflict] = useState(false);
