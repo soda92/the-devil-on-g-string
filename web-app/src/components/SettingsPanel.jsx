@@ -9,7 +9,9 @@ export default function SettingsPanel({
   isGameplay, 
   onSave, 
   onLoad, 
-  onQuit 
+  onQuit,
+  username = 'default',
+  onSwitchUser
 }) {
   const vol = sf.vol !== undefined && !isNaN(sf.vol) ? sf.vol : 8;
   const sevol = sf.sevol !== undefined && !isNaN(sf.sevol) ? sf.sevol : 8;
@@ -23,6 +25,16 @@ export default function SettingsPanel({
       <h2 className="screen-title">{language === 'JP' ? '设置' : 'SETTINGS'}</h2>
       
       <div className="settings-options-container">
+        <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? '当前用户 / Profile' : 'Current Profile'}</label>
+          <div className="settings-control-buttons" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ color: '#ce9178', fontWeight: 'bold', minWidth: '80px' }}>👤 {username}</span>
+            <button className="control-btn" onClick={onSwitchUser}>
+              {language === 'JP' ? '切换用户' : 'Switch User'}
+            </button>
+          </div>
+        </div>
+
         <div className="settings-row">
           <label className="settings-label">{language === 'JP' ? '语言 / Language' : 'Language / 语言'}</label>
           <div className="settings-control-buttons">

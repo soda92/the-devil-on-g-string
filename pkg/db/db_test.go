@@ -36,14 +36,14 @@ func TestSystemFlags(t *testing.T) {
 		},
 	}
 
-	// Save SF
-	err := SaveSFToDB(testSF)
+	// Save SF for default user
+	err := SaveSFToDB("default", testSF)
 	if err != nil {
 		t.Errorf("SaveSFToDB failed: %v", err)
 	}
 
 	// Load and verify
-	sf, _, err := LoadStateFromDB()
+	sf, _, err := LoadStateFromDB("default")
 	if err != nil {
 		t.Errorf("LoadStateFromDB failed: %v", err)
 	}
@@ -64,6 +64,39 @@ func TestSystemFlags(t *testing.T) {
 
 	if g01["0"] != true {
 		t.Errorf("expected g01 ptr 0 to be true")
+	}
+}
+
+func TestSystemFlagsMultiUser(t *testing.T) {
+	setupTestDB(t)
+
+	aliceSF := map[string]interface{}{"typewriterMode": "CHAR"}
+	bobSF := map[string]interface{}{"typewriterMode": "WORD"}
+
+	// Save SF for both
+	if err := SaveSFToDB("alice", aliceSF); err != nil {
+		t.Errorf("failed to save alice SF: %v", err)
+	}
+	if err := SaveSFToDB("bob", bobSF); err != nil {
+		t.Errorf("failed to save bob SF: %v", err)
+	}
+
+	// Verify Alice
+	sfAlice, _, err := LoadStateFromDB("alice")
+	if err != nil {
+		t.Errorf("failed to load alice state: %v", err)
+	}
+	if sfAlice["typewriterMode"] != "CHAR" {
+		t.Errorf("expected alice typewriterMode CHAR, got %v", sfAlice["typewriterMode"])
+	}
+
+	// Verify Bob
+	sfBob, _, err := LoadStateFromDB("bob")
+	if err != nil {
+		t.Errorf("failed to load bob state: %v", err)
+	}
+	if sfBob["typewriterMode"] != "WORD" {
+		t.Errorf("expected bob typewriterMode WORD, got %v", sfBob["typewriterMode"])
 	}
 }
 
@@ -100,14 +133,14 @@ func TestSaveSlotAndProgress(t *testing.T) {
 		},
 	}
 
-	// Save slot
-	err := SaveSlotToDB(slotID, saveData, historyLog)
+	// Save slot for default user
+	err := SaveSlotToDB("default", slotID, saveData, historyLog)
 	if err != nil {
 		t.Errorf("SaveSlotToDB failed: %v", err)
 	}
 
 	// Load and verify
-	_, slots, err := LoadStateFromDB()
+	_, slots, err := LoadStateFromDB("default")
 	if err != nil {
 		t.Errorf("LoadStateFromDB failed: %v", err)
 	}
@@ -158,7 +191,6 @@ func TestSaveSlotAndProgress(t *testing.T) {
 	}
 
 	// --- Test Overwrite ---
-	// Save again with only 1 entry in history log to test clean clean-up
 	newHistoryLog := []interface{}{
 		map[string]interface{}{
 			"currentScenario": "g02",
@@ -170,13 +202,13 @@ func TestSaveSlotAndProgress(t *testing.T) {
 		},
 	}
 
-	err = SaveSlotToDB(slotID, saveData, newHistoryLog)
+	err = SaveSlotToDB("default", slotID, saveData, newHistoryLog)
 	if err != nil {
 		t.Errorf("overwrite SaveSlotToDB failed: %v", err)
 	}
 
 	// Load and verify overwrite
-	_, slots, err = LoadStateFromDB()
+	_, slots, err = LoadStateFromDB("default")
 	if err != nil {
 		t.Errorf("LoadStateFromDB failed: %v", err)
 	}
@@ -190,14 +222,79 @@ func TestSaveSlotAndProgress(t *testing.T) {
 
 	entry := loadedHistory[0].(map[string]interface{})
 	if entry["textJp"] != "新的话。" {
-		t.Errorf("expected text新的话。, got %v", entry["textJp"])
+		t.Errorf("expected text 新的话。, got %v", entry["textJp"])
+	}
+}
+
+func TestSaveSlotAndProgressMultiUser(t *testing.T) {
+	setupTestDB(t)
+
+	// Alice saveData
+	aliceData := map[string]interface{}{"currentScenario": "g01"}
+	aliceHistory := []interface{}{
+		map[string]interface{}{
+			"currentScenario": "g01",
+			"pointer":         float64(0),
+			"speakerJp":       "京介",
+			"speakerEn":       "Kyousuke",
+			"textJp":          "第一句",
+			"textEn":          "Line 1",
+		},
+	}
+
+	// Bob saveData
+	bobData := map[string]interface{}{"currentScenario": "g02"}
+	bobHistory := []interface{}{
+		map[string]interface{}{
+			"currentScenario": "g02",
+			"pointer":         float64(5),
+			"speakerJp":       "春原",
+			"speakerEn":       "Sunohara",
+			"textJp":          "第二句",
+			"textEn":          "Line 2",
+		},
+	}
+
+	// Save both under slot_id "1"
+	if err := SaveSlotToDB("alice", "1", aliceData, aliceHistory); err != nil {
+		t.Errorf("failed to save alice slot: %v", err)
+	}
+	if err := SaveSlotToDB("bob", "1", bobData, bobHistory); err != nil {
+		t.Errorf("failed to save bob slot: %v", err)
+	}
+
+	// Load Alice and verify
+	_, aliceSlots, err := LoadStateFromDB("alice")
+	if err != nil {
+		t.Errorf("failed to load alice state: %v", err)
+	}
+	aliceSlot1 := aliceSlots["1"].(map[string]interface{})
+	if aliceSlot1["currentScenario"] != "g01" {
+		t.Errorf("expected alice slot 1 scenario g01, got %v", aliceSlot1["currentScenario"])
+	}
+	aliceHist := aliceSlot1["historyLog"].([]interface{})
+	if len(aliceHist) != 1 || aliceHist[0].(map[string]interface{})["speakerEn"] != "Kyousuke" {
+		t.Errorf("alice history mismatch")
+	}
+
+	// Load Bob and verify
+	_, bobSlots, err := LoadStateFromDB("bob")
+	if err != nil {
+		t.Errorf("failed to load bob state: %v", err)
+	}
+	bobSlot1 := bobSlots["1"].(map[string]interface{})
+	if bobSlot1["currentScenario"] != "g02" {
+		t.Errorf("expected bob slot 1 scenario g02, got %v", bobSlot1["currentScenario"])
+	}
+	bobHist := bobSlot1["historyLog"].([]interface{})
+	if len(bobHist) != 1 || bobHist[0].(map[string]interface{})["speakerEn"] != "Sunohara" {
+		t.Errorf("bob history mismatch")
 	}
 }
 
 func TestMigrateFromJSON(t *testing.T) {
 	setupTestDB(t)
 
-	// Create a temporary JSON saves file
 	tempSavesFile := "temp_saves_test.json"
 	tempSavesBackup := "temp_saves_test.json.bak"
 
@@ -235,14 +332,13 @@ func TestMigrateFromJSON(t *testing.T) {
 		t.Fatalf("failed to write temp file: %v", err)
 	}
 
-	// Perform migration
 	err = MigrateFromJSON(tempSavesFile, tempSavesBackup)
 	if err != nil {
 		t.Errorf("MigrateFromJSON failed: %v", err)
 	}
 
-	// Verify database content
-	sf, slots, err := LoadStateFromDB()
+	// Verify migrated data is loaded under the "default" user
+	sf, slots, err := LoadStateFromDB("default")
 	if err != nil {
 		t.Errorf("LoadStateFromDB failed: %v", err)
 	}
@@ -268,7 +364,7 @@ func TestMigrateFromJSON(t *testing.T) {
 
 	entry := history[0].(map[string]interface{})
 	if entry["textJp"] != "老数据。" {
-		t.Errorf("expected text老数据。")
+		t.Errorf("expected text 老数据。")
 	}
 
 	// Verify JSON backup file exists and original is deleted

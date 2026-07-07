@@ -110,37 +110,33 @@ export function useGameAudio(vol = 8, sevol = 8) {
 
   // Auto-pause all active players when tab/app is inactive (lost focus/blur/hidden), and resume state when active
   useEffect(() => {
-    let wasBgmAutoPaused = false;
-    let wasSeAutoPaused = false;
-    let wasVoiceAutoPaused = false;
-
     const pauseAll = () => {
       if (bgmPlayer && !bgmPlayer.paused) {
         bgmPlayer.pause();
-        wasBgmAutoPaused = true;
+        bgmPlayer.__wasAutoPaused__ = true;
       }
       if (sePlayer && !sePlayer.paused) {
         sePlayer.pause();
-        wasSeAutoPaused = true;
+        sePlayer.__wasAutoPaused__ = true;
       }
       if (voicePlayer && !voicePlayer.paused) {
         voicePlayer.pause();
-        wasVoiceAutoPaused = true;
+        voicePlayer.__wasAutoPaused__ = true;
       }
     };
 
     const resumeAll = () => {
-      if (wasBgmAutoPaused && bgmPlayer) {
+      if (bgmPlayer && bgmPlayer.__wasAutoPaused__) {
         bgmPlayer.play().catch(err => console.log("BGM auto-resume interrupted", err));
-        wasBgmAutoPaused = false;
+        bgmPlayer.__wasAutoPaused__ = false;
       }
-      if (wasSeAutoPaused && sePlayer) {
+      if (sePlayer && sePlayer.__wasAutoPaused__) {
         sePlayer.play().catch(err => console.log("SE auto-resume interrupted", err));
-        wasSeAutoPaused = false;
+        sePlayer.__wasAutoPaused__ = false;
       }
-      if (wasVoiceAutoPaused && voicePlayer) {
+      if (voicePlayer && voicePlayer.__wasAutoPaused__) {
         voicePlayer.play().catch(err => console.log("Voice auto-resume interrupted", err));
-        wasVoiceAutoPaused = false;
+        voicePlayer.__wasAutoPaused__ = false;
       }
     };
 

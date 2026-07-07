@@ -49,6 +49,52 @@ export function useKagRunner({
 }) {
   const storagePrefix = config?.storagePrefix || 'school';
 
+  const [username, setUsernameState] = useState(() => localStorage.getItem('school_username') || 'default');
+
+  const setUsername = (newUsername) => {
+    localStorage.setItem('school_username', newUsername);
+    setUsernameState(newUsername);
+  };
+
+  const clientIdRef = useRef(null);
+  if (!clientIdRef.current) {
+    clientIdRef.current = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : Math.random().toString(36).substring(2) + Date.now().toString(36);
+  }
+
+  const [sessionConflict, setSessionConflict] = useState(false);
+
+  // Heartbeat loop to detect concurrent sessions
+  useEffect(() => {
+    const sendHeartbeat = async () => {
+      try {
+        const response = await fetch('/api/heartbeat', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Username': username
+          },
+          body: JSON.stringify({ clientId: clientIdRef.current })
+        });
+        if (response.ok) {
+          const res = await response.json();
+          if (res.status === 'conflict') {
+            setSessionConflict(true);
+          } else {
+            setSessionConflict(false);
+          }
+        }
+      } catch (e) {
+        console.warn("Heartbeat failed", e);
+      }
+    };
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 3000);
+    return () => clearInterval(interval);
+  }, [username]);
+
   const [language, setLanguage] = useState('JP');
   const [gameState, setGameState] = useState('TITLE');
   
@@ -197,7 +243,12 @@ export function useKagRunner({
   useEffect(() => {
     const init = async () => {
       try {
-        const response = await fetch('/api/state');
+        const response = await fetch('/api/state', {
+          headers: { 
+            'X-Username': username,
+            'X-Client-ID': clientIdRef.current
+          }
+        });
         if (response.ok) {
           const state = await response.json();
           if (state && state.f) setF(prev => ({ ...prev, ...state.f }));
@@ -217,7 +268,11 @@ export function useKagRunner({
               if (needsBackendSave) {
                 fetch('/api/save-sf', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Username': username,
+                    'X-Client-ID': clientIdRef.current
+                  },
                   body: JSON.stringify({ sf: next })
                 }).catch(e => console.warn("Failed to auto-save default SF to backend", e));
               }
@@ -264,14 +319,18 @@ export function useKagRunner({
       }
     };
     init();
-  }, []);
+  }, [username]);
 
   const updateSf = (updater) => {
     setSf(prev => {
       const nextSf = typeof updater === 'function' ? updater(prev) : updater;
       fetch('/api/save-sf', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Username': username,
+          'X-Client-ID': clientIdRef.current
+        },
         body: JSON.stringify(nextSf)
       }).catch(err => console.error("Failed to save SF to backend", err));
       localStorage.setItem(`${storagePrefix}_sf`, JSON.stringify(nextSf));
@@ -618,7 +677,11 @@ export function useKagRunner({
     autosaveTimeoutRef.current = setTimeout(() => {
       fetch('/api/save-slot', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Username': username,
+          'X-Client-ID': clientIdRef.current
+        },
         body: JSON.stringify({ slot: 'autosave', data: saveData })
       }).catch(e => console.error("Failed to auto-save to backend", e));
     }, 2000);
@@ -1466,7 +1529,11 @@ export function useKagRunner({
     
     fetch('/api/save-slot', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-Username': username,
+        'X-Client-ID': clientIdRef.current
+      },
       body: JSON.stringify({ slot: String(slotIdx), data: saveData })
     }).catch(e => console.error("Failed to save slot to backend", e));
 
@@ -1836,6 +1903,9 @@ export function useKagRunner({
     setIsAudioUnlocked,
     quakeActive,
     flashActive,
-    storagePrefix
+    storagePrefix,
+    username,
+    setUsername,
+    sessionConflict
   };
 }

@@ -11,17 +11,19 @@ import (
 )
 
 type SystemFlag struct {
-	ID uint   `gorm:"primaryKey;check:id = 1"`
-	SF string `gorm:"type:text;not null"`
+	Username string `gorm:"primaryKey"`
+	SF       string `gorm:"type:text;not null"`
 }
 
 type SaveSlot struct {
+	Username string         `gorm:"primaryKey"`
 	SlotID   string         `gorm:"primaryKey"`
 	SaveData string         `gorm:"type:text;not null"`
-	Progress []SaveProgress `gorm:"foreignKey:SlotID;constraint:OnDelete:CASCADE"`
+	Progress []SaveProgress `gorm:"foreignKey:Username,SlotID;references:Username,SlotID;constraint:OnDelete:CASCADE"`
 }
 
 type SaveProgress struct {
+	Username     string `gorm:"primaryKey"`
 	SlotID       string `gorm:"primaryKey"`
 	EntryIndex   int    `gorm:"primaryKey"`
 	ScenarioName string `gorm:"not null"`
@@ -46,13 +48,13 @@ func InitDB(dbPath string) error {
 	return DB.AutoMigrate(&SystemFlag{}, &SaveSlot{}, &SaveProgress{})
 }
 
-func LoadStateFromDB() (map[string]interface{}, map[string]interface{}, error) {
+func LoadStateFromDB(username string) (map[string]interface{}, map[string]interface{}, error) {
 	sf := make(map[string]interface{})
 	slots := make(map[string]interface{})
 
 	// Load sf
 	var sysFlag SystemFlag
-	err := DB.First(&sysFlag, 1).Error
+	err := DB.Where("username = ?", username).First(&sysFlag).Error
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil, err
 	}
@@ -64,7 +66,7 @@ func LoadStateFromDB() (map[string]interface{}, map[string]interface{}, error) {
 
 	// Load slots
 	var dbSlots []SaveSlot
-	if err := DB.Find(&dbSlots).Error; err != nil {
+	if err := DB.Where("username = ?", username).Find(&dbSlots).Error; err != nil {
 		return nil, nil, err
 	}
 
@@ -79,7 +81,7 @@ func LoadStateFromDB() (map[string]interface{}, map[string]interface{}, error) {
 
 	// Load all save progress records sorted by entry index
 	var progressRecords []SaveProgress
-	if err := DB.Order("slot_id, entry_index asc").Find(&progressRecords).Error; err == nil {
+	if err := DB.Where("username = ?", username).Order("slot_id, entry_index asc").Find(&progressRecords).Error; err == nil {
 		for _, rec := range progressRecords {
 			entryMap := map[string]interface{}{
 				"currentScenario": rec.ScenarioName,
@@ -114,7 +116,7 @@ func LoadStateFromDB() (map[string]interface{}, map[string]interface{}, error) {
 	return sf, slots, nil
 }
 
-func SaveSlotToDB(slotID string, saveData map[string]interface{}, historyLog []interface{}) error {
+func SaveSlotToDB(username string, slotID string, saveData map[string]interface{}, historyLog []interface{}) error {
 	dataJSON, err := json.Marshal(saveData)
 	if err != nil {
 		return fmt.Errorf("failed to encode slot metadata: %w", err)
@@ -123,6 +125,7 @@ func SaveSlotToDB(slotID string, saveData map[string]interface{}, historyLog []i
 	return DB.Transaction(func(tx *gorm.DB) error {
 		// Save base slot metadata
 		saveSlot := SaveSlot{
+			Username: username,
 			SlotID:   slotID,
 			SaveData: string(dataJSON),
 		}
@@ -131,7 +134,7 @@ func SaveSlotToDB(slotID string, saveData map[string]interface{}, historyLog []i
 		}
 
 		// Delete old progress backlogs
-		if err := tx.Where("slot_id = ?", slotID).Delete(&SaveProgress{}).Error; err != nil {
+		if err := tx.Where("username = ? AND slot_id = ?", username, slotID).Delete(&SaveProgress{}).Error; err != nil {
 			return err
 		}
 
@@ -169,6 +172,7 @@ func SaveSlotToDB(slotID string, saveData map[string]interface{}, historyLog []i
 			}
 
 			rec := SaveProgress{
+				Username:     username,
 				SlotID:       slotID,
 				EntryIndex:   idx,
 				ScenarioName: scenName,
@@ -189,15 +193,15 @@ func SaveSlotToDB(slotID string, saveData map[string]interface{}, historyLog []i
 	})
 }
 
-func SaveSFToDB(sf map[string]interface{}) error {
+func SaveSFToDB(username string, sf map[string]interface{}) error {
 	sfJSON, err := json.Marshal(sf)
 	if err != nil {
 		return fmt.Errorf("failed to encode system flags: %w", err)
 	}
 
 	sysFlag := SystemFlag{
-		ID: 1,
-		SF: string(sfJSON),
+		Username: username,
+		SF:       string(sfJSON),
 	}
 	return DB.Save(&sysFlag).Error
 }
@@ -226,8 +230,8 @@ func MigrateFromJSON(savesJSONPath string, backupPath string) error {
 				return err
 			}
 			sfFlag := SystemFlag{
-				ID: 1,
-				SF: string(sfJSON),
+				Username: "default",
+				SF:       string(sfJSON),
 			}
 			if err := tx.Save(&sfFlag).Error; err != nil {
 				return err
@@ -264,6 +268,7 @@ func MigrateFromJSON(savesJSONPath string, backupPath string) error {
 				}
 
 				saveSlot := SaveSlot{
+					Username: "default",
 					SlotID:   slotID,
 					SaveData: string(slotJSON),
 				}
@@ -272,7 +277,7 @@ func MigrateFromJSON(savesJSONPath string, backupPath string) error {
 				}
 
 				// Clean out old progress
-				if err := tx.Where("slot_id = ?", slotID).Delete(&SaveProgress{}).Error; err != nil {
+				if err := tx.Where("username = ? AND slot_id = ?", "default", slotID).Delete(&SaveProgress{}).Error; err != nil {
 					return err
 				}
 
@@ -310,6 +315,7 @@ func MigrateFromJSON(savesJSONPath string, backupPath string) error {
 					}
 
 					rec := SaveProgress{
+						Username:     "default",
 						SlotID:       slotID,
 						EntryIndex:   idx,
 						ScenarioName: scenName,

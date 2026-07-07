@@ -3,11 +3,52 @@ package handlers
 import (
 	"net/http"
 	"path/filepath"
+	"sync"
+	"time"
 
 	"game-rewrite/pkg/db"
 
 	"github.com/gin-gonic/gin"
 )
+
+type UserSession struct {
+	ClientID string
+	LastSeen time.Time
+}
+
+var (
+	sessions     = make(map[string]UserSession)
+	sessionsLock sync.Mutex
+)
+
+func getUsername(c *gin.Context) string {
+	username := c.GetHeader("X-Username")
+	if username == "" {
+		username = "default"
+	}
+	return username
+}
+
+func verifySession(username string, clientID string) bool {
+	sessionsLock.Lock()
+	defer sessionsLock.Unlock()
+
+	if clientID == "" {
+		return false
+	}
+
+	now := time.Now()
+	current, exists := sessions[username]
+	if !exists {
+		return true
+	}
+
+	if now.Sub(current.LastSeen) < 8*time.Second && current.ClientID != clientID {
+		return false
+	}
+
+	return true
+}
 
 func SetupRouter(devMode bool) *gin.Engine {
 	if devMode {
@@ -18,9 +59,44 @@ func SetupRouter(devMode bool) *gin.Engine {
 
 	r := gin.Default()
 
+	// Heartbeat endpoint
+	r.POST("/api/heartbeat", func(c *gin.Context) {
+		username := getUsername(c)
+		var req struct {
+			ClientID string `json:"clientId"`
+		}
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
+			return
+		}
+
+		sessionsLock.Lock()
+		defer sessionsLock.Unlock()
+
+		now := time.Now()
+		current, exists := sessions[username]
+		isActive := exists && now.Sub(current.LastSeen) < 8*time.Second
+
+		if isActive && current.ClientID != req.ClientID {
+			c.JSON(http.StatusOK, gin.H{
+				"status":  "conflict",
+				"message": "User session active in another window",
+			})
+			return
+		}
+
+		sessions[username] = UserSession{
+			ClientID: req.ClientID,
+			LastSeen: now,
+		}
+
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
 	// API endpoints
 	r.GET("/api/state", func(c *gin.Context) {
-		sf, slots, err := db.LoadStateFromDB()
+		username := getUsername(c)
+		sf, slots, err := db.LoadStateFromDB(username)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load state: " + err.Error()})
 			return
@@ -32,6 +108,13 @@ func SetupRouter(devMode bool) *gin.Engine {
 	})
 
 	r.POST("/api/save-slot", func(c *gin.Context) {
+		username := getUsername(c)
+		clientID := c.GetHeader("X-Client-ID")
+		if !verifySession(username, clientID) {
+			c.JSON(http.StatusConflict, gin.H{"error": "Session conflict: another window has ownership"})
+			return
+		}
+
 		var req struct {
 			Slot string                 `json:"slot"`
 			Data map[string]interface{} `json:"data"`
@@ -50,7 +133,7 @@ func SetupRouter(devMode bool) *gin.Engine {
 
 		delete(req.Data, "historyLog")
 
-		if err := db.SaveSlotToDB(req.Slot, req.Data, historyLog); err != nil {
+		if err := db.SaveSlotToDB(username, req.Slot, req.Data, historyLog); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save slot: " + err.Error()})
 			return
 		}
@@ -59,6 +142,13 @@ func SetupRouter(devMode bool) *gin.Engine {
 	})
 
 	r.POST("/api/save-sf", func(c *gin.Context) {
+		username := getUsername(c)
+		clientID := c.GetHeader("X-Client-ID")
+		if !verifySession(username, clientID) {
+			c.JSON(http.StatusConflict, gin.H{"error": "Session conflict: another window has ownership"})
+			return
+		}
+
 		var req struct {
 			SF map[string]interface{} `json:"sf"`
 		}
@@ -67,7 +157,7 @@ func SetupRouter(devMode bool) *gin.Engine {
 			return
 		}
 
-		if err := db.SaveSFToDB(req.SF); err != nil {
+		if err := db.SaveSFToDB(username, req.SF); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save system flags: " + err.Error()})
 			return
 		}
