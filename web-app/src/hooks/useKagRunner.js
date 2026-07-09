@@ -144,6 +144,11 @@ export function useKagRunner({
         try { initial[i] = JSON.parse(slot); } catch(e){}
       }
     }
+    // Load special chapter-transition slot 150
+    const slot150 = localStorage.getItem(`${storagePrefix}_save_slot_150`);
+    if (slot150) {
+      try { initial[150] = JSON.parse(slot150); } catch(e){}
+    }
     return initial;
   });
 
@@ -307,12 +312,21 @@ export function useKagRunner({
                 localStorage.removeItem(key);
               }
             }
+
+            // Sync special transition slot 150
+            const key150 = `${storagePrefix}_save_slot_150`;
+            if (activeSlots[150]) {
+              localStorage.setItem(key150, JSON.stringify(activeSlots[150]));
+            } else {
+              localStorage.removeItem(key150);
+            }
           } else {
             setSaveSlots({});
             localStorage.removeItem(`${storagePrefix}_autosave`);
             for (let i = 0; i < 24; i++) {
               localStorage.removeItem(`${storagePrefix}_save_slot_${i}`);
             }
+            localStorage.removeItem(`${storagePrefix}_save_slot_150`);
           }
         }
       } catch (e) {
