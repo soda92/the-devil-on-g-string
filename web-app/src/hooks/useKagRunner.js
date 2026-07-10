@@ -35,6 +35,15 @@ const cleanHistoryLogForSave = (history) => {
   });
 };
 
+const stripHistoryForLocalStorage = (saveData) => {
+  if (!saveData) return saveData;
+  const copy = { ...saveData };
+  if (copy.historyLog && copy.historyLog.length > 50) {
+    copy.historyLog = copy.historyLog.slice(-50);
+  }
+  return copy;
+};
+
 export function useKagRunner({
   config,
   playBgm,
@@ -298,7 +307,7 @@ export function useKagRunner({
             // Sync autosave
             const autosaveKey = `${storagePrefix}_autosave`;
             if (activeSlots.autosave) {
-              localStorage.setItem(autosaveKey, JSON.stringify(activeSlots.autosave));
+              localStorage.setItem(autosaveKey, JSON.stringify(stripHistoryForLocalStorage(activeSlots.autosave)));
             } else {
               localStorage.removeItem(autosaveKey);
             }
@@ -307,7 +316,7 @@ export function useKagRunner({
             for (let i = 0; i < 24; i++) {
               const key = `${storagePrefix}_save_slot_${i}`;
               if (activeSlots[i]) {
-                localStorage.setItem(key, JSON.stringify(activeSlots[i]));
+                localStorage.setItem(key, JSON.stringify(stripHistoryForLocalStorage(activeSlots[i])));
               } else {
                 localStorage.removeItem(key);
               }
@@ -316,7 +325,7 @@ export function useKagRunner({
             // Sync special transition slot 150
             const key150 = `${storagePrefix}_save_slot_150`;
             if (activeSlots[150]) {
-              localStorage.setItem(key150, JSON.stringify(activeSlots[150]));
+              localStorage.setItem(key150, JSON.stringify(stripHistoryForLocalStorage(activeSlots[150])));
             } else {
               localStorage.removeItem(key150);
             }
@@ -683,8 +692,8 @@ export function useKagRunner({
       timestamp: Date.now()
     };
     
-    // 1. Instantly write to local storage
-    localStorage.setItem(`${storagePrefix}_autosave`, JSON.stringify(saveData));
+    // 1. Instantly write to local storage (lightweight cache to prevent QuotaExceededError)
+    localStorage.setItem(`${storagePrefix}_autosave`, JSON.stringify(stripHistoryForLocalStorage(saveData)));
     
     // 2. Update React slots state
     setSaveSlots(prev => ({ ...prev, autosave: saveData }));
@@ -1535,7 +1544,8 @@ export function useKagRunner({
       date: new Date().toLocaleString(),
       timestamp: Date.now()
     };
-    localStorage.setItem(slotKey, JSON.stringify(saveData));
+    // Write lightweight cache to localStorage to prevent QuotaExceededError
+    localStorage.setItem(slotKey, JSON.stringify(stripHistoryForLocalStorage(saveData)));
     
     console.log(
       `%c[SAVE] Saved to Slot: %c${slotIdx}%c | Scenario: %c${targetScenario}%c | Pointer: %c${targetPointer}`,
