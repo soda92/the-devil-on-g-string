@@ -126,6 +126,7 @@ export function useGameAudio(vol = 8, sevol = 8) {
     };
 
     const resumeAll = () => {
+      if (document.hidden) return;
       if (bgmPlayer && bgmPlayer.__wasAutoPaused__) {
         bgmPlayer.play().catch(err => console.log("BGM auto-resume interrupted", err));
         bgmPlayer.__wasAutoPaused__ = false;
