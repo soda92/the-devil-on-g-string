@@ -42,6 +42,7 @@ export default function GameplayScreen({
   language,
   background,
   sprites,
+  faceIcon,
   sideNarration,
   textVisible,
   speaker,
@@ -106,6 +107,8 @@ export default function GameplayScreen({
         <DialogueBox 
           dialogueMode={dialogueMode}
           speaker={speaker}
+          faceIcon={faceIcon}
+          resolveAsset={resolveAsset}
           typewriterText={typewriterText}
           dialogueText={dialogueText}
           currentVoice={currentVoice}

@@ -19,7 +19,7 @@
     "go_next_chapter": 0,
     "show_next_chapter": 0,
     "evcgmode": 0,
-    "faceRecord": 0,
+    "faceRecord": {},
     "choicesHistory": [],
     "chour": 21
   },

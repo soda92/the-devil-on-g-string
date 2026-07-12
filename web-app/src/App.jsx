@@ -206,6 +206,7 @@ export default function App() {
             language={runner.language}
             background={runner.background}
             sprites={runner.sprites}
+            faceIcon={runner.faceIcon}
             sideNarration={runner.sideNarration}
             textVisible={runner.textVisible}
             speaker={runner.speaker}

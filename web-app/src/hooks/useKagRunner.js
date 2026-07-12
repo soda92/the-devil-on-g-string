@@ -21,6 +21,68 @@ const applyTranslationImprovements = (instructions) => {
   });
 };
 
+// --- Miniface Face Icon Helper Functions ---
+const getStNameHead = (name) => {
+  if (!name) return '';
+  const trimmed = name.trim();
+  switch (trimmed) {
+    case 'ハル':
+    case '春':
+    case '宇佐美':
+      return 'haru';
+    case '椿姫':
+    case '椿姬':
+    case '白鸟':
+      return 'tuba';
+    case '花音':
+      return 'kano';
+    case '水羽':
+      return 'mizu';
+    case 'ユキ':
+    case '由岐':
+    case '雪':
+      return 'yuki';
+    case '栄一':
+    case '荣一':
+      return 'eiic';
+    case '浅井権三':
+    case '浅井权三':
+      return 'gonz';
+    case '広明':
+    case '广明':
+      return 'hiro';
+    case '郁子':
+      return 'ikuk';
+    case '恭平':
+    case 'まおう':
+    case '魔王':
+      return 'maou';
+    default:
+      return '';
+  }
+};
+
+const getFaceIcon = (speakerName, currentF) => {
+  if (!speakerName) return null;
+  const head = getStNameHead(speakerName);
+  if (!head) return null;
+  
+  const faceRecord = currentF?.faceRecord || {};
+  const activeSprite = faceRecord[head];
+  if (!activeSprite) return null;
+  
+  let faceName = activeSprite;
+  if (faceName.endsWith('_b')) {
+    faceName = faceName.slice(0, -2) + '_f';
+  } else if (faceName.endsWith('_s')) {
+    faceName = faceName.slice(0, -2) + '_f';
+  } else if (!faceName.endsWith('_f')) {
+    faceName = faceName + '_f';
+  }
+  
+  return faceName;
+};
+
 // --- Save State Cleaners for Flowchart Nested Snapshots ---
 const cleanFForSnapshot = (originalF) => {
   if (!originalF) return {};
@@ -143,6 +205,7 @@ export function useKagRunner({
   const [currentVoice, setCurrentVoice] = useState('');
   const [dialogueText, setDialogueText] = useState('');
   const [typewriterText, setTypewriterText] = useState('');
+  const [faceIcon, setFaceIcon] = useState(null);
   const [textVisible, setTextVisible] = useState(false);
   const [historyLog, setHistoryLog] = useState([]);
   const [dialogueMode, setDialogueMode] = useState('avg');
@@ -1228,6 +1291,28 @@ export function useKagRunner({
       }
     }
 
+    // Update faceRecord from current sprites
+    const nextFaceRecord = { ...newF.faceRecord };
+    let faceRecordChanged = false;
+    for (let layer = 0; layer < 3; layer++) {
+      const sprite = tempSprites[layer];
+      if (sprite) {
+        const cleanSprite = sprite.startsWith('st_') ? sprite.slice(3) : sprite;
+        const parts = cleanSprite.split('_');
+        if (parts.length > 0) {
+          const charName = parts[0];
+          const head = charName.substring(0, 4);
+          if (nextFaceRecord[head] !== sprite) {
+            nextFaceRecord[head] = sprite;
+            faceRecordChanged = true;
+          }
+        }
+      }
+    }
+    if (faceRecordChanged) {
+      newF.faceRecord = nextFaceRecord;
+    }
+
     setPointer(p);
     setF(newF);
     if (JSON.stringify(newSf) !== JSON.stringify(sf)) {
@@ -1361,6 +1446,15 @@ export function useKagRunner({
     }
   }, [currentScenario, pointer, background, gameState, speaker]);
 
+  useEffect(() => {
+    if (gameState !== 'PLAYING') {
+      setFaceIcon(null);
+      return;
+    }
+    const resolvedFace = getFaceIcon(speaker, f);
+    setFaceIcon(resolvedFace);
+  }, [speaker, f, gameState]);
+
   // Dialogue box mousewheel scroll backlog history trigger
   const handleWheel = (e) => {
     if (gameState !== 'PLAYING') return;
@@ -1413,7 +1507,7 @@ export function useKagRunner({
       go_next_chapter: 0,
       show_next_chapter: 0,
       evcgmode: 0,
-      faceRecord: 0,
+      faceRecord: {},
       chour: new Date().getHours(),
       choicesHistory: []
     });
@@ -1897,6 +1991,7 @@ export function useKagRunner({
   return {
     language,
     setLanguage,
+    faceIcon,
     gameState,
     setGameState,
     currentScenario,
