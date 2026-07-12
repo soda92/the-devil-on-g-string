@@ -1,6 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
 import { resolveAsset, resolveCharacterName, tokenizeText } from '../utils/gameUtils';
 import { DEFAULT_SHORTCUTS, toggleFullscreen } from '../utils/shortcutManager';
+import translationImprovements from '../utils/translation_improvements.json';
+
+// --- Translation Improvements Overlay ---
+const applyTranslationImprovements = (instructions) => {
+  if (!instructions) return instructions;
+  return instructions.map(inst => {
+    if (inst.type === 'text') {
+      const patched = { ...inst };
+      if (translationImprovements[inst.text_jp]) {
+        patched.text_jp = translationImprovements[inst.text_jp];
+      }
+      if (translationImprovements[inst.text_en]) {
+        patched.text_en = translationImprovements[inst.text_en];
+      }
+      return patched;
+    }
+    return inst;
+  });
+};
 
 // --- Save State Cleaners for Flowchart Nested Snapshots ---
 const cleanFForSnapshot = (originalF) => {
@@ -433,7 +452,9 @@ export function useKagRunner({
       
       if (fetchId !== lastFetchIdRef.current) return;
       
-      setScenarioData(data.instructions);
+      const instructions = applyTranslationImprovements(data.instructions);
+      data.instructions = instructions;
+      setScenarioData(instructions);
       setCurrentScenario(name);
       
       let startIdx = 0;
@@ -1482,7 +1503,9 @@ export function useKagRunner({
     
     if (!data) return;
     
-    setScenarioData(data);
+    const patchedData = applyTranslationImprovements(data);
+    setScenarioData(patchedData);
+    data = patchedData;
     setCurrentScenario(slotData.currentScenario);
     setPointer(slotData.pointer);
     
