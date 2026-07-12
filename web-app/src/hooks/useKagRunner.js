@@ -66,11 +66,11 @@ const getFaceIcon = (speakerName, currentF) => {
   if (!speakerName) return null;
   const head = getStNameHead(speakerName);
   if (!head) return null;
-  
+
   const faceRecord = currentF?.faceRecord || {};
   const activeSprite = faceRecord[head];
   if (!activeSprite) return null;
-  
+
   let faceName = activeSprite;
   if (faceName.endsWith('_b')) {
     faceName = faceName.slice(0, -2) + '_f';
@@ -79,8 +79,82 @@ const getFaceIcon = (speakerName, currentF) => {
   } else if (!faceName.endsWith('_f')) {
     faceName = faceName + '_f';
   }
-  
+
   return faceName;
+};
+
+// --- Programmatic Scenario Backtracking for Deep Links ---
+const getPrecedingScenario = (name) => {
+  if (!name) return null;
+  if (name === 'gt01') return 'g23';
+  if (name === 'gk01') return 'g34';
+  if (name === 'gm01') return 'g42';
+
+  const match = name.match(/^([a-zA-Z]+)(\d+)$/);
+  if (match) {
+    const prefix = match[1];
+    const num = parseInt(match[2]);
+    if (num > 1) {
+      const prevNum = String(num - 1).padStart(2, '0');
+      return `${prefix}${prevNum}`;
+    }
+  }
+  return null;
+};
+
+const backtrackScenarioState = async (scenName, depth = 0) => {
+  const state = { bg: 'white', bgm: '' };
+  if (depth >= 3 || !scenName) return state;
+  const prevScen = getPrecedingScenario(scenName);
+  if (!prevScen) return state;
+
+  try {
+    const response = await fetch(`/scenarios/${prevScen}.json`);
+    if (!response.ok) return state;
+    const prevData = await response.json();
+
+    let foundBg = false;
+    let foundBgm = false;
+
+    for (let i = prevData.instructions.length - 1; i >= 0; i--) {
+      const inst = prevData.instructions[i];
+      if (inst.type === 'command') {
+        if (!foundBg && (inst.name === 'bg' || inst.name === 'back' || inst.name === 'image')) {
+          if (inst.name === 'image' && inst.args.storage && inst.args.layer === 'base') {
+            state.bg = inst.args.storage;
+            foundBg = true;
+          } else if (inst.name !== 'image' && inst.args.storage) {
+            state.bg = inst.args.storage;
+            foundBg = true;
+          }
+        } else if (!foundBg && inst.name === 'black') {
+          state.bg = 'black';
+          foundBg = true;
+        } else if (!foundBgm && inst.name === 'bgm') {
+          if (inst.args.storage) {
+            state.bgm = inst.args.storage;
+            foundBgm = true;
+          }
+        } else if (!foundBgm && (inst.name === 'fobgm' || inst.name === 'stopbgm')) {
+          state.bgm = '';
+          foundBgm = true;
+        }
+      }
+      if (foundBg && foundBgm) break;
+    }
+
+    // If any state is still missing, recurse deeper to find it
+    if (!foundBg || !foundBgm) {
+      const deeperState = await backtrackScenarioState(prevScen, depth + 1);
+      if (!foundBg) state.bg = deeperState.bg;
+      if (!foundBgm) state.bgm = deeperState.bgm;
+    }
+
+    return state;
+  } catch (e) {
+    console.warn("Backtrack failed for", prevScen, e);
+    return state;
+  }
 };
 
 // --- Save State Cleaners for Flowchart Nested Snapshots ---
@@ -168,7 +242,7 @@ export function useKagRunner({
       try {
         const response = await fetch('/api/heartbeat', {
           method: 'POST',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
             'X-Username': username
           },
@@ -194,7 +268,7 @@ export function useKagRunner({
 
   const [language, setLanguage] = useState('JP');
   const [gameState, setGameState] = useState('TITLE');
-  
+
   // Visual Novel States
   const [currentScenario, setCurrentScenario] = useState(config?.initial?.scenario || 'g01');
   const [scenarioData, setScenarioData] = useState(null);
@@ -227,18 +301,18 @@ export function useKagRunner({
     const initial = {};
     const auto = localStorage.getItem(`${storagePrefix}_autosave`);
     if (auto) {
-      try { initial.autosave = JSON.parse(auto); } catch(e){}
+      try { initial.autosave = JSON.parse(auto); } catch (e) { }
     }
     for (let i = 0; i < 24; i++) {
       const slot = localStorage.getItem(`${storagePrefix}_save_slot_${i}`);
       if (slot) {
-        try { initial[i] = JSON.parse(slot); } catch(e){}
+        try { initial[i] = JSON.parse(slot); } catch (e) { }
       }
     }
     // Load special chapter-transition slot 150
     const slot150 = localStorage.getItem(`${storagePrefix}_save_slot_150`);
     if (slot150) {
-      try { initial[150] = JSON.parse(slot150); } catch(e){}
+      try { initial[150] = JSON.parse(slot150); } catch (e) { }
     }
     return initial;
   });
@@ -275,7 +349,7 @@ export function useKagRunner({
     if (saved) {
       try {
         return { ...defaults, ...JSON.parse(saved) };
-      } catch (e) {}
+      } catch (e) { }
     }
     return defaults;
   });
@@ -347,7 +421,7 @@ export function useKagRunner({
     const init = async () => {
       try {
         const response = await fetch('/api/state', {
-          headers: { 
+          headers: {
             'X-Username': username,
             'X-Client-ID': clientIdRef.current
           }
@@ -371,7 +445,7 @@ export function useKagRunner({
               if (needsBackendSave) {
                 fetch('/api/save-sf', {
                   method: 'POST',
-                  headers: { 
+                  headers: {
                     'Content-Type': 'application/json',
                     'X-Username': username,
                     'X-Client-ID': clientIdRef.current
@@ -434,7 +508,7 @@ export function useKagRunner({
       const nextSf = typeof updater === 'function' ? updater(prev) : updater;
       fetch('/api/save-sf', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'X-Username': username,
           'X-Client-ID': clientIdRef.current
@@ -449,8 +523,8 @@ export function useKagRunner({
   const cleanKagExpression = (exp) => {
     if (!exp) return '';
     return exp.replace(/\[(sf\.[a-zA-Z0-9_\u4e00-\u9fff\uff00-\uffff]+)\]/g, '$1')
-              .replace(/\[(f\.[a-zA-Z0-9_\u4e00-\u9fff\uff00-\uffff]+)\]/g, '$1')
-              .replace(/\[(tf\.[a-zA-Z0-9_\u4e00-\u9fff\uff00-\uffff]+)\]/g, '$1');
+      .replace(/\[(f\.[a-zA-Z0-9_\u4e00-\u9fff\uff00-\uffff]+)\]/g, '$1')
+      .replace(/\[(tf\.[a-zA-Z0-9_\u4e00-\u9fff\uff00-\uffff]+)\]/g, '$1');
   };
 
   const evaluateExpression = (exp, currentF = f, currentSf = sf, currentTf = tfRef.current) => {
@@ -494,7 +568,7 @@ export function useKagRunner({
     return p;
   };
 
-  const loadScenario = async (name, targetLabel = null, overridePointer = null, shouldWait = false) => {
+  const loadScenario = async (name, targetLabel = null, overridePointer = null, shouldWait = false, skipPreScanner = false) => {
     if (name === 'option' || name === 'systembutton') {
       setShowSettings(true);
       return;
@@ -504,22 +578,22 @@ export function useKagRunner({
       setGameState('TITLE');
       return;
     }
-    
+
     const fetchId = ++lastFetchIdRef.current;
-    setScenarioData(null); 
-    setIsWaiting(true);    
+    setScenarioData(null);
+    setIsWaiting(true);
     try {
       const response = await fetch(`/scenarios/${name}.json`);
       if (!response.ok) throw new Error(`Failed to fetch scenario: ${name}`);
       const data = await response.json();
-      
+
       if (fetchId !== lastFetchIdRef.current) return;
-      
+
       const instructions = applyTranslationImprovements(data.instructions);
       data.instructions = instructions;
       setScenarioData(instructions);
       setCurrentScenario(name);
-      
+
       let startIdx = 0;
       if (overridePointer !== null) {
         let targetTextIdx = overridePointer;
@@ -527,152 +601,164 @@ export function useKagRunner({
           targetTextIdx--;
         }
         startIdx = targetTextIdx >= 0 ? targetTextIdx : overridePointer;
-        
-        let initialBg = 'white';
-        let initialBgm = '';
-        let initialSprites = { 0: null, 1: null, 2: null };
-        let initialSpeaker = '';
-        let initialDialogueMode = 'avg';
-        let initialVoice = '';
-        let hasNm = false;
-        
-        for (let i = 0; i < startIdx; i++) {
-          const inst = data.instructions[i];
-          if (inst) {
-            if (inst.type === 'page_break' || inst.type === 'clear_text') {
-              initialSpeaker = '';
-              initialVoice = '';
-              hasNm = false;
-            } else if (inst.type === 'text') {
-              if (!hasNm) {
+
+        if (!skipPreScanner) {
+          let initialBg = 'white';
+          let initialBgm = '';
+          let initialSprites = { 0: null, 1: null, 2: null };
+          let initialSpeaker = '';
+          let initialDialogueMode = 'avg';
+          let initialVoice = '';
+          let hasNm = false;
+
+          for (let i = 0; i < startIdx; i++) {
+            const inst = data.instructions[i];
+            if (inst) {
+              if (inst.type === 'page_break' || inst.type === 'clear_text') {
                 initialSpeaker = '';
-              }
-              hasNm = false;
-            } else if (inst.type === 'command') {
-              const args = inst.args || {};
-            if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm' || inst.name === 'fibgm' || inst.name === 'xbgm') {
-              initialBgm = args.storage;
-            } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm' || inst.name === 'fobgm' || inst.name === 'sbgm') {
-              initialBgm = '';
-            } else if (inst.name === 'bg' || inst.name === 'bg2' || inst.name === 'bg_ch' || inst.name === 'b_ch') {
-              initialBg = args.str || args.storage || 'black';
-              initialSprites = { 0: null, 1: null, 2: null };
-            } else if (inst.name === 'ev' || inst.name === 'ev_ch' || inst.name === 'ev_mosaic') {
-              if (args.str || args.storage) {
-                initialBg = args.str || args.storage;
-              }
-              initialSprites = { 0: null, 1: null, 2: null };
-            } else if (inst.name === 'black' || inst.name === 'hide') {
-              if (inst.name === 'black') {
-                initialBg = 'black';
-              }
-              initialSprites = { 0: null, 1: null, 2: null };
-            } else if (inst.name === 'image') {
-              if (args.layer === 'base' && args.storage) {
-                initialBg = args.storage;
-              } else if (args.layer !== 'base') {
-                const layer = args.layer !== undefined ? parseInt(args.layer) : 2;
-                if (args.visible === 'false' || !args.storage) {
-                  initialSprites[layer] = null;
-                } else {
-                  const isBgOrEv = args.storage.startsWith('bg') || args.storage.startsWith('ev_') || args.storage === 'black' || args.storage === 'white';
-                  if (isBgOrEv) {
+                initialVoice = '';
+                hasNm = false;
+              } else if (inst.type === 'text') {
+                if (!hasNm) {
+                  initialSpeaker = '';
+                }
+                hasNm = false;
+              } else if (inst.type === 'command') {
+                const args = inst.args || {};
+                if (inst.name === 'playbgm' || inst.name === 'bgm' || inst.name === 'fadeinbgm' || inst.name === 'fibgm' || inst.name === 'xbgm') {
+                  initialBgm = args.storage;
+                } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm' || inst.name === 'fobgm' || inst.name === 'sbgm') {
+                  initialBgm = '';
+                } else if (inst.name === 'bg' || inst.name === 'bg2' || inst.name === 'bg_ch' || inst.name === 'b_ch') {
+                  initialBg = args.str || args.storage || 'black';
+                  initialSprites = { 0: null, 1: null, 2: null };
+                } else if (inst.name === 'ev' || inst.name === 'ev_ch' || inst.name === 'ev_mosaic') {
+                  if (args.str || args.storage) {
+                    initialBg = args.str || args.storage;
+                  }
+                  initialSprites = { 0: null, 1: null, 2: null };
+                } else if (inst.name === 'black' || inst.name === 'hide') {
+                  if (inst.name === 'black') {
+                    initialBg = 'black';
+                  }
+                  initialSprites = { 0: null, 1: null, 2: null };
+                } else if (inst.name === 'image') {
+                  if (args.layer === 'base' && args.storage) {
                     initialBg = args.storage;
-                  } else {
-                    initialSprites[layer] = args.storage;
+                  } else if (args.layer !== 'base') {
+                    const layer = args.layer !== undefined ? parseInt(args.layer) : 2;
+                    if (args.visible === 'false' || !args.storage) {
+                      initialSprites[layer] = null;
+                    } else {
+                      const isBgOrEv = args.storage.startsWith('bg') || args.storage.startsWith('ev_') || args.storage === 'black' || args.storage === 'white';
+                      if (isBgOrEv) {
+                        initialBg = args.storage;
+                      } else {
+                        initialSprites[layer] = args.storage;
+                      }
+                    }
                   }
-                }
-              }
-            } else if (inst.name === 'chr' || inst.name === 'chr_dash' || inst.name === 'chr_walk' || inst.name === 'chr_jump' || inst.name === 'chr_bow') {
-              if (args.c !== undefined) initialSprites[2] = args.c;
-              if (args.l !== undefined) initialSprites[1] = args.l;
-              if (args.r !== undefined) initialSprites[0] = args.r;
-            } else if (inst.name === 'mface') {
-              const match = args.name.match(/^[a-zA-Z]+/);
-              const charPrefix = match ? match[0] : '';
-              if (charPrefix) {
-                for (let layer = 0; layer < 3; layer++) {
-                  if (initialSprites[layer] && initialSprites[layer].startsWith(charPrefix)) {
-                    initialSprites[layer] = args.name;
-                    break;
+                } else if (inst.name === 'chr' || inst.name === 'chr_dash' || inst.name === 'chr_walk' || inst.name === 'chr_jump' || inst.name === 'chr_bow') {
+                  if (args.c !== undefined) initialSprites[2] = args.c;
+                  if (args.l !== undefined) initialSprites[1] = args.l;
+                  if (args.r !== undefined) initialSprites[0] = args.r;
+                } else if (inst.name === 'mface') {
+                  const match = args.name.match(/^[a-zA-Z]+/);
+                  const charPrefix = match ? match[0] : '';
+                  if (charPrefix) {
+                    for (let layer = 0; layer < 3; layer++) {
+                      if (initialSprites[layer] && initialSprites[layer].startsWith(charPrefix)) {
+                        initialSprites[layer] = args.name;
+                        break;
+                      }
+                    }
                   }
+                } else if (inst.name === 'chr_pos_change') {
+                  const mapPosToSlot = (pos) => {
+                    if (pos === 'c' || pos === 'cc') return 2;
+                    if (pos === 'l' || pos === 'll') return 1;
+                    if (pos === 'r' || pos === 'rr') return 0;
+                    return -1;
+                  };
+                  const beforeSlot = mapPosToSlot(args.before);
+                  const afterSlot = mapPosToSlot(args.after);
+                  if (beforeSlot !== -1 && afterSlot !== -1) {
+                    const sprite = initialSprites[beforeSlot];
+                    initialSprites[afterSlot] = sprite;
+                    if (beforeSlot !== afterSlot) {
+                      initialSprites[beforeSlot] = null;
+                    }
+                  }
+                } else if (inst.name === 'chr1') {
+                  initialSprites[2] = args.str;
+                } else if (inst.name === 'chr2') {
+                  initialSprites[1] = args.str;
+                } else if (inst.name === 'chr3') {
+                  initialSprites[0] = args.str;
+                } else if (inst.name === 'dellay' || inst.name === 'dellay_far' || inst.name === 'dellay_walk' || inst.name === 'dellay_dash') {
+                  const pos = args.pos;
+                  if (pos === 'c' || pos === 'cc') initialSprites[2] = null;
+                  if (pos === 'l' || pos === 'll') initialSprites[1] = null;
+                  if (pos === 'r' || pos === 'rr') initialSprites[0] = null;
+                } else if (inst.name === 'delchr') {
+                  const l = args.layer !== undefined ? parseInt(args.layer) : 2;
+                  initialSprites[l] = null;
+                } else if (inst.name === 'alldelchr') {
+                  initialSprites = { 0: null, 1: null, 2: null };
+                } else if (inst.name === 'name' || inst.name === 'nm') {
+                  initialSpeaker = args.txt || args.t || '';
+                  initialVoice = args.s || '';
+                  hasNm = true;
+                } else if (inst.name === 'novel') {
+                  initialDialogueMode = 'novel';
+                } else if (inst.name === 'avg' || inst.name === 'avg_with_name') {
+                  initialDialogueMode = 'avg';
                 }
               }
-            } else if (inst.name === 'chr_pos_change') {
-              const mapPosToSlot = (pos) => {
-                if (pos === 'c' || pos === 'cc') return 2;
-                if (pos === 'l' || pos === 'll') return 1;
-                if (pos === 'r' || pos === 'rr') return 0;
-                return -1;
-              };
-              const beforeSlot = mapPosToSlot(args.before);
-              const afterSlot = mapPosToSlot(args.after);
-              if (beforeSlot !== -1 && afterSlot !== -1) {
-                const sprite = initialSprites[beforeSlot];
-                initialSprites[afterSlot] = sprite;
-                if (beforeSlot !== afterSlot) {
-                  initialSprites[beforeSlot] = null;
-                }
-              }
-            } else if (inst.name === 'chr1') {
-              initialSprites[2] = args.str;
-            } else if (inst.name === 'chr2') {
-              initialSprites[1] = args.str;
-            } else if (inst.name === 'chr3') {
-              initialSprites[0] = args.str;
-            } else if (inst.name === 'dellay' || inst.name === 'dellay_far' || inst.name === 'dellay_walk' || inst.name === 'dellay_dash') {
-              const pos = args.pos;
-              if (pos === 'c' || pos === 'cc') initialSprites[2] = null;
-              if (pos === 'l' || pos === 'll') initialSprites[1] = null;
-              if (pos === 'r' || pos === 'rr') initialSprites[0] = null;
-            } else if (inst.name === 'delchr') {
-              const l = args.layer !== undefined ? parseInt(args.layer) : 2;
-              initialSprites[l] = null;
-            } else if (inst.name === 'alldelchr') {
-              initialSprites = { 0: null, 1: null, 2: null };
-            } else if (inst.name === 'name' || inst.name === 'nm') {
-              initialSpeaker = args.txt || args.t || '';
-              initialVoice = args.s || '';
-              hasNm = true;
-            } else if (inst.name === 'novel') {
-              initialDialogueMode = 'novel';
-            } else if (inst.name === 'avg' || inst.name === 'avg_with_name') {
-              initialDialogueMode = 'avg';
             }
           }
-        }
-      }
-        
-        setBackground(initialBg);
-        backgroundRef.current = initialBg;
-        setSprites(initialSprites);
-        spritesRef.current = initialSprites;
-        setDialogueMode(initialDialogueMode);
-        
-        hasNmCommandRef.current = hasNm;
-        
-        if (initialSpeaker) {
-          const resolvedSp = resolveCharacterName(initialSpeaker, 'JP', config?.characterNames);
-          setSpeaker(resolvedSp);
-          currentSpeakerRef.current = { jp: resolvedSp, en: resolveCharacterName(resolvedSp, 'EN', config?.characterNames) };
-        } else {
-          setSpeaker('');
-          currentSpeakerRef.current = { jp: '', en: '' };
-        }
-        initialVoiceRef.current = initialVoice;
-        setCurrentVoice(initialVoice);
-        if (initialVoice) {
-          playVoice(initialVoice);
-        } else if (voicePlayer) {
-          voicePlayer.pause();
-          voicePlayer.src = '';
-        }
-        if (initialBgm) {
-          initialBgmRef.current = initialBgm;
-          playBgm(initialBgm);
-        } else {
-          initialBgmRef.current = '';
-          stopBgm();
+
+          if (initialBg === 'white' || !initialBgm) {
+            const backtracked = await backtrackScenarioState(name);
+            if (initialBg === 'white') {
+              initialBg = backtracked.bg;
+            }
+            if (!initialBgm) {
+              initialBgm = backtracked.bgm;
+            }
+          }
+
+          setBackground(initialBg);
+          backgroundRef.current = initialBg;
+          setSprites(initialSprites);
+          spritesRef.current = initialSprites;
+          setDialogueMode(initialDialogueMode);
+
+          hasNmCommandRef.current = hasNm;
+
+          if (initialSpeaker) {
+            const resolvedSp = resolveCharacterName(initialSpeaker, 'JP', config?.characterNames);
+            setSpeaker(resolvedSp);
+            currentSpeakerRef.current = { jp: resolvedSp, en: resolveCharacterName(resolvedSp, 'EN', config?.characterNames) };
+          } else {
+            setSpeaker('');
+            currentSpeakerRef.current = { jp: '', en: '' };
+          }
+          initialVoiceRef.current = initialVoice;
+          setCurrentVoice(initialVoice);
+          if (initialVoice) {
+            playVoice(initialVoice);
+          } else if (voicePlayer) {
+            voicePlayer.pause();
+            voicePlayer.src = '';
+          }
+          if (initialBgm) {
+            initialBgmRef.current = initialBgm;
+            playBgm(initialBgm);
+          } else {
+            initialBgmRef.current = '';
+            stopBgm();
+          }
         }
       } else if (targetLabel) {
         const idx = data.instructions.findIndex(i => i.type === 'label' && i.name === targetLabel);
@@ -693,7 +779,7 @@ export function useKagRunner({
 
   const triggerTypewriter = (startText, appendText) => {
     if (textTimerRef.current) clearInterval(textTimerRef.current);
-    
+
     const speedMode = sf.typewriterMode || 'CHAR';
     if (speedMode === 'OFF') {
       setTypewriterText(startText + appendText);
@@ -703,7 +789,7 @@ export function useKagRunner({
     const tokens = tokenizeText(appendText, language);
     let tokenIdx = 0;
     let accumulated = startText;
-    
+
     setTypewriterText(accumulated);
 
     textTimerRef.current = setInterval(() => {
@@ -755,7 +841,7 @@ export function useKagRunner({
 
   const triggerAutosave = (currentP = pointer, currentScen = currentScenario) => {
     if (gameState !== 'PLAYING' || currentP <= 0 || !currentScen) return;
-    
+
     const saveData = {
       slotId: 'autosave',
       f: cleanFForSnapshot(f),
@@ -775,19 +861,19 @@ export function useKagRunner({
       date: new Date().toLocaleString(),
       timestamp: Date.now()
     };
-    
+
     // 1. Instantly write to local storage (lightweight cache to prevent QuotaExceededError)
     localStorage.setItem(`${storagePrefix}_autosave`, JSON.stringify(stripHistoryForLocalStorage(saveData)));
-    
+
     // 2. Update React slots state
     setSaveSlots(prev => ({ ...prev, autosave: saveData }));
-    
+
     // 3. Debounced/throttled backend post to avoid network spam
     if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
     autosaveTimeoutRef.current = setTimeout(() => {
       fetch('/api/save-slot', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'X-Username': username,
           'X-Client-ID': clientIdRef.current
@@ -916,7 +1002,7 @@ export function useKagRunner({
             const storage = args.storage;
             const layerStr = String(args.layer || '');
             const layer = args.layer !== undefined ? parseInt(args.layer) : 2;
-            
+
             if (layerStr === 'base') {
               if (storage) {
                 tempBackground = storage;
@@ -934,12 +1020,12 @@ export function useKagRunner({
               }
             }
           } else if (inst.name === 'chr' || inst.name === 'chr_dash' || inst.name === 'chr_walk' || inst.name === 'chr_jump' || inst.name === 'chr_bow') {
-            if (args.c !== undefined) tempSprites[2] = args.c; 
-            else if (args.cc !== undefined) tempSprites[2] = args.cc; 
-            if (args.l !== undefined) tempSprites[1] = args.l; 
-            else if (args.ll !== undefined) tempSprites[1] = args.ll; 
-            if (args.r !== undefined) tempSprites[0] = args.r; 
-            else if (args.rr !== undefined) tempSprites[0] = args.rr; 
+            if (args.c !== undefined) tempSprites[2] = args.c;
+            else if (args.cc !== undefined) tempSprites[2] = args.cc;
+            if (args.l !== undefined) tempSprites[1] = args.l;
+            else if (args.ll !== undefined) tempSprites[1] = args.ll;
+            if (args.r !== undefined) tempSprites[0] = args.r;
+            else if (args.rr !== undefined) tempSprites[0] = args.rr;
           } else if (inst.name === 'black') {
             tempBackground = 'black';
             tempSprites = { 0: null, 1: null, 2: null };
@@ -971,15 +1057,15 @@ export function useKagRunner({
               }
             }
           } else if (inst.name === 'chr1') {
-            tempSprites[2] = args.str; 
+            tempSprites[2] = args.str;
           } else if (inst.name === 'chr2') {
-            tempSprites[1] = args.str; 
+            tempSprites[1] = args.str;
           } else if (inst.name === 'chr3') {
-            tempSprites[0] = args.str; 
+            tempSprites[0] = args.str;
           } else if (inst.name === 'chr4') {
-            tempSprites[1] = args.str; 
+            tempSprites[1] = args.str;
           } else if (inst.name === 'chr5') {
-            tempSprites[0] = args.str; 
+            tempSprites[0] = args.str;
           } else if (inst.name === 'chr6') {
             const layer = args.layer !== undefined ? parseInt(args.layer) : 2;
             tempSprites[layer] = args.str;
@@ -1087,7 +1173,7 @@ export function useKagRunner({
           } else if (inst.name === 'jump') {
             const storage = args.storage ? args.storage.replace('.ks', '') : currentScenario;
             const target = args.target ? args.target.replace('*', '') : null;
-            
+
             console.log(
               `%c[JUMP] Target Scenario: %c${storage}%c | Target Label: %c*${target || 'None'}`,
               'color: #c678dd; font-weight: bold;', 'color: #ce9178; font-weight: bold;',
@@ -1103,12 +1189,12 @@ export function useKagRunner({
             tfRef.current = newTf;
             setSprites(tempSprites);
             setBackground(tempBackground);
-            
+
             loadScenario(storage, target);
             return;
           }
           break;
-          
+
         case 'text':
           const currentPtr = p - 1;
           if (newSf.readScenarios === undefined) {
@@ -1117,14 +1203,14 @@ export function useKagRunner({
           if (!newSf.readScenarios[currentScenario]) {
             newSf.readScenarios[currentScenario] = {};
           }
-          
+
           const isRead = newSf.readScenarios[currentScenario][currentPtr] === true;
-          
+
           if (isFastForwardRef.current && newSf.skipMode === 'READ_ONLY' && !isRead) {
             setIsFastForward(false);
             isFastForwardRef.current = false;
           }
-          
+
           newSf.readScenarios[currentScenario][currentPtr] = true;
 
           if (!hasNmCommandRef.current) {
@@ -1132,16 +1218,16 @@ export function useKagRunner({
             currentSpeakerRef.current = { jp: '', en: '' };
           }
           hasNmCommandRef.current = false;
-          
+
           setCurrentVoice(currentVoiceRef.current || '');
           const displayTxt = language === 'JP' ? inst.text_jp : inst.text_en;
-          
+
           let prevDiag = dialogueTextRef.current;
           if (dialogueMode === 'avg' && hasWaitedClickRef.current) {
             prevDiag = '';
           }
           hasWaitedClickRef.current = false;
-          
+
           let targetFullText;
           if (dialogueMode === 'novel' && prevDiag !== '') {
             const separator = (prevDiag.endsWith('<br />') || prevDiag.endsWith('<br/>')) ? '' : '<br />';
@@ -1152,7 +1238,7 @@ export function useKagRunner({
           updateDialogueText(targetFullText);
           triggerTypewriter(prevDiag, targetFullText.slice(prevDiag.length));
           setTextVisible(true);
-          
+
           const snapshot = {
             f: cleanFForSnapshot(newF),
             choicesCount: newF.choicesHistory ? newF.choicesHistory.length : 0,
@@ -1167,16 +1253,16 @@ export function useKagRunner({
             showOptions: showOptions || null,
             bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null
           };
-          
+
           const voiceFile = currentVoiceRef.current;
-          
+
           setHistoryLog(prev => {
             const newHistory = [
               ...prev,
-              { 
-                speakerJp: currentSpeakerRef.current.jp, 
-                speakerEn: currentSpeakerRef.current.en, 
-                textJp: inst.text_jp, 
+              {
+                speakerJp: currentSpeakerRef.current.jp,
+                speakerEn: currentSpeakerRef.current.en,
+                textJp: inst.text_jp,
                 textEn: inst.text_en,
                 voice: voiceFile,
                 currentScenario,
@@ -1189,13 +1275,13 @@ export function useKagRunner({
           currentVoiceRef.current = null;
           shouldBlock = true;
           break;
-          
+
         case 'wait_click':
           if (p - 1 !== pointer) {
             shouldBlock = true;
           }
           break;
-          
+
         case 'page_break':
           if (p - 1 !== pointer) {
             p = p - 1;
@@ -1209,7 +1295,7 @@ export function useKagRunner({
             hasNmCommandRef.current = false;
           }
           break;
-          
+
         case 'clear_text':
           setTypewriterText('');
           updateDialogueText('');
@@ -1218,14 +1304,14 @@ export function useKagRunner({
           currentVoiceRef.current = null;
           hasNmCommandRef.current = false;
           break;
-          
+
         case 'line_feed':
           if (dialogueTextRef.current && dialogueTextRef.current.trim() !== '') {
             updateDialogueText(dialogueTextRef.current + '<br />');
             setTypewriterText(prev => prev + '<br />');
           }
           break;
-          
+
         case 'link_start':
           const options = [];
           let tempP = p - 1;
@@ -1258,7 +1344,7 @@ export function useKagRunner({
               break;
             }
           }
-          
+
           if (options.length > 0) {
             setShowOptions(options);
             shouldBlock = true;
@@ -1267,16 +1353,16 @@ export function useKagRunner({
             p = tempP;
           }
           break;
-          
+
         case 'if':
           if (!evaluateExpression(inst.exp, newF, newSf, newTf)) {
             p = skipToEndif(p);
           }
           break;
-          
+
         case 'endif':
           break;
-          
+
         case 'eval':
           try {
             const cleaned = cleanKagExpression(inst.exp);
@@ -1324,7 +1410,7 @@ export function useKagRunner({
     tfRef.current = newTf;
     setSprites(tempSprites);
     setBackground(tempBackground);
-    
+
     if (shouldBlock) {
       setIsWaiting(true);
     }
@@ -1336,7 +1422,7 @@ export function useKagRunner({
 
     let accumulated = '';
     let lastClearIdx = -1;
-    
+
     for (let i = 0; i < pointer; i++) {
       const inst = scenarioData[i];
       if (inst.type === 'page_break' || inst.type === 'clear_text') {
@@ -1375,7 +1461,7 @@ export function useKagRunner({
 
     if (isAutoMode) {
       const charCount = typewriterText.length;
-      const readDelay = Math.max(1200, charCount * 70); 
+      const readDelay = Math.max(1200, charCount * 70);
       const timer = setTimeout(() => {
         hasWaitedClickRef.current = true;
         setIsWaiting(false);
@@ -1470,18 +1556,18 @@ export function useKagRunner({
       setIsAudioUnlocked(true);
       return;
     }
-    
+
     if (!textVisible) {
       setTextVisible(true);
       return;
     }
-    
+
     if (typewriterText !== dialogueText) {
       if (textTimerRef.current) clearInterval(textTimerRef.current);
       setTypewriterText(dialogueText);
       return;
     }
-    
+
     if (isWaiting) {
       hasWaitedClickRef.current = true;
       setIsWaiting(false);
@@ -1535,7 +1621,7 @@ export function useKagRunner({
     if (auto) {
       try {
         loadSaveSlot(JSON.parse(auto));
-      } catch(e){}
+      } catch (e) { }
     }
   };
 
@@ -1573,17 +1659,17 @@ export function useKagRunner({
     updateDialogueText(slotData.dialogueText);
     setTypewriterText(slotData.dialogueText);
     setDialogueMode(slotData.dialogueMode || 'avg');
-    
+
     if (slotData.language) {
       setLanguage(slotData.language);
     }
-    
+
     if (slotData.historyLog) {
       setHistoryLog(slotData.historyLog);
     } else {
       setHistoryLog([]);
     }
-    
+
     let data = null;
     try {
       const response = await fetch(`/scenarios/${slotData.currentScenario}.json`);
@@ -1594,26 +1680,26 @@ export function useKagRunner({
       console.error("Failed to load scenario data for save state, falling back to embedded", e);
       data = slotData.scenarioData;
     }
-    
+
     if (!data) return;
-    
+
     const patchedData = applyTranslationImprovements(data);
     setScenarioData(patchedData);
     data = patchedData;
     setCurrentScenario(slotData.currentScenario);
     setPointer(slotData.pointer);
-    
+
     if (slotData.showOptions) {
       setShowOptions(slotData.showOptions);
     } else {
       setShowOptions(false);
     }
-    
+
     const targetInst = data[slotData.pointer];
     const shouldWait = targetInst && (targetInst.type === 'text' || targetInst.type === 'wait_click' || targetInst.type === 'page_break');
     setIsWaiting(shouldWait);
     setGameState('PLAYING');
-    
+
     if (slotData.bgm) {
       initialBgmRef.current = slotData.bgm;
       playBgm(slotData.bgm);
@@ -1621,14 +1707,14 @@ export function useKagRunner({
       initialBgmRef.current = '';
       stopBgm();
     }
-    
+
     console.log(
       `%c[LOAD] Loaded Slot: %c${slotData.slotId || 'autosave'}%c | Scenario: %c${slotData.currentScenario}%c | Pointer: %c${slotData.pointer}`,
       'color: #61afef; font-weight: bold;', 'color: #d19a66; font-weight: bold;',
       'color: #61afef;', 'color: #ce9178; font-weight: bold;',
       'color: #61afef;', 'color: #b5cea8; font-weight: bold;'
     );
-    
+
     setShowSaveLoad(null);
   };
 
@@ -1640,7 +1726,7 @@ export function useKagRunner({
     const targetBackground = overrideBackground || background;
     const targetPointer = overridePointer !== null ? overridePointer : pointer;
     const targetScenario = overrideScenario || currentScenario;
-    
+
     const saveData = {
       slotId: slotIdx,
       f: cleanFForSnapshot(targetF),
@@ -1663,17 +1749,17 @@ export function useKagRunner({
     };
     // Write lightweight cache to localStorage to prevent QuotaExceededError
     localStorage.setItem(slotKey, JSON.stringify(stripHistoryForLocalStorage(saveData)));
-    
+
     console.log(
       `%c[SAVE] Saved to Slot: %c${slotIdx}%c | Scenario: %c${targetScenario}%c | Pointer: %c${targetPointer}`,
       'color: #98c379; font-weight: bold;', 'color: #d19a66; font-weight: bold;',
       'color: #98c379;', 'color: #ce9178; font-weight: bold;',
       'color: #98c379;', 'color: #b5cea8; font-weight: bold;'
     );
-    
+
     fetch('/api/save-slot', {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'X-Username': username,
         'X-Client-ID': clientIdRef.current
@@ -1694,7 +1780,7 @@ export function useKagRunner({
 
     const choiceEntry = {
       scenario: currentScenario,
-      pointer: pointer, 
+      pointer: pointer,
       options: showOptions.map(o => ({ jp: o.text_jp, en: o.text_en, target: o.target, exp: o.exp })),
       selectedOption: { jp: opt.text_jp, en: opt.text_en, target: opt.target },
       snapshot: {
@@ -1727,7 +1813,7 @@ export function useKagRunner({
     setIsWaiting(false);
     setIsFastForward(false);
     isFastForwardRef.current = false;
-    
+
     const idx = scenarioData.findIndex(i => i.type === 'label' && i.name === opt.target);
     if (idx !== -1) {
       setPointer(idx);
@@ -1742,13 +1828,13 @@ export function useKagRunner({
     isFastForwardRef.current = false;
     setScenarioData(null);
     setIsWaiting(true);
-    
+
     const entry = historyLog[entryIdx];
     const targetScen = snap ? snap.currentScenario : entry.currentScenario;
     const targetPtr = snap ? snap.pointer : entry.pointer;
 
     setHistoryLog(prev => prev.slice(0, entryIdx + 1));
-    
+
     if (snap) {
       setF({
         ...snap.f,
@@ -1761,13 +1847,13 @@ export function useKagRunner({
       setCurrentVoice(snap.currentVoice || '');
       updateDialogueText(snap.dialogueText);
       setTypewriterText(snap.dialogueText);
-      
+
       if (snap.showOptions) {
         setShowOptions(snap.showOptions);
       } else {
         setShowOptions(false);
       }
-      
+
       if (snap.bgm) {
         initialBgmRef.current = snap.bgm;
         playBgm(snap.bgm);
@@ -1786,9 +1872,9 @@ export function useKagRunner({
       setTypewriterText(text);
       setShowOptions(false);
     }
-    
-    await loadScenario(targetScen, null, targetPtr, true);
-    
+
+    await loadScenario(targetScen, null, targetPtr, true, true);
+
     setIsWaiting(true);
     setGameState('PLAYING');
     setShowHistory(false);
@@ -1800,9 +1886,9 @@ export function useKagRunner({
     isFastForwardRef.current = false;
     setScenarioData(null);
     setIsWaiting(true);
-    
+
     const snap = choice.snapshot;
-    
+
     setF({
       ...snap.f,
       choicesHistory: (f.choicesHistory || []).slice(0, choiceIdx)
@@ -1814,16 +1900,16 @@ export function useKagRunner({
     updateDialogueText(snap.dialogueText);
     setTypewriterText(snap.dialogueText);
     setCurrentScenario(snap.currentScenario);
-    
-    await loadScenario(snap.currentScenario, null, snap.pointer, true);
-    
+
+    await loadScenario(snap.currentScenario, null, snap.pointer, true, true);
+
     setShowOptions(choice.options.map(o => ({
       text_jp: o.jp,
       text_en: o.en,
       target: o.target,
       exp: o.exp
     })));
-    
+
     if (snap.bgm) {
       initialBgmRef.current = snap.bgm;
       playBgm(snap.bgm);
@@ -1831,7 +1917,7 @@ export function useKagRunner({
       initialBgmRef.current = '';
       stopBgm();
     }
-    
+
     setGameState('PLAYING');
   };
 

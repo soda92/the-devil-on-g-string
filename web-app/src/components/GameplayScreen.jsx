@@ -5,8 +5,26 @@ import spritePositions from '../sprite_positions.json';
 function Sprite({ spriteName, resolveAsset, positionClass }) {
   if (!spriteName) return null;
   const cleanName = spriteName.split('.')[0];
-  const positionInfo = spritePositions[cleanName] || spritePositions['st_' + cleanName];
+  let positionInfo = spritePositions[cleanName] || spritePositions['st_' + cleanName];
   
+  let isBaseBodyOnly = false;
+  if (!positionInfo) {
+    // Find any key in sprite_positions that uses this as base body
+    const searchBaseName = cleanName.startsWith('st_') ? cleanName : 'st_' + cleanName;
+    const cleanSearchBaseName = cleanName.startsWith('st_') ? cleanName.slice(3) : cleanName;
+    const foundEntry = Object.values(spritePositions).find(
+      posVal => posVal.base === searchBaseName || posVal.base === cleanSearchBaseName
+    );
+    if (foundEntry) {
+      positionInfo = {
+        base: searchBaseName,
+        base_h: foundEntry.base_h,
+        base_w: foundEntry.base_w
+      };
+      isBaseBodyOnly = true;
+    }
+  }
+
   let height = '580px';
   if (positionInfo && positionInfo.base_h) {
     const isStandard = cleanName.endsWith('_s');
@@ -20,17 +38,19 @@ function Sprite({ spriteName, resolveAsset, positionClass }) {
     return (
       <div className={`sprite-img ${positionClass}`} style={{ height, overflow: 'visible', width: 'fit-content' }}>
         <img src={baseSrc} alt="base body" style={{ height: '100%', width: 'auto', display: 'block' }} />
-        <img 
-          src={overlaySrc} 
-          alt="face overlay" 
-          style={{ 
-            position: 'absolute', 
-            left: `${positionInfo.left_pct}%`, 
-            top: `${positionInfo.top_pct}%`, 
-            width: `${positionInfo.width_pct}%`,
-            display: 'block'
-          }} 
-        />
+        {!isBaseBodyOnly && (
+          <img 
+            src={overlaySrc} 
+            alt="face overlay" 
+            style={{ 
+              position: 'absolute', 
+              left: `${positionInfo.left_pct}%`, 
+              top: `${positionInfo.top_pct}%`, 
+              width: `${positionInfo.width_pct}%`,
+              display: 'block'
+            }} 
+          />
+        )}
       </div>
     );
   }
