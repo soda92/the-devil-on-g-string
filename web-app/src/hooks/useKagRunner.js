@@ -1,6 +1,87 @@
 import { useState, useEffect, useRef } from 'react';
 import { resolveAsset, resolveCharacterName, tokenizeText } from '../utils/gameUtils';
 import { DEFAULT_SHORTCUTS, toggleFullscreen } from '../utils/shortcutManager';
+import translationImprovements from '../utils/translation_improvements.json';
+
+// --- Translation Improvements Overlay ---
+const applyTranslationImprovements = (instructions) => {
+  if (!instructions) return instructions;
+  return instructions.map(inst => {
+    if (inst.type === 'text') {
+      const patched = { ...inst };
+      if (translationImprovements[inst.text_jp]) {
+        patched.text_jp = translationImprovements[inst.text_jp];
+      }
+      if (translationImprovements[inst.text_en]) {
+        patched.text_en = translationImprovements[inst.text_en];
+      }
+      return patched;
+    }
+    return inst;
+  });
+};
+
+// --- Miniface Face Icon Helper Functions ---
+const getStNameHead = (name) => {
+  if (!name) return '';
+  const trimmed = name.trim();
+  switch (trimmed) {
+    case 'ハル':
+    case '春':
+    case '宇佐美':
+      return 'haru';
+    case '椿姫':
+    case '椿姬':
+    case '白鸟':
+      return 'tuba';
+    case '花音':
+      return 'kano';
+    case '水羽':
+      return 'mizu';
+    case 'ユキ':
+    case '由岐':
+    case '雪':
+      return 'yuki';
+    case '栄一':
+    case '荣一':
+      return 'eiic';
+    case '浅井権三':
+    case '浅井权三':
+      return 'gonz';
+    case '広明':
+    case '广明':
+      return 'hiro';
+    case '郁子':
+      return 'ikuk';
+    case '恭平':
+    case 'まおう':
+    case '魔王':
+      return 'maou';
+    default:
+      return '';
+  }
+};
+
+const getFaceIcon = (speakerName, currentF) => {
+  if (!speakerName) return null;
+  const head = getStNameHead(speakerName);
+  if (!head) return null;
+  
+  const faceRecord = currentF?.faceRecord || {};
+  const activeSprite = faceRecord[head];
+  if (!activeSprite) return null;
+  
+  let faceName = activeSprite;
+  if (faceName.endsWith('_b')) {
+    faceName = faceName.slice(0, -2) + '_f';
+  } else if (faceName.endsWith('_s')) {
+    faceName = faceName.slice(0, -2) + '_f';
+  } else if (!faceName.endsWith('_f')) {
+    faceName = faceName + '_f';
+  }
+  
+  return faceName;
+};
 
 // --- Save State Cleaners for Flowchart Nested Snapshots ---
 const cleanFForSnapshot = (originalF) => {
@@ -33,6 +114,15 @@ const cleanHistoryLogForSave = (history) => {
       }
     };
   });
+};
+
+const stripHistoryForLocalStorage = (saveData) => {
+  if (!saveData) return saveData;
+  const copy = { ...saveData };
+  if (copy.historyLog && copy.historyLog.length > 50) {
+    copy.historyLog = copy.historyLog.slice(-50);
+  }
+  return copy;
 };
 
 export function useKagRunner({
@@ -115,6 +205,7 @@ export function useKagRunner({
   const [currentVoice, setCurrentVoice] = useState('');
   const [dialogueText, setDialogueText] = useState('');
   const [typewriterText, setTypewriterText] = useState('');
+  const [faceIcon, setFaceIcon] = useState(null);
   const [textVisible, setTextVisible] = useState(false);
   const [historyLog, setHistoryLog] = useState([]);
   const [dialogueMode, setDialogueMode] = useState('avg');
@@ -143,6 +234,11 @@ export function useKagRunner({
       if (slot) {
         try { initial[i] = JSON.parse(slot); } catch(e){}
       }
+    }
+    // Load special chapter-transition slot 150
+    const slot150 = localStorage.getItem(`${storagePrefix}_save_slot_150`);
+    if (slot150) {
+      try { initial[150] = JSON.parse(slot150); } catch(e){}
     }
     return initial;
   });
@@ -293,7 +389,7 @@ export function useKagRunner({
             // Sync autosave
             const autosaveKey = `${storagePrefix}_autosave`;
             if (activeSlots.autosave) {
-              localStorage.setItem(autosaveKey, JSON.stringify(activeSlots.autosave));
+              localStorage.setItem(autosaveKey, JSON.stringify(stripHistoryForLocalStorage(activeSlots.autosave)));
             } else {
               localStorage.removeItem(autosaveKey);
             }
@@ -302,10 +398,18 @@ export function useKagRunner({
             for (let i = 0; i < 24; i++) {
               const key = `${storagePrefix}_save_slot_${i}`;
               if (activeSlots[i]) {
-                localStorage.setItem(key, JSON.stringify(activeSlots[i]));
+                localStorage.setItem(key, JSON.stringify(stripHistoryForLocalStorage(activeSlots[i])));
               } else {
                 localStorage.removeItem(key);
               }
+            }
+
+            // Sync special transition slot 150
+            const key150 = `${storagePrefix}_save_slot_150`;
+            if (activeSlots[150]) {
+              localStorage.setItem(key150, JSON.stringify(stripHistoryForLocalStorage(activeSlots[150])));
+            } else {
+              localStorage.removeItem(key150);
             }
           } else {
             setSaveSlots({});
@@ -313,6 +417,7 @@ export function useKagRunner({
             for (let i = 0; i < 24; i++) {
               localStorage.removeItem(`${storagePrefix}_save_slot_${i}`);
             }
+            localStorage.removeItem(`${storagePrefix}_save_slot_150`);
           }
         }
       } catch (e) {
@@ -410,7 +515,9 @@ export function useKagRunner({
       
       if (fetchId !== lastFetchIdRef.current) return;
       
-      setScenarioData(data.instructions);
+      const instructions = applyTranslationImprovements(data.instructions);
+      data.instructions = instructions;
+      setScenarioData(instructions);
       setCurrentScenario(name);
       
       let startIdx = 0;
@@ -669,8 +776,8 @@ export function useKagRunner({
       timestamp: Date.now()
     };
     
-    // 1. Instantly write to local storage
-    localStorage.setItem(`${storagePrefix}_autosave`, JSON.stringify(saveData));
+    // 1. Instantly write to local storage (lightweight cache to prevent QuotaExceededError)
+    localStorage.setItem(`${storagePrefix}_autosave`, JSON.stringify(stripHistoryForLocalStorage(saveData)));
     
     // 2. Update React slots state
     setSaveSlots(prev => ({ ...prev, autosave: saveData }));
@@ -1184,6 +1291,28 @@ export function useKagRunner({
       }
     }
 
+    // Update faceRecord from current sprites
+    const nextFaceRecord = { ...newF.faceRecord };
+    let faceRecordChanged = false;
+    for (let layer = 0; layer < 3; layer++) {
+      const sprite = tempSprites[layer];
+      if (sprite) {
+        const cleanSprite = sprite.startsWith('st_') ? sprite.slice(3) : sprite;
+        const parts = cleanSprite.split('_');
+        if (parts.length > 0) {
+          const charName = parts[0];
+          const head = charName.substring(0, 4);
+          if (nextFaceRecord[head] !== sprite) {
+            nextFaceRecord[head] = sprite;
+            faceRecordChanged = true;
+          }
+        }
+      }
+    }
+    if (faceRecordChanged) {
+      newF.faceRecord = nextFaceRecord;
+    }
+
     setPointer(p);
     setF(newF);
     if (JSON.stringify(newSf) !== JSON.stringify(sf)) {
@@ -1317,6 +1446,15 @@ export function useKagRunner({
     }
   }, [currentScenario, pointer, background, gameState, speaker]);
 
+  useEffect(() => {
+    if (gameState !== 'PLAYING') {
+      setFaceIcon(null);
+      return;
+    }
+    const resolvedFace = getFaceIcon(speaker, f);
+    setFaceIcon(resolvedFace);
+  }, [speaker, f, gameState]);
+
   // Dialogue box mousewheel scroll backlog history trigger
   const handleWheel = (e) => {
     if (gameState !== 'PLAYING') return;
@@ -1369,7 +1507,7 @@ export function useKagRunner({
       go_next_chapter: 0,
       show_next_chapter: 0,
       evcgmode: 0,
-      faceRecord: 0,
+      faceRecord: {},
       chour: new Date().getHours(),
       choicesHistory: []
     });
@@ -1459,7 +1597,9 @@ export function useKagRunner({
     
     if (!data) return;
     
-    setScenarioData(data);
+    const patchedData = applyTranslationImprovements(data);
+    setScenarioData(patchedData);
+    data = patchedData;
     setCurrentScenario(slotData.currentScenario);
     setPointer(slotData.pointer);
     
@@ -1521,7 +1661,8 @@ export function useKagRunner({
       date: new Date().toLocaleString(),
       timestamp: Date.now()
     };
-    localStorage.setItem(slotKey, JSON.stringify(saveData));
+    // Write lightweight cache to localStorage to prevent QuotaExceededError
+    localStorage.setItem(slotKey, JSON.stringify(stripHistoryForLocalStorage(saveData)));
     
     console.log(
       `%c[SAVE] Saved to Slot: %c${slotIdx}%c | Scenario: %c${targetScenario}%c | Pointer: %c${targetPointer}`,
@@ -1850,6 +1991,7 @@ export function useKagRunner({
   return {
     language,
     setLanguage,
+    faceIcon,
     gameState,
     setGameState,
     currentScenario,

@@ -157,15 +157,10 @@ export default function App() {
   }, [runner.showHistory, runner.showSettings, runner.showSaveLoad, runner.showChoiceGraph]);
 
   const handleNextChapter = () => {
-    const saved = localStorage.getItem(`${runner.storagePrefix}_save_slot_150`);
-    if (saved) {
-      try {
-        const slotData = JSON.parse(saved);
-        runner.setTf({ go_next_chapter: true });
-        runner.loadSaveSlot(slotData);
-      } catch (e) {
-        console.error("Failed to parse next chapter save slot", e);
-      }
+    const slotData = runner.saveSlots[150];
+    if (slotData) {
+      runner.setTf({ go_next_chapter: true });
+      runner.loadSaveSlot(slotData);
     }
   };
 
@@ -211,6 +206,7 @@ export default function App() {
             language={runner.language}
             background={runner.background}
             sprites={runner.sprites}
+            faceIcon={runner.faceIcon}
             sideNarration={runner.sideNarration}
             textVisible={runner.textVisible}
             speaker={runner.speaker}

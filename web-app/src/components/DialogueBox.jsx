@@ -3,6 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 export default function DialogueBox({ 
   dialogueMode, 
   speaker, 
+  faceIcon,
+  resolveAsset,
   typewriterText, 
   dialogueText, 
   currentVoice, 
@@ -26,6 +28,8 @@ export default function DialogueBox({
 }) {
   const textRef = useRef(null);
   const [hovered, setHovered] = useState(false);
+
+  const showFace = faceIcon && dialogueMode === 'avg' && !sf?.immerseMode;
 
   useEffect(() => {
     if (textRef.current) {
@@ -79,7 +83,7 @@ export default function DialogueBox({
 
   return (
     <div 
-      className={`dialogue-box-layer glass-panel ${dialogueMode === 'novel' ? 'novel-mode' : 'avg-mode'} ${sf?.immerseMode ? 'immerse-mode' : ''}`} 
+      className={`dialogue-box-layer glass-panel ${dialogueMode === 'novel' ? 'novel-mode' : 'avg-mode'} ${sf?.immerseMode ? 'immerse-mode' : ''} ${showFace ? 'has-face-icon' : ''}`} 
       onClick={(e) => {
         if (!sf?.immerseMode) {
           e.stopPropagation();
@@ -87,6 +91,11 @@ export default function DialogueBox({
       }}
       style={bgStyle}
     >
+      {showFace && (
+        <div className="dialogue-face-icon-container">
+          <img src={resolveAsset(faceIcon, 'face')} alt="speaker face" className="dialogue-face-icon-img" />
+        </div>
+      )}
       {speaker && dialogueMode !== 'novel' && !sf?.immerseMode && (
         <div 
           className="dialogue-speaker" 

@@ -259,6 +259,36 @@
   padding-right: 10px;
 }
 
+/* Dialogue Face Icon (Miniface) */
+.dialogue-face-icon-container {
+  position: absolute;
+  left: 20px;
+  bottom: 0px;
+  width: 140px;
+  height: 140px;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.dialogue-face-icon-img {
+  width: 100%;
+  height: auto;
+  max-height: 140px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Adjust layout when dialogue box has a face icon */
+.dialogue-box-layer.has-face-icon {
+  padding-left: 170px;
+}
+
+.dialogue-box-layer.has-face-icon .dialogue-speaker {
+  left: 170px;
+}
+
+
 .dialogue-cursor {
   position: absolute;
   bottom: 12px;
