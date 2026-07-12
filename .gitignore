@@ -12,7 +12,7 @@ G弦上的魔王-server
 /*.json
 compiled_scenarios
 web-app/public/scenarios
-
+game-images
 *.upx
 
 the-devil-on-g-string*
