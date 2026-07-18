@@ -273,6 +273,9 @@ export function useKagRunner({
   const [currentScenario, setCurrentScenario] = useState(config?.initial?.scenario || 'g01');
   const [scenarioData, setScenarioData] = useState(null);
   const [pointer, setPointer] = useState(0);
+  const [callStack, setCallStack] = useState([]);
+  const callStackRef = useRef([]);
+  callStackRef.current = callStack;
   const [background, setBackground] = useState(config?.initial?.background || 'white');
   const [sprites, setSprites] = useState({ 0: null, 1: null, 2: null });
   const [speaker, setSpeaker] = useState('');
@@ -858,6 +861,7 @@ export function useKagRunner({
       showOptions: showOptions || null,
       historyLog: cleanHistoryLogForSave(historyLog),
       bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null,
+      callStack: callStackRef.current,
       date: new Date().toLocaleString(),
       timestamp: Date.now()
     };
@@ -1170,6 +1174,60 @@ export function useKagRunner({
               setIsFastForward(false);
               isFastForwardRef.current = false;
             }
+          } else if (inst.name === 'call') {
+            const storage = args.storage ? args.storage.replace('.ks', '') : currentScenario;
+            const target = args.target ? args.target.replace('*', '') : null;
+
+            const nextStack = [...callStackRef.current, { scenario: currentScenario, pointer: p }];
+            setCallStack(nextStack);
+            callStackRef.current = nextStack;
+
+            console.log(
+              `%c[CALL] Target Scenario: %c${storage}%c | Target Label: %c*${target || 'None'}`,
+              'color: #c678dd; font-weight: bold;', 'color: #ce9178; font-weight: bold;',
+              'color: #c678dd;', 'color: #56b6c2; font-weight: bold;'
+            );
+            setF(newF);
+            if (JSON.stringify(newSf) !== JSON.stringify(sf)) {
+              updateSf(newSf);
+            } else {
+              setSf(newSf);
+            }
+            setTf(newTf);
+            tfRef.current = newTf;
+            setSprites(tempSprites);
+            setBackground(tempBackground);
+
+            loadScenario(storage, target);
+            return;
+          } else if (inst.name === 'return') {
+            if (callStackRef.current.length > 0) {
+              const returnAddr = callStackRef.current[callStackRef.current.length - 1];
+              const nextStack = callStackRef.current.slice(0, -1);
+              setCallStack(nextStack);
+              callStackRef.current = nextStack;
+
+              console.log(
+                `%c[RETURN] Returning to: %c${returnAddr.scenario}%c | Pointer: %c${returnAddr.pointer}`,
+                'color: #c678dd; font-weight: bold;', 'color: #ce9178; font-weight: bold;',
+                'color: #c678dd;', 'color: #56b6c2; font-weight: bold;'
+              );
+              setF(newF);
+              if (JSON.stringify(newSf) !== JSON.stringify(sf)) {
+                updateSf(newSf);
+              } else {
+                setSf(newSf);
+              }
+              setTf(newTf);
+              tfRef.current = newTf;
+              setSprites(tempSprites);
+              setBackground(tempBackground);
+
+              loadScenario(returnAddr.scenario, null, returnAddr.pointer, true, true);
+              return;
+            } else {
+              console.warn("KAG return command executed, but call stack is empty!");
+            }
           } else if (inst.name === 'jump') {
             const storage = args.storage ? args.storage.replace('.ks', '') : currentScenario;
             const target = args.target ? args.target.replace('*', '') : null;
@@ -1251,7 +1309,8 @@ export function useKagRunner({
             currentScenario,
             pointer: p,
             showOptions: showOptions || null,
-            bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null
+            bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null,
+            callStack: [...callStackRef.current]
           };
 
           const voiceFile = currentVoiceRef.current;
@@ -1597,6 +1656,8 @@ export function useKagRunner({
       chour: new Date().getHours(),
       choicesHistory: []
     });
+    setCallStack([]);
+    callStackRef.current = [];
     setSprites({ 0: null, 1: null, 2: null });
     setBackground('white');
     setDialogueMode('avg');
@@ -1659,6 +1720,8 @@ export function useKagRunner({
     updateDialogueText(slotData.dialogueText);
     setTypewriterText(slotData.dialogueText);
     setDialogueMode(slotData.dialogueMode || 'avg');
+    setCallStack(slotData.callStack || []);
+    callStackRef.current = slotData.callStack || [];
 
     if (slotData.language) {
       setLanguage(slotData.language);
@@ -1744,6 +1807,7 @@ export function useKagRunner({
       showOptions: showOptions || null,
       historyLog: cleanHistoryLogForSave(historyLog),
       bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null,
+      callStack: callStackRef.current,
       date: new Date().toLocaleString(),
       timestamp: Date.now()
     };
@@ -1793,7 +1857,8 @@ export function useKagRunner({
         dialogueText: dialogueText,
         currentScenario,
         pointer: pointer,
-        bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null
+        bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null,
+        callStack: [...callStackRef.current]
       }
     };
 
@@ -1854,6 +1919,9 @@ export function useKagRunner({
         setShowOptions(false);
       }
 
+      setCallStack(snap.callStack || []);
+      callStackRef.current = snap.callStack || [];
+
       if (snap.bgm) {
         initialBgmRef.current = snap.bgm;
         playBgm(snap.bgm);
@@ -1900,6 +1968,8 @@ export function useKagRunner({
     updateDialogueText(snap.dialogueText);
     setTypewriterText(snap.dialogueText);
     setCurrentScenario(snap.currentScenario);
+    setCallStack(snap.callStack || []);
+    callStackRef.current = snap.callStack || [];
 
     await loadScenario(snap.currentScenario, null, snap.pointer, true, true);
 
