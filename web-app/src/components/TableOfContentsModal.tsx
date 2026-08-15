@@ -6,6 +6,7 @@ interface TableOfContentsModalProps {
   onSelectTopic: (scenId: string, startPtr: number, presets?: Record<string, any>) => void;
   currentScenario: string | null;
   language: 'JP' | 'EN';
+  isSidebar?: boolean;
 }
 
 type TabFilter = 'ALL' | RouteType;
@@ -14,7 +15,8 @@ export default function TableOfContentsModal({
   onClose, 
   onSelectTopic, 
   currentScenario, 
-  language 
+  language,
+  isSidebar = false
 }: TableOfContentsModalProps) {
   const [selectedRoute, setSelectedRoute] = useState<TabFilter>('ALL');
 
@@ -27,9 +29,40 @@ export default function TableOfContentsModal({
     { id: 'Haru', labelJp: '宇佐美哈尔篇', labelEn: 'Haru Route' }
   ];
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="toc-modal glass-panel" onClick={(e) => e.stopPropagation()}>
+  const innerContent = (
+    <div 
+      className={`glass-panel ${isSidebar ? 'toc-sidebar shadow-premium' : 'toc-modal'}`}
+      style={isSidebar ? {
+        position: 'relative',
+        width: '380px',
+        height: '600px',
+        zIndex: 100,
+        background: 'rgba(15, 23, 42, 0.95)',
+        backdropFilter: 'blur(16px)',
+        border: '1px solid rgba(245, 158, 11, 0.45)',
+        borderRadius: '12px',
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.7)',
+        boxSizing: 'border-box',
+        color: '#fff'
+      } : undefined}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(245, 158, 11, 0.3)', paddingBottom: '8px', width: '100%', flexShrink: 0 }}>
+        <span style={{ color: '#f59e0b', fontWeight: 'bold', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          📚 {language === 'JP' ? '章节目录' : 'Story Milestones'}
+        </span>
+        <button 
+          onClick={onClose} 
+          style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '18px', padding: '0 4px', lineHeight: 1 }}
+          title="Close Index"
+        >
+          ✕
+        </button>
+      </div>
         <style>{`
           .toc-modal {
             width: 90%;
@@ -152,13 +185,15 @@ export default function TableOfContentsModal({
           .badge-haru { background: rgba(139, 92, 246, 0.25); color: #c084fc; }
         `}</style>
 
-        <div className="toc-header">
-          <div className="toc-title">
-            <span>📖</span>
-            <span>{language === 'JP' ? '章节与主题目录 (Table of Contents)' : 'Table of Contents & Scene Index'}</span>
+        {!isSidebar && (
+          <div className="toc-header">
+            <div className="toc-title">
+              <span>📖</span>
+              <span>{language === 'JP' ? '章节与主题目录 (Table of Contents)' : 'Table of Contents & Scene Index'}</span>
+            </div>
+            <button className="close-btn" onClick={onClose}>✕</button>
           </div>
-          <button className="close-btn" onClick={onClose}>✕</button>
-        </div>
+        )}
 
         <div className="toc-route-tabs">
           {routes.map(r => (
@@ -204,7 +239,16 @@ export default function TableOfContentsModal({
             );
           })}
         </div>
-      </div>
+    </div>
+  );
+
+  if (isSidebar) {
+    return innerContent;
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      {innerContent}
     </div>
   );
 }

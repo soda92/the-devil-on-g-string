@@ -7,9 +7,17 @@ export interface ChoiceGraphModalProps {
   language: Language | string;
   currentScenario?: string | null;
   onJumpToChoice: (choiceItem: ChoiceHistoryItem, choiceIdx: number) => void;
+  isSidebar?: boolean;
 }
 
-export default function ChoiceGraphModal({ onClose, f, language, currentScenario, onJumpToChoice }: ChoiceGraphModalProps) {
+export default function ChoiceGraphModal({ 
+  onClose, 
+  f, 
+  language, 
+  currentScenario, 
+  onJumpToChoice,
+  isSidebar = false
+}: ChoiceGraphModalProps) {
   const [confirmChoiceIdx, setConfirmChoiceIdx] = useState<number | null>(null);
   
   const choices: ChoiceHistoryItem[] = f.choicesHistory || [];
@@ -40,9 +48,40 @@ export default function ChoiceGraphModal({ onClose, f, language, currentScenario
     return null;
   };
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="choice-graph-modal glass-panel" onClick={(e) => e.stopPropagation()}>
+  const innerContent = (
+    <div 
+      className={`glass-panel ${isSidebar ? 'choice-graph-sidebar shadow-premium' : 'choice-graph-modal'}`}
+      style={isSidebar ? {
+        position: 'relative',
+        width: '380px',
+        height: '600px',
+        zIndex: 100,
+        background: 'rgba(15, 23, 42, 0.95)',
+        backdropFilter: 'blur(16px)',
+        border: '1px solid rgba(59, 130, 246, 0.45)',
+        borderRadius: '12px',
+        padding: '16px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '10px',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.7)',
+        boxSizing: 'border-box',
+        color: '#e2e8f0'
+      } : undefined}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(59, 130, 246, 0.3)', paddingBottom: '8px', width: '100%', flexShrink: 0 }}>
+        <span style={{ color: '#60a5fa', fontWeight: 'bold', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          🌿 {language === 'JP' ? '路线图谱' : 'Route & Choice Graph'}
+        </span>
+        <button 
+          onClick={onClose} 
+          style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', fontSize: '18px', padding: '0 4px', lineHeight: 1 }}
+          title="Close Flowchart"
+        >
+          ✕
+        </button>
+      </div>
         <style>{`
           .choice-graph-modal {
             width: 90%;
@@ -334,37 +373,48 @@ export default function ChoiceGraphModal({ onClose, f, language, currentScenario
           </div>
         </div>
 
+      {!isSidebar && (
         <button className="modal-close-btn" onClick={onClose}>
           {language === 'JP' ? '关闭' : 'Close'}
         </button>
+      )}
 
-        {/* --- Jump Confirmation Box Overlay --- */}
-        {confirmChoiceIdx !== null && (
-          <div className="graph-confirm-overlay" onClick={() => setConfirmChoiceIdx(null)}>
-            <div className="graph-confirm-dialog glass-panel" onClick={(e) => e.stopPropagation()}>
-              <h3 style={{ margin: '0 0 10px', color: '#fff' }}>
-                {language === 'JP' ? '确认要回退到该选项节点吗？' : 'Jump back to this choice?'}
-              </h3>
-              <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
-                {language === 'JP' ? '回退后，此节点之后的全部游戏进度和选择历史都将被重置。' : 'All progress and choices made after this point will be lost.'}
-              </p>
-              <div className="backlog-confirm-buttons">
-                <button className="confirm-btn yes-btn" onClick={() => {
-                  onJumpToChoice(choices[confirmChoiceIdx], confirmChoiceIdx);
-                  setConfirmChoiceIdx(null);
-                  onClose();
-                }}>
-                  {language === 'JP' ? '是' : 'Yes'}
-                </button>
-                <button className="confirm-btn no-btn" onClick={() => setConfirmChoiceIdx(null)}>
-                  {language === 'JP' ? '否' : 'No'}
-                </button>
-              </div>
+      {/* --- Jump Confirmation Box Overlay --- */}
+      {confirmChoiceIdx !== null && (
+        <div className="graph-confirm-overlay" onClick={() => setConfirmChoiceIdx(null)}>
+          <div className="graph-confirm-dialog glass-panel" onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 10px', color: '#fff' }}>
+              {language === 'JP' ? '确认要回退到该选项节点吗？' : 'Jump back to this choice?'}
+            </h3>
+            <p style={{ margin: '0 0 20px', fontSize: '13px', color: 'var(--color-text-muted)' }}>
+              {language === 'JP' ? '回退后，此节点之后的全部游戏进度和选择历史都将被重置。' : 'All progress and choices made after this point will be lost.'}
+            </p>
+            <div className="backlog-confirm-buttons">
+              <button className="confirm-btn yes-btn" onClick={() => {
+                onJumpToChoice(choices[confirmChoiceIdx], confirmChoiceIdx);
+                setConfirmChoiceIdx(null);
+                onClose();
+              }}>
+                {language === 'JP' ? '是' : 'Yes'}
+              </button>
+              <button className="confirm-btn no-btn" onClick={() => setConfirmChoiceIdx(null)}>
+                {language === 'JP' ? '否' : 'No'}
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-      </div>
+    </div>
+  );
+
+  if (isSidebar) {
+    return innerContent;
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      {innerContent}
     </div>
   );
 }

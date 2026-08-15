@@ -81,8 +81,15 @@ export default function App() {
     const handleResize = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      const isSideOpen = debugOpen || (runner.showPageFlipper && runner.gameState === 'PLAYING');
-      const targetWidth = isSideOpen ? 1180 : 800;
+      const isSideOpen = debugOpen || (
+        runner.gameState === 'PLAYING' && (
+          runner.showPageFlipper ||
+          runner.showHistory ||
+          runner.showChoiceGraph ||
+          runner.showTableOfContents
+        )
+      );
+      const targetWidth = isSideOpen ? 1200 : 800;
       const scaleX = w / targetWidth;
       const scaleY = h / 600;
       const newScale = Math.min(scaleX, scaleY, 1);
@@ -91,7 +98,7 @@ export default function App() {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [debugOpen, runner.showPageFlipper, runner.gameState]);
+  }, [debugOpen, runner.showPageFlipper, runner.showHistory, runner.showChoiceGraph, runner.showTableOfContents, runner.gameState]);
 
   // Re-sync volume changes when sf settings are updated live in settings panel
   useEffect(() => {
@@ -256,13 +263,29 @@ export default function App() {
               if (!runner.isAudioUnlocked) {
                 runner.setIsAudioUnlocked(true);
               }
-              runner.setShowHistory(show);
+              runner.setShowHistory((prev: boolean) => {
+                const next = typeof show === 'boolean' ? show : !prev;
+                if (next) {
+                  runner.setShowChoiceGraph(false);
+                  runner.setShowTableOfContents(false);
+                  runner.setShowPageFlipper(false);
+                }
+                return next;
+              });
             }}
             onShowFlowchart={() => {
               if (!runner.isAudioUnlocked) {
                 runner.setIsAudioUnlocked(true);
               }
-              runner.setShowChoiceGraph(true);
+              runner.setShowChoiceGraph((prev: boolean) => {
+                const next = !prev;
+                if (next) {
+                  runner.setShowHistory(false);
+                  runner.setShowTableOfContents(false);
+                  runner.setShowPageFlipper(false);
+                }
+                return next;
+              });
             }}
             dialogueMode={runner.dialogueMode}
             isAutoMode={runner.isAutoMode}
@@ -297,13 +320,29 @@ export default function App() {
               if (!runner.isAudioUnlocked) {
                 runner.setIsAudioUnlocked(true);
               }
-              runner.setShowTableOfContents(true);
+              runner.setShowTableOfContents((prev: boolean) => {
+                const next = !prev;
+                if (next) {
+                  runner.setShowHistory(false);
+                  runner.setShowChoiceGraph(false);
+                  runner.setShowPageFlipper(false);
+                }
+                return next;
+              });
             }}
             onToggleFlipper={() => {
               if (!runner.isAudioUnlocked) {
                 runner.setIsAudioUnlocked(true);
               }
-              runner.setShowPageFlipper((prev: boolean) => !prev);
+              runner.setShowPageFlipper((prev: boolean) => {
+                const next = !prev;
+                if (next) {
+                  runner.setShowHistory(false);
+                  runner.setShowChoiceGraph(false);
+                  runner.setShowTableOfContents(false);
+                }
+                return next;
+              });
             }}
             sf={runner.sf}
             updateSf={runner.updateSf}
@@ -439,42 +478,6 @@ export default function App() {
           </div>
         )}
 
-        {/* === CHOICE FLOWCHART / GRAPH OVERLAY === */}
-        {runner.showChoiceGraph && (
-          <ChoiceGraphModal 
-            onClose={() => runner.setShowChoiceGraph(false)}
-            f={runner.f}
-            language={runner.language}
-            currentScenario={runner.currentScenario}
-            onJumpToChoice={runner.jumpToChoiceSnapshot}
-          />
-        )}
-
-        {/* === BACKLOG / HISTORY OVERLAY === */}
-        {runner.showHistory && (
-          <HistoryModal 
-            onClose={() => runner.setShowHistory(false)}
-            historyLog={runner.historyLog}
-            language={runner.language}
-            onJumpToSnapshot={runner.jumpToHistorySnapshot}
-            onReplayVoice={(voice: string) => {
-              setTimeout(() => {
-                audio.playVoice(voice);
-              }, 150);
-            }}
-            autoFocusSearch={runner.historySearchFocused}
-          />
-        )}
-
-        {/* === TABLE OF CONTENTS (TOPIC INDEX) OVERLAY === */}
-        {runner.showTableOfContents && (
-          <TableOfContentsModal 
-            onClose={() => runner.setShowTableOfContents(false)}
-            onSelectTopic={runner.jumpToTopic}
-            currentScenario={runner.currentScenario}
-            language={runner.language}
-          />
-        )}
 
 
         {/* === SESSION CONFLICT LOCKOUT OVERLAY === */}
@@ -594,20 +597,64 @@ export default function App() {
 
       </div>
 
-      {/* === PAGE FLIPPER TIMELINE SCRUBBER SIDEBAR === */}
-      {runner.showPageFlipper && runner.gameState === 'PLAYING' && !debugOpen && (
-        <PageFlipperBar 
-          pointer={runner.pointer}
-          maxPointer={Array.isArray(runner.scenarioData) ? runner.scenarioData.length : (runner.scenarioData?.instructions?.length || 1000)}
-          currentScenario={runner.currentScenario}
-          scenarioData={runner.scenarioData}
-          currentDialogueText={runner.dialogueText}
-          speaker={runner.speaker}
-          onSeekPointer={runner.seekPointer}
-          onOpenToc={() => runner.setShowTableOfContents(true)}
-          onClose={() => runner.setShowPageFlipper(false)}
-          language={runner.language}
-        />
+      {/* === MID-GAMEPLAY COMPANION SIDEBAR PANELS === */}
+      {runner.gameState === 'PLAYING' && !debugOpen && (
+        <>
+          {runner.showHistory && (
+            <HistoryModal 
+              isSidebar={true}
+              onClose={() => runner.setShowHistory(false)}
+              historyLog={runner.historyLog}
+              language={runner.language}
+              onJumpToSnapshot={runner.jumpToHistorySnapshot}
+              onReplayVoice={(voice: string) => {
+                setTimeout(() => {
+                  audio.playVoice(voice);
+                }, 150);
+              }}
+              autoFocusSearch={runner.historySearchFocused}
+            />
+          )}
+
+          {runner.showChoiceGraph && (
+            <ChoiceGraphModal 
+              isSidebar={true}
+              onClose={() => runner.setShowChoiceGraph(false)}
+              f={runner.f}
+              language={runner.language}
+              currentScenario={runner.currentScenario}
+              onJumpToChoice={runner.jumpToChoiceSnapshot}
+            />
+          )}
+
+          {runner.showTableOfContents && (
+            <TableOfContentsModal 
+              isSidebar={true}
+              onClose={() => runner.setShowTableOfContents(false)}
+              onSelectTopic={runner.jumpToTopic}
+              currentScenario={runner.currentScenario}
+              language={runner.language}
+            />
+          )}
+
+          {runner.showPageFlipper && (
+            <PageFlipperBar 
+              pointer={runner.pointer}
+              maxPointer={Array.isArray(runner.scenarioData) ? runner.scenarioData.length : (runner.scenarioData?.instructions?.length || 1000)}
+              currentScenario={runner.currentScenario}
+              scenarioData={runner.scenarioData}
+              currentDialogueText={runner.dialogueText}
+              speaker={runner.speaker}
+              onSeekPointer={runner.seekPointer}
+              onOpenToc={() => {
+                runner.setShowPageFlipper(false);
+                runner.setShowTableOfContents(true);
+              }}
+              onClose={() => runner.setShowPageFlipper(false)}
+              language={runner.language}
+            />
+          )}
+        </>
       )}
 
       {/* === DEBUG PANEL OVERLAY === */}

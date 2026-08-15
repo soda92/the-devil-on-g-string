@@ -519,7 +519,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     expect(screen.getByText('历史记录')).toBeDefined();
 
-    const searchInput = screen.getByPlaceholderText(/输入关键字搜索/);
+    const searchInput = screen.getByPlaceholderText(/搜索对白或角色名/);
     expect(searchInput).toBeDefined();
     expect(document.activeElement).toBe(searchInput);
 
@@ -532,7 +532,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     expect(screen.queryByText('这是第一句话。')).toBeNull();
     
-    const backlogContainer = screen.getByText('历史记录').parentElement!;
+    const backlogContainer = (screen.getByText('历史记录').closest('.backlog-sidebar') || screen.getByText('历史记录').closest('.backlog-modal') || screen.getByText('历史记录').parentElement!) as HTMLElement;
     expect(backlogContainer.innerHTML).toContain('search-highlight');
     expect(backlogContainer.innerHTML).toContain('第二');
     expect(backlogContainer.innerHTML).not.toContain('第一');
@@ -641,7 +641,7 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     });
     expect(screen.queryByText('历史记录')).not.toBeNull();
 
-    const searchInput = screen.getByPlaceholderText(/输入关键字搜索/);
+    const searchInput = screen.getByPlaceholderText(/搜索对白或角色名/);
     expect(document.activeElement).not.toBe(searchInput);
 
     await act(async () => {

@@ -56,10 +56,16 @@ export default function PageFlipperBar({
     return Math.min(numChunks - 1, Math.floor(pointer / CHUNK_SIZE));
   });
 
-  // Sync scrubValue when pointer prop updates externally
+  // Sync scrubValue and automatically follow active chunk window when reading advances
   useEffect(() => {
     setScrubValue(pointer);
-  }, [pointer]);
+    if (selectedChunk !== 'ALL') {
+      const currentPointerChunk = Math.min(numChunks - 1, Math.floor(pointer / CHUNK_SIZE));
+      if (currentPointerChunk !== selectedChunk) {
+        setSelectedChunk(currentPointerChunk);
+      }
+    }
+  }, [pointer, numChunks, selectedChunk]);
 
   // Synchronously compute preview dialogue text from scenarioData while scrubbing
   const previewData = useMemo(() => {
@@ -127,12 +133,19 @@ export default function PageFlipperBar({
   const handleSelectChunk = (chunkId: number | 'ALL') => {
     setSelectedChunk(chunkId);
     if (chunkId === 'ALL') {
-      // Keep current scrubValue
+      setScrubValue(pointer);
     } else {
       const c = chunks[chunkId];
       if (c) {
-        setScrubValue(c.start);
-        onSeekPointer(c.start);
+        // If current reading pointer is already within this range chunk, preserve the progress!
+        if (pointer >= c.start && pointer <= c.end) {
+          setScrubValue(pointer);
+        } else {
+          // If switching to a different chunk, seek to the start of that chunk
+          const target = c.start;
+          setScrubValue(target);
+          onSeekPointer(target);
+        }
       }
     }
   };

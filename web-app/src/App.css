@@ -1166,3 +1166,107 @@
   }
 }
 
+/* =========================================================
+   COMPANION SIDEBAR PANELS (History, Route, TOC, Flipper)
+   ========================================================= */
+.backlog-sidebar .backlog-entry {
+  padding: 8px 12px;
+  gap: 4px;
+}
+
+.backlog-sidebar .backlog-entry-text {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.choice-graph-sidebar {
+  font-size: 13px;
+}
+
+.choice-graph-sidebar .route-meter-section {
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+}
+
+.choice-graph-sidebar .route-meters-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.choice-graph-sidebar .route-meter-item {
+  font-size: 11px;
+}
+
+.choice-graph-sidebar .choice-timeline-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.choice-graph-sidebar .choice-timeline {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.choice-graph-sidebar .timeline-node {
+  padding: 8px 10px;
+}
+
+.choice-graph-sidebar .node-title {
+  font-size: 12px;
+}
+
+.choice-graph-sidebar .option-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+}
+
+.toc-sidebar .toc-content {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.toc-sidebar .toc-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.toc-sidebar .toc-tab-btn {
+  font-size: 11px;
+  padding: 3px 8px;
+}
+
+.toc-sidebar .toc-scenarios-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.toc-sidebar .toc-scenario-card {
+  padding: 8px 10px;
+}
+
+.toc-sidebar .toc-scen-name {
+  font-size: 12px;
+}
+
+.toc-sidebar .toc-chapter-title {
+  font-size: 13px;
+}
+
+.toc-sidebar .toc-chapter-desc {
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+
+
