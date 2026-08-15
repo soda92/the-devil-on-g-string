@@ -704,6 +704,7 @@ export default function GalleryScreen({
               overflowY: 'auto',
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
+              alignContent: 'start',
               gap: '12px',
               paddingRight: '6px'
             }}
@@ -721,7 +722,7 @@ export default function GalleryScreen({
               return (
                 <div 
                   key={scene.id}
-                  className="glass-panel"
+                  className="scene-card glass-panel"
                   style={{
                     display: 'flex',
                     gap: '12px',

@@ -26,7 +26,7 @@ export function useKagRunner({
   voicePlayer,
   toggleBgm
 }) {
-  const storagePrefix = config?.storagePrefix || 'school';
+  const basePrefix = config?.storagePrefix || 'school';
 
   const [username, setUsernameState] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -40,6 +40,8 @@ export function useKagRunner({
     }
     return 'default';
   });
+
+  const storagePrefix = username && username !== 'default' ? `${basePrefix}_${username}` : basePrefix;
 
   const setUsername = (newUsername: string) => {
     localStorage.setItem('school_username', newUsername);
