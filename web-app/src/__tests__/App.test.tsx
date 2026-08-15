@@ -881,4 +881,47 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     globalThis.fetch = originalFetch;
   });
+
+  it('should synthesize predictive history backlog when jumping to a non-zero pointer in scenario', async () => {
+    const originalFetch = globalThis.fetch;
+    const scenarioWithHistory = {
+      instructions: [
+        { type: 'command', name: 'name', args: { txt: '春', s: 'voice_haru_01' } },
+        { type: 'text', text_jp: '这是第一句对话。', text_en: 'This is line 1.' },
+        { type: 'command', name: 'name', args: { txt: '椿姬', s: 'voice_tubaki_01' } },
+        { type: 'text', text_jp: '这是第二句对话。', text_en: 'This is line 2.' },
+        { type: 'command', name: 'ev', args: { str: 'ev_haru_01a' } },
+        { type: 'command', name: 'name', args: { txt: '春', s: 'voice_haru_02' } },
+        { type: 'text', text_jp: '这是CG展示时的第三句对话。', text_en: 'This is line 3 with CG.' }
+      ]
+    };
+
+    globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('g01.json') || url.includes('scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(scenarioWithHistory)
+        } as Response);
+      }
+      return Promise.resolve({ ok: false, status: 404 } as Response);
+    });
+
+    const App = await getApp();
+    render(<App />);
+
+    // Trigger loadScenario at pointer 6 (Line 3)
+    await act(async () => {
+      const runner = (window as any).quick_check();
+      await runner.loadScenario('g01', null, 6, false, false, true);
+    });
+
+    const quickCheck = (window as any).quick_check();
+    expect(quickCheck.historyLog.length).toBeGreaterThanOrEqual(2);
+    expect(quickCheck.historyLog[0].text_jp).toBe('这是第一句对话。');
+    expect(quickCheck.historyLog[0].speaker).toBe('春');
+    expect(quickCheck.historyLog[1].text_jp).toBe('这是第二句对话。');
+    expect(quickCheck.historyLog[1].speaker).toBe('椿姬');
+
+    globalThis.fetch = originalFetch;
+  });
 });

@@ -43,8 +43,34 @@ export function useKagRunner({
 
   const storagePrefix = username && username !== 'default' ? `${basePrefix}_${username}` : basePrefix;
 
+  const safeLocalStorageSet = (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e: any) {
+      if (e?.name === 'QuotaExceededError' || e?.code === 22) {
+        console.warn(`[Storage] QuotaExceededError writing to ${key}. Retrying with lightweight stripped payload.`);
+        try {
+          const parsed = JSON.parse(value);
+          if (parsed && typeof parsed === 'object') {
+            if (Array.isArray(parsed.historyLog)) {
+              parsed.historyLog = parsed.historyLog.slice(-5).map((item: any) => {
+                const { snapshot: _s, ...rest } = item;
+                return rest;
+              });
+            }
+            localStorage.setItem(key, JSON.stringify(parsed));
+            return;
+          }
+        } catch {
+          // ignore
+        }
+      }
+      console.error(`[Storage] Failed to write to localStorage for key ${key}:`, e);
+    }
+  };
+
   const setUsername = (newUsername: string) => {
-    localStorage.setItem('school_username', newUsername);
+    safeLocalStorageSet('school_username', newUsername);
     setUsernameState(newUsername);
   };
 
@@ -287,7 +313,7 @@ export function useKagRunner({
                 next.sevol = 8;
                 needsBackendSave = true;
               }
-              localStorage.setItem(`${storagePrefix}_sf`, JSON.stringify(next));
+              safeLocalStorageSet(`${storagePrefix}_sf`, JSON.stringify(next));
               if (needsBackendSave) {
                 fetch('/api/save-sf', {
                   method: 'POST',
@@ -310,7 +336,7 @@ export function useKagRunner({
             const autosaveKey = `${storagePrefix}_autosave`;
             if (activeSlots.autosave) {
               const auto = activeSlots.autosave;
-              localStorage.setItem(autosaveKey, JSON.stringify(stripHistoryForLocalStorage(auto)));
+              safeLocalStorageSet(autosaveKey, JSON.stringify(stripHistoryForLocalStorage(auto)));
               setF(prev => {
                 const nextF = { ...prev, ...auto.f };
                 if (auto.choicesHistory) {
@@ -329,7 +355,7 @@ export function useKagRunner({
             for (let i = 0; i < 24; i++) {
               const key = `${storagePrefix}_save_slot_${i}`;
               if (activeSlots[i]) {
-                localStorage.setItem(key, JSON.stringify(stripHistoryForLocalStorage(activeSlots[i])));
+                safeLocalStorageSet(key, JSON.stringify(stripHistoryForLocalStorage(activeSlots[i])));
               } else {
                 localStorage.removeItem(key);
               }
@@ -338,7 +364,7 @@ export function useKagRunner({
             // Sync special transition slot 150
             const key150 = `${storagePrefix}_save_slot_150`;
             if (activeSlots[150]) {
-              localStorage.setItem(key150, JSON.stringify(stripHistoryForLocalStorage(activeSlots[150])));
+              safeLocalStorageSet(key150, JSON.stringify(stripHistoryForLocalStorage(activeSlots[150])));
             } else {
               localStorage.removeItem(key150);
             }
@@ -361,7 +387,7 @@ export function useKagRunner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
 
-  const updateSf = (updater) => {
+  const updateSf = (updater: any) => {
     setSf(prev => {
       const nextSf = typeof updater === 'function' ? updater(prev) : updater;
       fetch('/api/save-sf', {
@@ -373,7 +399,7 @@ export function useKagRunner({
         },
         body: JSON.stringify(nextSf)
       }).catch(err => console.error("Failed to save SF to backend", err));
-      localStorage.setItem(`${storagePrefix}_sf`, JSON.stringify(nextSf));
+      safeLocalStorageSet(`${storagePrefix}_sf`, JSON.stringify(nextSf));
       return nextSf;
     });
   };
@@ -426,7 +452,7 @@ export function useKagRunner({
     return p;
   };
 
-  const loadScenario = async (name, targetLabel = null, overridePointer = null, shouldWait = false, skipPreScanner = false) => {
+  const loadScenario = async (name, targetLabel = null, overridePointer = null, shouldWait = false, skipPreScanner = false, isExplicitJump = false) => {
     if (name === 'option' || name === 'systembutton') {
       setShowSettings(true);
       return;
@@ -463,11 +489,12 @@ export function useKagRunner({
         if (!skipPreScanner) {
           let initialBg = 'white';
           let initialBgm = '';
-          let initialSprites = { 0: null, 1: null, 2: null };
+          let initialSprites: any = { 0: null, 1: null, 2: null };
           let initialSpeaker = '';
           let initialDialogueMode = 'avg';
           let initialVoice = '';
           let hasNm = false;
+          const synthesizedHistory: any[] = [];
 
           for (let i = 0; i < startIdx; i++) {
             const inst = data.instructions[i];
@@ -477,6 +504,37 @@ export function useKagRunner({
                 initialVoice = '';
                 hasNm = false;
               } else if (inst.type === 'text') {
+                const resolvedSpJp = initialSpeaker ? resolveCharacterName(initialSpeaker, 'JP', config?.characterNames) : '';
+                const resolvedSpEn = initialSpeaker ? resolveCharacterName(initialSpeaker, 'EN', config?.characterNames) : '';
+                synthesizedHistory.push({
+                  speakerJp: resolvedSpJp,
+                  speakerEn: resolvedSpEn,
+                  speaker: resolvedSpJp,
+                  textJp: inst.text_jp || inst.text || '',
+                  textEn: inst.text_en || '',
+                  text_jp: inst.text_jp || inst.text || '',
+                  text_en: inst.text_en || '',
+                  voice: initialVoice || undefined,
+                  currentScenario: name,
+                  scenario: name,
+                  pointer: i,
+                  dialogueMode: initialDialogueMode,
+                  faceIcon: getFaceIcon(resolvedSpJp, f),
+                  snapshot: {
+                    pointer: i,
+                    currentScenario: name,
+                    f: { ...f },
+                    sf: { ...sf },
+                    tf: { ...tf },
+                    background: initialBg,
+                    sprites: { ...initialSprites },
+                    dialogueMode: initialDialogueMode,
+                    currentVoice: initialVoice,
+                    speaker: resolvedSpJp,
+                    dialogueText: inst.text_jp || inst.text || '',
+                    bgm: initialBgm
+                  }
+                });
                 if (!hasNm) {
                   initialSpeaker = '';
                 }
@@ -532,7 +590,7 @@ export function useKagRunner({
                     }
                   }
                 } else if (inst.name === 'chr_pos_change') {
-                  const mapPosToSlot = (pos) => {
+                  const mapPosToSlot = (pos: string) => {
                     if (pos === 'c' || pos === 'cc') return 2;
                     if (pos === 'l' || pos === 'll') return 1;
                     if (pos === 'r' || pos === 'rr') return 0;
@@ -574,6 +632,12 @@ export function useKagRunner({
                 }
               }
             }
+          }
+
+          if (synthesizedHistory.length > 0) {
+            setHistoryLog(synthesizedHistory.slice(-100));
+          } else if (isExplicitJump || isSceneReplayMode) {
+            setHistoryLog([]);
           }
 
           if (initialBg === 'white' || !initialBgm) {
@@ -618,12 +682,17 @@ export function useKagRunner({
             stopBgm();
           }
         }
-      } else if (targetLabel) {
-        const idx = data.instructions.findIndex(i => i.type === 'label' && i.name === targetLabel);
-        if (idx !== -1) {
-          startIdx = idx;
-        } else {
-          console.warn(`Label ${targetLabel} not found in ${name}`);
+      } else {
+        if (isExplicitJump || isSceneReplayMode) {
+          setHistoryLog([]);
+        }
+        if (targetLabel) {
+          const idx = data.instructions.findIndex((i: any) => i.type === 'label' && i.name === targetLabel);
+          if (idx !== -1) {
+            startIdx = idx;
+          } else {
+            console.warn(`Label ${targetLabel} not found in ${name}`);
+          }
         }
       }
       setPointer(overridePointer !== null ? overridePointer : startIdx);
@@ -724,7 +793,7 @@ export function useKagRunner({
       timestamp: Date.now()
     };
 
-    localStorage.setItem(`${storagePrefix}_autosave`, JSON.stringify(stripHistoryForLocalStorage(saveData)));
+    safeLocalStorageSet(`${storagePrefix}_autosave`, JSON.stringify(stripHistoryForLocalStorage(saveData)));
     setSaveSlots(prev => ({ ...prev, autosave: saveData }));
 
     if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
@@ -1423,6 +1492,9 @@ export function useKagRunner({
         gameState,
         isAudioUnlocked,
         voicePlayer,
+        historyLog,
+        setHistoryLog,
+        loadScenario,
         audio: {
           bgm: { src: bgmPlayer.src, paused: bgmPlayer.paused, volume: bgmPlayer.volume },
           se: { src: sePlayer.src, paused: sePlayer.paused, volume: sePlayer.volume },
@@ -1434,7 +1506,7 @@ export function useKagRunner({
       delete window.quick_check;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentScenario, pointer, background, sprites, speaker, dialogueMode, dialogueText, typewriterText, isWaiting, isAutoMode, isFastForward, f, sf, gameState, isAudioUnlocked]);
+  }, [currentScenario, pointer, background, sprites, speaker, dialogueMode, dialogueText, typewriterText, isWaiting, isAutoMode, isFastForward, f, sf, gameState, isAudioUnlocked, historyLog]);
 
   // Log state progression in browser console
   useEffect(() => {
@@ -1686,7 +1758,7 @@ export function useKagRunner({
       pinned: pinned || false
     };
     // Write lightweight cache to localStorage to prevent QuotaExceededError
-    localStorage.setItem(slotKey, JSON.stringify(stripHistoryForLocalStorage(saveData)));
+    safeLocalStorageSet(slotKey, JSON.stringify(stripHistoryForLocalStorage(saveData)));
 
     console.log(
       `%c[SAVE] Saved to Slot: %c${slotIdx}%c | Scenario: %c${targetScenario}%c | Pointer: %c${targetPointer}`,
@@ -1714,7 +1786,7 @@ export function useKagRunner({
     if (!existing) return;
     const updated = { ...existing, note };
     const slotKey = `${storagePrefix}_save_slot_${slotIdx}`;
-    localStorage.setItem(slotKey, JSON.stringify(stripHistoryForLocalStorage(updated)));
+    safeLocalStorageSet(slotKey, JSON.stringify(stripHistoryForLocalStorage(updated)));
     fetch('/api/save-slot', {
       method: 'POST',
       headers: {
@@ -1732,7 +1804,7 @@ export function useKagRunner({
     if (!existing) return;
     const updated = { ...existing, pinned: !existing.pinned };
     const slotKey = `${storagePrefix}_save_slot_${slotIdx}`;
-    localStorage.setItem(slotKey, JSON.stringify(stripHistoryForLocalStorage(updated)));
+    safeLocalStorageSet(slotKey, JSON.stringify(stripHistoryForLocalStorage(updated)));
     fetch('/api/save-slot', {
       method: 'POST',
       headers: {
@@ -1920,20 +1992,20 @@ export function useKagRunner({
     setGameState('PLAYING');
   };
 
-  const jumpToTopic = async (scenId, targetPtr = 0, presets = null) => {
+  const jumpToTopic = async (scenId: string, targetPtr = 0, presets: any = null) => {
     if (presets) {
       setF(prev => ({ ...prev, ...presets }));
     }
-    await loadScenario(scenId, null, targetPtr, true, true);
+    await loadScenario(scenId, null, targetPtr, true, false, true);
     setGameState('PLAYING');
     setShowTableOfContents(false);
   };
 
-  const seekPointer = async (targetPtr) => {
+  const seekPointer = async (targetPtr: number) => {
     if (!currentScenario) return;
-    const maxP = scenarioData?.instructions?.length || targetPtr;
+    const maxP = scenarioData?.length || targetPtr;
     const safeP = Math.max(0, Math.min(targetPtr, maxP - 1));
-    await loadScenario(currentScenario, null, safeP, true, true);
+    await loadScenario(currentScenario, null, safeP, true, false, true);
   };
 
   // Centralized keyboard shortcut manager

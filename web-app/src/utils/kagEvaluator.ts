@@ -103,8 +103,17 @@ export const cleanHistoryLogForSave = (log: HistoryLogItem[] | undefined): any[]
 export const stripHistoryForLocalStorage = (saveData: any): any => {
   if (!saveData) return saveData;
   const copy = { ...saveData };
-  if (copy.historyLog && copy.historyLog.length > 50) {
-    copy.historyLog = copy.historyLog.slice(-50);
+  if (Array.isArray(copy.historyLog)) {
+    // Keep at most 25 recent history entries in localStorage
+    const recent = copy.historyLog.slice(-25);
+    copy.historyLog = recent.map((item: any, idx: number) => {
+      // Keep snapshot only on the 3 most recent entries for quick rewind
+      if (idx >= recent.length - 3) {
+        return item;
+      }
+      const { snapshot: _s, ...lightweight } = item;
+      return lightweight;
+    });
   }
   return copy;
 };

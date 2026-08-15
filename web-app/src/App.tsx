@@ -322,7 +322,7 @@ export default function App() {
               }
               runner.setIsSceneReplayMode(true);
               runner.setGameState('PLAYING');
-              runner.loadScenario(scenario, null, 0);
+              runner.loadScenario(scenario, null, 0, false, false, true);
             }}
             onJumpToStory={(scenario, pointer) => {
               if (!runner.isAudioUnlocked) {
@@ -330,7 +330,7 @@ export default function App() {
               }
               runner.setIsSceneReplayMode(false);
               runner.setGameState('PLAYING');
-              runner.loadScenario(scenario, null, pointer);
+              runner.loadScenario(scenario, null, pointer, false, false, true);
             }}
           />
         )}

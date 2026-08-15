@@ -113,13 +113,18 @@ export interface CallStackFrame {
 }
 
 export interface HistoryLogItem {
-  id: string | number;
+  id?: string | number;
   speaker: string;
   speakerJp?: string;
   speakerEn?: string;
-  dialogueText: string;
+  speaker_jp?: string;
+  speaker_en?: string;
+  dialogueText?: string;
+  text?: string;
   textJp?: string;
   textEn?: string;
+  text_jp?: string;
+  text_en?: string;
   voice?: string;
   snapshot: any;
   [key: string]: any;

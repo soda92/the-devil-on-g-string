@@ -43,8 +43,8 @@ export default function HistoryModal({
     .filter(item => {
       if (!searchQuery) return true;
       const q = searchQuery.toLowerCase();
-      const speaker = (language === 'JP' ? item.speakerJp : item.speakerEn) || '';
-      const text = (language === 'JP' ? item.textJp : item.textEn) || '';
+      const speaker = (language === 'JP' ? (item.speakerJp || item.speaker_jp) : (item.speakerEn || item.speaker_en)) || item.speaker || '';
+      const text = (language === 'JP' ? (item.textJp || item.text_jp) : (item.textEn || item.text_en)) || item.textJp || item.text_jp || item.text || '';
       return speaker.toLowerCase().includes(q) || text.toLowerCase().includes(q);
     });
 
@@ -68,15 +68,9 @@ export default function HistoryModal({
             ref={searchInputRef}
             type="text"
             className="backlog-search-input"
-            placeholder={language === 'JP' ? '输入关键字搜索记录...' : 'Type keyword to search history...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              e.stopPropagation();
-              if (e.key === 'Escape') {
-                onClose();
-              }
-            }}
+            placeholder={language === 'JP' ? '输入关键字搜索记录...' : 'Type keyword to search history...'}
             style={{
               flex: 1,
               padding: '8px 12px',
@@ -85,16 +79,12 @@ export default function HistoryModal({
               background: 'rgba(255, 255, 255, 0.1)',
               color: 'var(--color-text-bright)',
               fontSize: '14px',
-              outline: 'none',
-              transition: 'border-color 0.2s'
+              outline: 'none'
             }}
           />
           {searchQuery && (
             <button
-              onClick={() => {
-                setSearchQuery('');
-                if (searchInputRef.current) searchInputRef.current.focus();
-              }}
+              onClick={() => setSearchQuery('')}
               style={{
                 padding: '8px 16px',
                 borderRadius: '6px',
@@ -113,8 +103,8 @@ export default function HistoryModal({
         <div className="backlog-content-area" ref={contentAreaRef}>
           {filteredLog && filteredLog.length > 0 ? (
             filteredLog.map((entry, idx) => {
-              const speaker = language === 'JP' ? entry.speakerJp : entry.speakerEn;
-              const text = language === 'JP' ? entry.textJp : entry.textEn;
+              const speaker = (language === 'JP' ? (entry.speakerJp || entry.speaker_jp) : (entry.speakerEn || entry.speaker_en)) || entry.speaker || '';
+              const text = (language === 'JP' ? (entry.textJp || entry.text_jp) : (entry.textEn || entry.text_en)) || entry.textJp || entry.text_jp || entry.text || '';
               const isClickable = !!entry.snapshot;
               
               return (
