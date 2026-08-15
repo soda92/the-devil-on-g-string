@@ -13,6 +13,8 @@ import ChoiceGraphModal from './components/ChoiceGraphModal';
 import DebugPanel from './components/DebugPanel';
 import MusicRoom from './components/MusicRoom';
 import StoryNavigator from './components/StoryNavigator';
+import BranchConditionModal from './components/BranchConditionModal';
+import { getScenarioPreset } from './data/scenarioIndex';
 
 // --- Custom Hooks ---
 import { useGameAudio } from './hooks/useGameAudio';
@@ -127,6 +129,10 @@ export default function App() {
         } catch (_e) {}
       }
       if (!loadedFromAuto) {
+        const autoPreset = getScenarioPreset(scen);
+        if (autoPreset && Object.keys(autoPreset).length > 0) {
+          runner.setF((prev: any) => ({ ...prev, ...autoPreset }));
+        }
         runner.setGameState('PLAYING');
         runner.loadScenario(scen, null, parsedPtr);
       }
@@ -638,6 +644,8 @@ export default function App() {
               speaker={runner.speaker}
               onSeekPointer={runner.seekPointer}
               onSelectTopic={runner.jumpToTopic}
+              f={runner.f}
+              setF={runner.setF}
               onClose={() => {
                 runner.setShowPageFlipper(false);
                 runner.setShowTableOfContents(false);
@@ -646,6 +654,19 @@ export default function App() {
             />
           )}
         </>
+      )}
+
+      {/* === BRANCH CONDITION INTERCEPTOR MODAL === */}
+      {runner.branchConditionPrompt && (
+        <BranchConditionModal
+          info={runner.branchConditionPrompt}
+          f={runner.f}
+          onUpdateF={(newF) => runner.setF(newF)}
+          onProceed={() => runner.setBranchConditionPrompt(null)}
+          onAutoFixAndProceed={runner.autoFixBranchCondition}
+          onClose={() => runner.setBranchConditionPrompt(null)}
+          language={runner.language}
+        />
       )}
 
       {/* === DEBUG PANEL OVERLAY === */}

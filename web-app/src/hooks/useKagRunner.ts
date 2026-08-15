@@ -13,6 +13,7 @@ import {
   stripHistoryForLocalStorage
 } from '../utils/kagEvaluator';
 import { GameVariables, SystemFlags, Language, GameState } from '../types/kag';
+import { getScenarioPreset } from '../data/scenarioIndex';
 
 export function useKagRunner({
   config,
@@ -167,6 +168,7 @@ export function useKagRunner({
   const [quakeActive, setQuakeActive] = useState<boolean>(false);
   const [flashActive, setFlashActive] = useState<any>(null);
   const [isSceneReplayMode, setIsSceneReplayMode] = useState<boolean>(false);
+  const [branchConditionPrompt, setBranchConditionPrompt] = useState<any>(null);
 
   const [saveSlots, setSaveSlots] = useState<Record<string | number, any>>(() => {
     const initial: Record<string | number, any> = {};
@@ -849,7 +851,21 @@ export function useKagRunner({
         case 'command':
           const args = inst.args || {};
           if (args.cond) {
-            if (!evaluateExpression(args.cond, newF, newSf, newTf)) {
+            const isCondMet = evaluateExpression(args.cond, newF, newSf, newTf);
+            if (!isCondMet && (args.cond.includes('flag_') || args.cond.includes('badflag'))) {
+              console.warn(`[Branch Interceptor] Condition check not met: ${args.cond}`, newF);
+              setBranchConditionPrompt({
+                scenario: currentScenario || 'unknown',
+                pointer: p,
+                condition: args.cond,
+                passed: false,
+                variables: { ...newF },
+                target: args.target || null,
+                storage: args.storage || null,
+                description: '路线条件判定未满足，可能会导致剧情分歧、跳过关键情节或进入Bad End。'
+              });
+            }
+            if (!isCondMet) {
               break;
             }
           }
@@ -1999,11 +2015,28 @@ export function useKagRunner({
   };
 
   const jumpToTopic = async (scenId: string, targetPtr = 0, presets: any = null) => {
-    if (presets) {
-      setF(prev => ({ ...prev, ...presets }));
+    const autoPreset = presets || getScenarioPreset(scenId);
+    if (autoPreset && Object.keys(autoPreset).length > 0) {
+      setF(prev => ({ ...prev, ...autoPreset }));
     }
     await loadScenario(scenId, null, targetPtr, false, false, true);
     setGameState('PLAYING');
+  };
+
+  const autoFixBranchCondition = () => {
+    if (!branchConditionPrompt) return;
+    const cond = branchConditionPrompt.condition || '';
+    const newPreset: Record<string, any> = {};
+    if (cond.includes('flag_haru')) newPreset.flag_haru = 3;
+    if (cond.includes('flag_tubaki')) newPreset.flag_tubaki = 4;
+    if (cond.includes('flag_kanon')) { newPreset.flag_kanon = 3; newPreset.badflag_kanon = false; }
+    if (cond.includes('flag_mizuha')) newPreset.flag_mizuha = 2;
+    if (cond.includes('badflag')) newPreset.badflag_kanon = false;
+    if (Object.keys(newPreset).length === 0) {
+      newPreset.flag_haru = 3;
+    }
+    setF(prev => ({ ...prev, ...newPreset }));
+    setBranchConditionPrompt(null);
   };
 
   const seekPointer = async (targetPtr: number) => {
@@ -2258,6 +2291,9 @@ export function useKagRunner({
     username,
     setUsername,
     sessionConflict,
-    forceTakeoverSession
+    forceTakeoverSession,
+    branchConditionPrompt,
+    setBranchConditionPrompt,
+    autoFixBranchCondition
   };
 }

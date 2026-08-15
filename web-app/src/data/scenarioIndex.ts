@@ -175,3 +175,30 @@ export const SCENARIO_INDEX: ChapterIndex[] = [
     ]
   }
 ];
+
+export function getScenarioPreset(scenId: string): Record<string, any> {
+  const cleanId = scenId.replace('.ks', '').replace('.json', '');
+  for (const ch of SCENARIO_INDEX) {
+    const found = ch.scenarios.find(s => s.id === cleanId);
+    if (found && found.presets) {
+      return { ...found.presets };
+    }
+  }
+
+  // Fallback heuristics based on prefix
+  if (cleanId.startsWith('gt') || cleanId.startsWith('gth')) {
+    return { flag_tubaki: 4 };
+  }
+  if (cleanId.startsWith('gk') || cleanId.startsWith('gkh')) {
+    return { flag_kanon: 3, badflag_kanon: false };
+  }
+  if (cleanId.startsWith('gm') || cleanId.startsWith('gmh')) {
+    return { flag_mizuha: 2 };
+  }
+  if (cleanId.startsWith('ghh') || (cleanId.startsWith('g') && parseInt(cleanId.replace('g', ''), 10) >= 43)) {
+    return { flag_haru: 3, flag_tubaki: 0, flag_kanon: 0, flag_mizuha: 0 };
+  }
+
+  return {};
+}
+
