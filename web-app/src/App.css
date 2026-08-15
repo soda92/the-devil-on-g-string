@@ -389,26 +389,31 @@
 /* Dialogue Face Icon (Miniface) */
 .dialogue-face-icon-container {
   position: absolute;
-  left: 15px;
-  bottom: 0px;
-  width: 140px;
-  height: 140px;
+  left: 16px;
+  bottom: 12px;
+  width: 126px;
+  height: 126px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   overflow: visible;
   pointer-events: none;
   z-index: 5;
 }
 
 .dialogue-face-icon-img {
-  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
   height: auto;
-  max-height: 140px;
   object-fit: contain;
+  object-position: bottom center;
   display: block;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
 }
 
 /* Adjust layout when dialogue box has a face icon */
 .dialogue-box-layer.has-face-icon {
-  padding-left: 160px;
+  padding-left: 152px;
 }
 
 .dialogue-cursor {
