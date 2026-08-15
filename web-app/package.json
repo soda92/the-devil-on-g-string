@@ -8,7 +8,9 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "docs:build": "mdbook build ../docs",
+    "docs:serve": "mdbook serve ../docs"
   },
   "dependencies": {
     "react": "^19.2.6",

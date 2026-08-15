@@ -33,3 +33,12 @@ scenario_names.json
 *_backup
 
 game-server.exe
+
+# Documentation build output
+docs/book/
+docs/book
+book/
+
+# Web App build output
+web-app/dist/
+web-app/node_modules/

@@ -1,0 +1,16 @@
+[book]
+authors = ["Development Team"]
+language = "en"
+src = "src"
+title = "G-Senjou no Maou (The Devil on G-String) Web Engine Documentation"
+
+[output.html]
+git-repository-url = "https://github.com/soda92/the-devil-on-g-string"
+edit-url-template = "https://github.com/soda92/the-devil-on-g-string/edit/main/{path}"
+default-theme = "navy"
+preferred-dark-theme = "navy"
+mathjax-support = false
+
+[output.html.fold]
+enable = true
+level = 1
