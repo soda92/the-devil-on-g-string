@@ -286,6 +286,18 @@ export default function App() {
               runner.setIsFastForward(nextSkip);
               runner.setIsAutoMode(false);
             }}
+            onOpenToc={() => {
+              if (!runner.isAudioUnlocked) {
+                runner.setIsAudioUnlocked(true);
+              }
+              runner.setShowTableOfContents(true);
+            }}
+            onToggleFlipper={() => {
+              if (!runner.isAudioUnlocked) {
+                runner.setIsAudioUnlocked(true);
+              }
+              runner.setShowPageFlipper(prev => !prev);
+            }}
             sf={runner.sf}
             updateSf={runner.updateSf}
           />
@@ -414,6 +426,31 @@ export default function App() {
               }, 150);
             }}
             autoFocusSearch={runner.historySearchFocused}
+          />
+        )}
+
+        {/* === TABLE OF CONTENTS (TOPIC INDEX) OVERLAY === */}
+        {runner.showTableOfContents && (
+          <TableOfContentsModal 
+            onClose={() => runner.setShowTableOfContents(false)}
+            onSelectTopic={runner.jumpToTopic}
+            currentScenario={runner.currentScenario}
+            language={runner.language}
+          />
+        )}
+
+        {/* === PAGE FLIPPER TIMELINE SCRUBBER === */}
+        {runner.showPageFlipper && runner.gameState === 'PLAYING' && (
+          <PageFlipperBar 
+            pointer={runner.pointer}
+            maxPointer={runner.scenarioData?.instructions?.length || 1000}
+            currentScenario={runner.currentScenario}
+            currentDialogueText={runner.dialogueText}
+            speaker={runner.speaker}
+            onSeekPointer={runner.seekPointer}
+            onOpenToc={() => runner.setShowTableOfContents(true)}
+            onClose={() => runner.setShowPageFlipper(false)}
+            language={runner.language}
           />
         )}
 

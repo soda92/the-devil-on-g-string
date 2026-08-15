@@ -1,10 +1,24 @@
 import React, { useState } from 'react';
-import { SCENARIO_INDEX } from '../data/scenarioIndex';
+import { SCENARIO_INDEX, RouteType } from '../data/scenarioIndex';
 
-export default function TableOfContentsModal({ onClose, onSelectTopic, currentScenario, language }) {
-  const [selectedRoute, setSelectedRoute] = useState('ALL');
+interface TableOfContentsModalProps {
+  onClose: () => void;
+  onSelectTopic: (scenId: string, startPtr: number, presets?: Record<string, any>) => void;
+  currentScenario: string | null;
+  language: 'JP' | 'EN';
+}
 
-  const routes = [
+type TabFilter = 'ALL' | RouteType;
+
+export default function TableOfContentsModal({ 
+  onClose, 
+  onSelectTopic, 
+  currentScenario, 
+  language 
+}: TableOfContentsModalProps) {
+  const [selectedRoute, setSelectedRoute] = useState<TabFilter>('ALL');
+
+  const routes: { id: TabFilter; labelJp: string; labelEn: string }[] = [
     { id: 'ALL', labelJp: '全部章节', labelEn: 'All Chapters' },
     { id: 'Main', labelJp: '主线 / 共通', labelEn: 'Main Common' },
     { id: 'Tsubaki', labelJp: '美轮椿姬篇', labelEn: 'Tsubaki Route' },
@@ -104,7 +118,6 @@ export default function TableOfContentsModal({ onClose, onSelectTopic, currentSc
             display: flex;
             flex-direction: column;
             gap: 6px;
-
           }
           .toc-scenario-card:hover {
             border-color: #f59e0b;

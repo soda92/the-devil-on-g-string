@@ -1,4 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ChangeEvent } from 'react';
+
+interface PageFlipperBarProps {
+  pointer: number;
+  maxPointer: number;
+  currentScenario: string | null;
+  currentDialogueText: string;
+  speaker: string;
+  onSeekPointer: (pointer: number) => void;
+  onOpenToc: () => void;
+  onClose: () => void;
+  language: 'JP' | 'EN';
+}
 
 export default function PageFlipperBar({
   pointer,
@@ -10,16 +22,15 @@ export default function PageFlipperBar({
   onOpenToc,
   onClose,
   language
-}) {
-  const [bookmarkPtr, setBookmarkPtr] = useState(pointer);
-  const [scrubValue, setScrubValue] = useState(pointer);
-  const [isHovered, setIsHovered] = useState(false);
+}: PageFlipperBarProps) {
+  const [bookmarkPtr, setBookmarkPtr] = useState<number>(pointer);
+  const [scrubValue, setScrubValue] = useState<number>(pointer);
 
   useEffect(() => {
     setScrubValue(pointer);
   }, [pointer]);
 
-  const handleSliderChange = (e) => {
+  const handleSliderChange = (e: ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value, 10);
     setScrubValue(val);
     onSeekPointer(val);
@@ -34,11 +45,7 @@ export default function PageFlipperBar({
   };
 
   return (
-    <div 
-      className="page-flipper-bar glass-panel"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <div className="page-flipper-bar glass-panel">
       <style>{`
         .page-flipper-bar {
           position: absolute;

@@ -1,4 +1,23 @@
-export const SCENARIO_INDEX = [
+export type RouteType = 'Main' | 'Tsubaki' | 'Kanon' | 'Mizuha' | 'Haru';
+
+export interface ScenarioTopic {
+  id: string;
+  title: string;
+  startPtr: number;
+  bg?: string;
+  route: RouteType;
+  presets?: Record<string, any>;
+}
+
+export interface ChapterIndex {
+  chapterId: string;
+  titleJp: string;
+  titleEn: string;
+  description: string;
+  scenarios: ScenarioTopic[];
+}
+
+export const SCENARIO_INDEX: ChapterIndex[] = [
   {
     chapterId: 'ch1',
     titleJp: '第一章：魔王降临',
