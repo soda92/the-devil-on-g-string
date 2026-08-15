@@ -1,5 +1,26 @@
 import React, { useState, useEffect, useRef } from 'react';
 import scenarioNames from '../scenario_names.json';
+import { GameVariables, KagInstruction, SpritesState, SystemFlags } from '../types/kag';
+
+const typedScenarioNames: string[] = scenarioNames as string[];
+
+export interface DebugPanelProps {
+  currentScenario: string;
+  pointer: number;
+  scenarioData?: KagInstruction[] | null;
+  f: GameVariables;
+  sf: SystemFlags;
+  setF: (updater: (prev: GameVariables) => GameVariables) => void;
+  setSf: (updater: (prev: SystemFlags) => SystemFlags) => void;
+  loadScenario: (scenario: string, target?: string | null, startPointer?: number) => void;
+  sprites: SpritesState;
+  background: string;
+  dialogueMode: string;
+  speaker?: string;
+  bgmPlayer?: HTMLAudioElement;
+  playVoice: (storage: string) => void;
+  onClose: () => void;
+}
 
 export default function DebugPanel({ 
   currentScenario, 
@@ -17,20 +38,25 @@ export default function DebugPanel({
   bgmPlayer,
   playVoice,
   onClose
-}) {
+}: DebugPanelProps) {
   // Remember the active tab in localStorage across panel opens/closes
-  const [tab, setTab] = useState(() => {
+  const [tab, setTab] = useState<string>(() => {
     return localStorage.getItem('debug_panel_active_tab') || 'debug';
   });
   
-  const [selectedScenario, setSelectedScenario] = useState(currentScenario);
-  const [targetPointer, setTargetPointer] = useState(pointer);
-  const [customVarName, setCustomVarName] = useState('');
-  const [customVarValue, setCustomVarValue] = useState('');
-  const [bgmState, setBgmState] = useState({ src: 'None', paused: true, volume: 1, muted: false });
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedScenario, setSelectedScenario] = useState<string>(currentScenario);
+  const [targetPointer, setTargetPointer] = useState<number | string>(pointer);
+  const [customVarName, setCustomVarName] = useState<string>('');
+  const [customVarValue, setCustomVarValue] = useState<string>('');
+  const [bgmState, setBgmState] = useState<{ src: string; paused: boolean; volume: number; muted: boolean }>({
+    src: 'None',
+    paused: true,
+    volume: 1,
+    muted: false
+  });
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const activeCardRef = useRef(null);
+  const activeCardRef = useRef<HTMLDivElement>(null);
 
   // Update selectedScenario and targetPointer when props change
   useEffect(() => {
@@ -46,8 +72,7 @@ export default function DebugPanel({
     setSearchQuery('');
   }, [currentScenario]);
 
-  // Auto-scroll active dialogue into view. Includes scenarioData in dependency array
-  // to ensure centering happens once the async scenario load finishes.
+  // Auto-scroll active dialogue into view
   useEffect(() => {
     if (tab === 'dialogues' && activeCardRef.current) {
       const timer = setTimeout(() => {
@@ -63,8 +88,10 @@ export default function DebugPanel({
   useEffect(() => {
     if (!bgmPlayer) return;
     const updateStatus = () => {
+      const srcUrl = bgmPlayer.src || '';
+      const filename = srcUrl ? (srcUrl.split('/').pop()?.replace(/\.[^/.]+$/, "") || 'None') : 'None';
       setBgmState({
-        src: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace(/\.[^/.]+$/, "") : 'None',
+        src: filename,
         paused: bgmPlayer.paused,
         volume: bgmPlayer.volume,
         muted: bgmPlayer.muted
@@ -83,18 +110,19 @@ export default function DebugPanel({
     };
   }, [bgmPlayer]);
 
-  const handleTabChange = (newTab) => {
+  const handleTabChange = (newTab: string) => {
     setTab(newTab);
     localStorage.setItem('debug_panel_active_tab', newTab);
   };
 
   const handleJump = () => {
-    loadScenario(selectedScenario, null, parseInt(targetPointer) || 0);
+    const ptr = typeof targetPointer === 'number' ? targetPointer : parseInt(targetPointer, 10);
+    loadScenario(selectedScenario, null, isNaN(ptr) ? 0 : ptr);
   };
 
   const handleSetVar = () => {
     if (!customVarName) return;
-    const val = isNaN(customVarValue) ? customVarValue : parseInt(customVarValue);
+    const val = isNaN(Number(customVarValue)) ? customVarValue : parseInt(customVarValue, 10);
     if (customVarName.startsWith('sf.')) {
       const name = customVarName.replace('sf.', '');
       setSf(prev => ({ ...prev, [name]: val }));
@@ -107,7 +135,7 @@ export default function DebugPanel({
   // Helper to extract dialogues and associated audio/BGM from scenario instructions
   const getDialogues = () => {
     if (!scenarioData) return [];
-    const list = [];
+    const list: Array<{ ptr: number; speaker: string; voice: string; bgm: string; text_jp: string; text_en: string }> = [];
     let currentSpeaker = '';
     let currentVoice = '';
     let currentBgm = '';
@@ -229,7 +257,7 @@ export default function DebugPanel({
                 onChange={(e) => setSelectedScenario(e.target.value)}
                 style={{ width: '100%', background: '#333', color: '#fff', border: '1px solid #555', padding: '4px', borderRadius: '4px' }}
               >
-                {scenarioNames.map(name => (
+                {typedScenarioNames.map(name => (
                   <option key={name} value={name}>{name}.ks</option>
                 ))}
               </select>
@@ -256,7 +284,7 @@ export default function DebugPanel({
             <h4 style={{ margin: '0 0 5px 0', color: '#fff', borderBottom: '1px solid #333', fontSize: '11px', paddingBottom: '2px' }}>2. Active Runner State</h4>
             <div><strong>Scenario:</strong> {currentScenario}.ks</div>
             <div><strong>Pointer:</strong> {pointer} / {scenarioData ? scenarioData.length : 0}</div>
-            <div><strong>Speaker:</strong> "{speaker}"</div>
+            <div><strong>Speaker:</strong> "{speaker || ''}"</div>
             <div><strong>Layout:</strong> {dialogueMode.toUpperCase()}</div>
             <div><strong>Background:</strong> "{background}"</div>
             <div><strong>Sprites:</strong> {JSON.stringify(sprites)}</div>
@@ -357,7 +385,7 @@ export default function DebugPanel({
                 const isCurrent = absoluteIdx === pointer;
                 return (
                   <div key={idx} style={{ color: isCurrent ? '#fff' : '#777', background: isCurrent ? '#333' : 'transparent', padding: '2px 0', fontFamily: 'monospace' }}>
-                    {isCurrent ? '➔' : ' '} [{absoluteIdx}] {inst.type.toUpperCase()}: {inst.type === 'command' ? inst.name : (inst.type === 'text' ? inst.text_jp.slice(0, 15) : '')}
+                    {isCurrent ? '➔' : ' '} [{absoluteIdx}] {inst.type.toUpperCase()}: {inst.type === 'command' ? inst.name : (inst.type === 'text' ? (inst.text_jp || '').slice(0, 15) : '')}
                   </div>
                 );
               })}
@@ -471,10 +499,10 @@ export default function DebugPanel({
                             style={{ 
                               background: 'rgba(68, 255, 68, 0.15)', 
                               border: 'none', 
-                              borderRadius: '3px',
+                              borderRadius: '3px', 
                               color: '#44ff44', 
                               cursor: 'pointer', 
-                              padding: '2px 4px',
+                              padding: '2px 4px', 
                               fontSize: '9px',
                               display: 'inline-flex',
                               alignItems: 'center',

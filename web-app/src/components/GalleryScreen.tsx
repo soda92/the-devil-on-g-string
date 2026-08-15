@@ -1,19 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import GALLERY_ITEMS from '../gallery_items.json';
+import { SystemFlags } from '../types/kag';
 
-export default function GalleryScreen({ sf, resolveAsset, onBack, setCgViewerUrl: _setCgViewerUrl }) {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [viewingVariants, setViewingVariants] = useState(null);
-  const [viewingIdx, setViewingIdx] = useState(0);
+interface GalleryItem {
+  id: string | number;
+  title: string;
+  variants: string[];
+}
+
+const typedGalleryItems: GalleryItem[] = GALLERY_ITEMS as GalleryItem[];
+
+export interface GalleryScreenProps {
+  sf: SystemFlags;
+  resolveAsset: (name?: string | null, type?: string) => string;
+  onBack: () => void;
+  setCgViewerUrl?: (url: string | null) => void;
+}
+
+export default function GalleryScreen({ sf, resolveAsset, onBack, setCgViewerUrl: _setCgViewerUrl }: GalleryScreenProps) {
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [viewingVariants, setViewingVariants] = useState<string[] | null>(null);
+  const [viewingIdx, setViewingIdx] = useState<number>(0);
 
   const ITEMS_PER_PAGE = 12;
-  const totalPages = Math.ceil(GALLERY_ITEMS.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(typedGalleryItems.length / ITEMS_PER_PAGE);
   
   // Filter items by page
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const filteredItems = GALLERY_ITEMS.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const filteredItems = typedGalleryItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
-  const handleItemClick = (item) => {
+  const handleItemClick = (item: GalleryItem) => {
     const unlocked = item.variants.filter(v => sf[v] === 1);
     if (unlocked.length > 0) {
       setViewingVariants(unlocked);
@@ -22,6 +38,7 @@ export default function GalleryScreen({ sf, resolveAsset, onBack, setCgViewerUrl
   };
 
   const handleNextCg = () => {
+    if (!viewingVariants) return;
     if (viewingIdx < viewingVariants.length - 1) {
       setViewingIdx(prev => prev + 1);
     } else {
@@ -32,7 +49,7 @@ export default function GalleryScreen({ sf, resolveAsset, onBack, setCgViewerUrl
   // Keyboard controls for CG Viewer
   useEffect(() => {
     if (!viewingVariants) return;
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setViewingVariants(null);
       } else if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {

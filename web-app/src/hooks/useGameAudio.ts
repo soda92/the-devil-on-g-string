@@ -2,11 +2,8 @@ import { useEffect, useRef, useState, MutableRefObject } from 'react';
 import { resolveAsset } from '../utils/gameUtils';
 
 declare global {
-  // eslint-disable-next-line no-var
   var __bgmPlayer__: HTMLAudioElement | undefined;
-  // eslint-disable-next-line no-var
   var __sePlayer__: HTMLAudioElement | undefined;
-  // eslint-disable-next-line no-var
   var __voicePlayer__: HTMLAudioElement | undefined;
 }
 

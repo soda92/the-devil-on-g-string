@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
+import { SystemFlags } from '../types/kag';
 
-const BGM_TRACKS = [
+interface BgmTrack {
+  id: string;
+  name: string;
+  desc: string;
+  composer: string;
+}
+
+const BGM_TRACKS: BgmTrack[] = [
   { id: "bgm_01", name: "G弦上的咏叹调 - 主题曲", desc: "巴赫 《G弦上的咏叹调》 (Air on the G String)", composer: "J.S. Bach" },
   { id: "bgm_02", name: "魔鬼的颤音", desc: "塔蒂尼 《魔鬼的颤音奏鸣曲》 (The Devil's Trill)", composer: "G. Tartini" },
   { id: "bgm_03", name: "D大调交响曲", desc: "巴赫 《D大调前奏曲》 (Sinfonia in D major)", composer: "J.S. Bach" },
@@ -30,12 +38,21 @@ const BGM_TRACKS = [
   { id: "bgm_end", name: "G弦上的咏叹调 - 管弦乐版", desc: "巴赫 《G弦上的咏叹调》 (管弦乐完整版)", composer: "J.S. Bach" }
 ];
 
-export default function MusicRoom({ playBgm, stopBgm, currentBgmName, onBack, sf, setSf }) {
-  const [playingId, setPlayingId] = useState(currentBgmName || '');
-  const [isPlaying, setIsPlaying] = useState(!!currentBgmName);
-  const [volume, setVolume] = useState(sf.vol || 8);
+export interface MusicRoomProps {
+  playBgm: (storage: string) => void;
+  stopBgm: () => void;
+  currentBgmName?: string;
+  onBack: () => void;
+  sf: SystemFlags;
+  setSf: (updater: (prev: SystemFlags) => SystemFlags) => void;
+}
 
-  const handlePlayTrack = (trackId) => {
+export default function MusicRoom({ playBgm, stopBgm, currentBgmName, onBack, sf, setSf }: MusicRoomProps) {
+  const [playingId, setPlayingId] = useState<string>(currentBgmName || '');
+  const [isPlaying, setIsPlaying] = useState<boolean>(!!currentBgmName);
+  const [volume, setVolume] = useState<number>(sf.vol || 8);
+
+  const handlePlayTrack = (trackId: string) => {
     setPlayingId(trackId);
     setIsPlaying(true);
     playBgm(trackId);
@@ -76,8 +93,8 @@ export default function MusicRoom({ playBgm, stopBgm, currentBgmName, onBack, sf
     }
   };
 
-  const handleVolumeChange = (e) => {
-    const newVol = parseInt(e.target.value);
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVol = parseInt(e.target.value, 10);
     setVolume(newVol);
     setSf(prev => ({ ...prev, vol: newVol }));
   };
