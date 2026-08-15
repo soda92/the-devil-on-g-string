@@ -579,22 +579,22 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
     await act(async () => {
       fireEvent.keyDown(window, { code: 'KeyS' });
     });
-    expect(screen.queryByText('保存游戏 / SAVE')).not.toBeNull();
+    expect(screen.queryByText(/档案记录管理/)).not.toBeNull();
 
     await act(async () => {
       fireEvent.keyDown(window, { code: 'KeyS' });
     });
-    expect(screen.queryByText('保存游戏 / SAVE')).toBeNull();
+    expect(screen.queryByText(/档案记录管理/)).toBeNull();
 
     await act(async () => {
       fireEvent.keyDown(window, { code: 'KeyL' });
     });
-    expect(screen.queryByText('读取游戏 / LOAD')).not.toBeNull();
+    expect(screen.queryByText(/档案记录管理/)).not.toBeNull();
 
     await act(async () => {
       fireEvent.keyDown(window, { code: 'KeyL' });
     });
-    expect(screen.queryByText('读取游戏 / LOAD')).toBeNull();
+    expect(screen.queryByText(/档案记录管理/)).toBeNull();
 
     await act(async () => {
       fireEvent.keyDown(window, { code: 'KeyF' });

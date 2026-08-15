@@ -95,7 +95,8 @@ export interface GameplayScreenProps {
   handleWheel: (e: React.WheelEvent) => void;
   handleSelectOption: (opt: ChoiceOption) => void;
   setLanguage: (lang: Language) => void;
-  setShowSaveLoad: (mode: 'SAVE' | 'LOAD') => void;
+  onOpenArchives?: () => void;
+  setShowSaveLoad?: (mode: any) => void;
   setShowSettings: (show: boolean) => void;
   quitToTitle: () => void;
   setShowHistory: (show: boolean) => void;
@@ -130,6 +131,7 @@ export default function GameplayScreen({
   handleWheel,
   handleSelectOption,
   setLanguage,
+  onOpenArchives,
   setShowSaveLoad,
   setShowSettings,
   quitToTitle,
@@ -191,8 +193,9 @@ export default function GameplayScreen({
           isWaiting={isWaiting}
           language={language}
           _setLanguage={setLanguage}
-          onSave={() => setShowSaveLoad('SAVE')}
-          onLoad={() => setShowSaveLoad('LOAD')}
+          onOpenArchives={onOpenArchives || (() => setShowSaveLoad?.('SAVE'))}
+          onSave={() => setShowSaveLoad ? setShowSaveLoad('SAVE') : onOpenArchives?.()}
+          onLoad={() => setShowSaveLoad ? setShowSaveLoad('LOAD') : onOpenArchives?.()}
           onConfig={() => setShowSettings(true)}
           onQuit={quitToTitle}
           onScreenClick={handleScreenClick}

@@ -4,7 +4,7 @@ import gameConfig from './game_config.json';
 
 // --- Sub Components ---
 import TitleScreen from './components/TitleScreen';
-import SaveLoadModal from './components/SaveLoadModal';
+import { ArchivesModal } from './components/ArchivesModal';
 import GalleryScreen from './components/GalleryScreen';
 import SettingsPanel from './components/SettingsPanel';
 import HistoryModal from './components/HistoryModal';
@@ -149,8 +149,8 @@ export default function App() {
           runner.setShowHistory(false);
         } else if (runner.showSettings) {
           runner.setShowSettings(false);
-        } else if (runner.showSaveLoad) {
-          runner.setShowSaveLoad(null);
+        } else if (runner.showArchives) {
+          runner.setShowArchives(false);
         } else if (runner.showChoiceGraph) {
           runner.setShowChoiceGraph(false);
         } else if (runner.showTableOfContents) {
@@ -163,7 +163,7 @@ export default function App() {
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runner.showHistory, runner.showSettings, runner.showSaveLoad, runner.showChoiceGraph, runner.showTableOfContents, runner.showPageFlipper]);
+  }, [runner.showHistory, runner.showSettings, runner.showArchives, runner.showChoiceGraph, runner.showTableOfContents, runner.showPageFlipper]);
 
   const handleNextChapter = () => {
     const slotData = runner.saveSlots[150];
@@ -192,7 +192,7 @@ export default function App() {
             f={runner.f}
             resolveAsset={resolveAsset}
             startNewGame={runner.startNewGame}
-            onShowLoad={() => runner.setShowSaveLoad('LOAD')}
+            onShowArchives={() => runner.setShowArchives(true)}
             onShowGallery={() => runner.setGameState('GALLERY')}
             onShowMusic={() => runner.setGameState('MUSIC')}
             onShowSettings={() => runner.setGameState('SETTINGS')}
@@ -230,11 +230,11 @@ export default function App() {
             handleWheel={runner.handleWheel}
             handleSelectOption={runner.handleSelectOption}
             setLanguage={runner.setLanguage}
-            setShowSaveLoad={(mode: any) => {
+            onOpenArchives={() => {
               if (!runner.isAudioUnlocked) {
                 runner.setIsAudioUnlocked(true);
               }
-              runner.setShowSaveLoad(mode);
+              runner.setShowArchives(true);
             }}
             setShowSettings={(show: boolean) => {
               if (!runner.isAudioUnlocked) {
@@ -356,16 +356,24 @@ export default function App() {
           />
         )}
 
-        {/* === SAVE/LOAD OVERLAY MODAL === */}
-        {runner.showSaveLoad && (
-          <SaveLoadModal 
-            mode={runner.showSaveLoad}
-            onClose={() => runner.setShowSaveLoad(null)}
-            onSaveSlot={runner.handleSaveSlot}
-            onLoadSlot={runner.loadSaveSlot}
-            saveSlots={runner.saveSlots}
-          />
-        )}
+        {/* === UNIFIED DOCUMENT ARCHIVES MODAL === */}
+        <ArchivesModal 
+          isOpen={runner.showArchives}
+          onClose={() => runner.setShowArchives(false)}
+          saveSlots={runner.saveSlots}
+          onLoadSlot={runner.loadSaveSlot}
+          onSaveSlot={runner.handleSaveSlot}
+          onUpdateNote={runner.handleUpdateSaveNote}
+          onTogglePin={runner.handleTogglePinSave}
+          onDeleteSlot={runner.handleDeleteSave}
+          gameState={runner.gameState as any}
+          language={runner.language}
+          currentScenario={runner.currentScenario}
+          currentPointer={runner.pointer}
+          currentDialogueText={runner.dialogueText}
+          currentSpeaker={runner.speaker}
+          config={gameConfig}
+        />
 
         {/* === SETTINGS OVERLAY MODAL (MID-GAMEPLAY) === */}
         {runner.showSettings && runner.gameState === 'PLAYING' && (
@@ -385,11 +393,11 @@ export default function App() {
                 }}
                 onSave={() => {
                   runner.setShowSettings(false);
-                  runner.setShowSaveLoad('SAVE');
+                  runner.setShowArchives(true);
                 }}
                 onLoad={() => {
                   runner.setShowSettings(false);
-                  runner.setShowSaveLoad('LOAD');
+                  runner.setShowArchives(true);
                 }}
                 onQuit={() => {
                   runner.setShowSettings(false);

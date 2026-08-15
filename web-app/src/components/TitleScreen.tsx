@@ -5,7 +5,8 @@ export interface TitleScreenProps {
   f: GameVariables;
   resolveAsset: (name?: string | null, type?: string) => string;
   startNewGame: () => void;
-  onShowLoad: () => void;
+  onShowArchives?: () => void;
+  onShowLoad?: () => void;
   onShowGallery: () => void;
   onShowMusic: () => void;
   onShowSettings: () => void;
@@ -25,6 +26,7 @@ export default function TitleScreen({
   f,
   resolveAsset,
   startNewGame,
+  onShowArchives,
   onShowLoad,
   onShowGallery,
   onShowMusic,
@@ -113,42 +115,66 @@ export default function TitleScreen({
           <h1 className="title-heading" style={{ fontSize: '36px', letterSpacing: '2px', textShadow: '0 4px 10px rgba(0,0,0,0.5)' }}>G弦上的魔王</h1>
           <h2 className="title-subheading">The Devil on G-String</h2>
           
-          <div className="title-menu-buttons">
-            {showNextChapter && (
-              <button className="premium-btn title-menu-btn resume-btn" onClick={onNextChapter} style={{ background: 'var(--color-primary)', borderColor: 'var(--color-primary-hover)' }}>
-                {language === 'JP' ? '进入下一章' : 'Enter Next Chapter'}
+          <div className="title-menu-container">
+            {/* Primary Action Section */}
+            <div className="title-primary-actions">
+              {showNextChapter && (
+                <button className="title-hero-btn primary-pulse" onClick={onNextChapter}>
+                  <span className="hero-btn-icon">✨</span>
+                  <span>{language === 'JP' ? '进入下一章' : 'Enter Next Chapter'}</span>
+                </button>
+              )}
+
+              {hasActiveGame && (
+                <button className="title-hero-btn primary-glow" onClick={onResume}>
+                  <span className="hero-btn-icon">▶️</span>
+                  <span>{language === 'JP' ? '继续游戏' : 'Resume Game'}</span>
+                </button>
+              )}
+
+              <div className="title-core-row">
+                <button className="title-action-btn primary-btn" onClick={startNewGame}>
+                  <span>⚔️</span>
+                  <span>{language === 'JP' ? '开始游戏' : 'Start Game'}</span>
+                </button>
+                <button className="title-action-btn secondary-btn" onClick={onShowArchives || onShowLoad}>
+                  <span>🗄️</span>
+                  <span>{language === 'JP' ? '档案记录' : 'Archives'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Extras & Memories Grid */}
+            <div className="title-extras-grid">
+              <button className="title-extra-pill" onClick={onShowGallery}>
+                <span>🎨</span>
+                <span>CG 鉴赏</span>
               </button>
-            )}
-            {hasActiveGame && (
-              <button className="premium-btn title-menu-btn resume-btn" onClick={onResume}>
-                继续游戏
+              <button className="title-extra-pill" onClick={onShowMusic}>
+                <span>🎵</span>
+                <span>音乐鉴赏</span>
               </button>
-            )}
-            {hasHistory && (
-              <button className="premium-btn title-menu-btn rewind-btn" onClick={onRewind} style={{ borderColor: 'var(--color-primary)' }}>
-                回到前一幕
+              {f.choicesHistory && f.choicesHistory.length > 0 && (
+                <button className="title-extra-pill" onClick={onShowFlowchart}>
+                  <span>🌳</span>
+                  <span>路线流程</span>
+                </button>
+              )}
+              {hasHistory && (
+                <button className="title-extra-pill" onClick={onRewind}>
+                  <span>⏪</span>
+                  <span>回到前一幕</span>
+                </button>
+              )}
+            </div>
+
+            {/* Bottom System Section */}
+            <div className="title-system-row">
+              <button className="title-system-btn" onClick={onShowSettings}>
+                <span>⚙️</span>
+                <span>游戏设置</span>
               </button>
-            )}
-            {f.choicesHistory && f.choicesHistory.length > 0 && (
-              <button className="premium-btn title-menu-btn flowchart-btn" onClick={onShowFlowchart}>
-                路线流程图
-              </button>
-            )}
-            <button className="premium-btn title-menu-btn" onClick={startNewGame}>
-              开始游戏
-            </button>
-            <button className="premium-btn title-menu-btn" onClick={onShowLoad}>
-              读取存档
-            </button>
-            <button className="premium-btn title-menu-btn" onClick={onShowGallery}>
-              CG 鉴赏
-            </button>
-            <button className="premium-btn title-menu-btn" onClick={onShowMusic}>
-              音乐鉴赏
-            </button>
-            <button className="premium-btn title-menu-btn" onClick={onShowSettings}>
-              游戏设置
-            </button>
+            </div>
           </div>
         </div>
       ) : (

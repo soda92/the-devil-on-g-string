@@ -13,8 +13,9 @@ export interface DialogueBoxProps {
   isWaiting: boolean;
   language: Language | string;
   _setLanguage?: (lang: Language) => void;
-  onSave: () => void;
-  onLoad: () => void;
+  onOpenArchives?: () => void;
+  onSave?: () => void;
+  onLoad?: () => void;
   onConfig: () => void;
   onQuit: () => void;
   onScreenClick: () => void;
@@ -41,6 +42,7 @@ export default function DialogueBox({
   replayCurrentVoice, 
   isWaiting, 
   language, 
+  onOpenArchives,
   onSave, 
   onLoad, 
   onConfig, 
@@ -226,8 +228,7 @@ export default function DialogueBox({
           {onToggleFlipper && <button className="sys-action-btn" onClick={onToggleFlipper} style={{ color: '#f59e0b', fontWeight: 'bold' }}>翻页</button>}
           <button className={`sys-action-btn ${isAutoMode ? 'active-auto' : ''}`} onClick={onToggleAuto}>自动</button>
           <button className={`sys-action-btn ${isFastForward ? 'active-skip' : ''}`} onClick={onToggleSkip}>快进</button>
-          <button className="sys-action-btn" onClick={onSave}>保存</button>
-          <button className="sys-action-btn" onClick={onLoad}>读取</button>
+          <button className="sys-action-btn" onClick={onOpenArchives || onSave || onLoad} style={{ color: '#c084fc', fontWeight: 'bold' }}>档案</button>
           <button className="sys-action-btn" onClick={onConfig}>设置</button>
           <button className="sys-action-btn" onClick={onQuit}>菜单</button>
         </div>

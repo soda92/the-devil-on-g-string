@@ -82,3 +82,33 @@ export const tokenizeText = (text: string, lang?: Language | string): string[] =
 
   return tokens;
 };
+
+// --- Sensitive / H-Scene Asset Detector ---
+export const isSensitiveAsset = (assetName?: string | null, scenarioName?: string | null): boolean => {
+  if (!assetName && !scenarioName) return false;
+  const a = (assetName || '').toLowerCase();
+  const s = (scenarioName || '').toLowerCase();
+
+  // 1. Explicit H-scene image identifiers
+  if (
+    a.includes('_h_') ||
+    a.includes('_h0') ||
+    a.includes('_h1') ||
+    a.includes('_h2') ||
+    a.startsWith('h_') ||
+    a.endsWith('_h') ||
+    a.includes('ev_haru_h') ||
+    a.includes('ev_kanon_h') ||
+    a.includes('ev_tubaki_h') ||
+    a.includes('ev_mizuha_h')
+  ) {
+    return true;
+  }
+
+  // 2. Scenario specific H-scenes
+  if (s.includes('_h') || s.endsWith('h')) {
+    return true;
+  }
+
+  return false;
+};

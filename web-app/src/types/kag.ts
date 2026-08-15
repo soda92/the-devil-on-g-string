@@ -145,5 +145,7 @@ export interface SaveSlotData {
   callStack?: CallStackFrame[];
   date?: string;
   timestamp?: number;
+  note?: string;
+  pinned?: boolean;
   [key: string]: any;
 }

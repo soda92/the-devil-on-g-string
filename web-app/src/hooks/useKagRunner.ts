@@ -106,7 +106,7 @@ export function useKagRunner({
   const [isWaiting, setIsWaiting] = useState<boolean>(false);
   const [showOptions, setShowOptions] = useState<any>(false);
   const [sideNarration, setSideNarration] = useState<any>({ visible: false, text: '', side: 'left', top: 130 });
-  const [showSaveLoad, setShowSaveLoad] = useState<any>(null);
+  const [showArchives, setShowArchives] = useState<boolean>(false);
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showChoiceGraph, setShowChoiceGraph] = useState<boolean>(false);
   const [showHistory, setShowHistory] = useState<boolean>(false);
@@ -758,7 +758,7 @@ export function useKagRunner({
             playBgm(args.storage);
           } else if (inst.name === 'save') {
             const place = args.place !== undefined ? parseInt(args.place) : 150;
-            handleSaveSlot(place, p, currentScenario, newF, newSf, tempSprites, tempBackground);
+            handleSaveSlot(place, '章节自动保存 / Chapter Transition', true, p, currentScenario, newF, newSf, tempSprites, tempBackground);
           } else if (inst.name === 'stbgm' || inst.name === 'stopbgm' || inst.name === 'fadeoutbgm' || inst.name === 'fobgm' || inst.name === 'sbgm') {
             initialBgmRef.current = '';
             stopBgm();
@@ -1611,10 +1611,20 @@ export function useKagRunner({
       'color: #61afef;', 'color: #b5cea8; font-weight: bold;'
     );
 
-    setShowSaveLoad(null);
+    setShowArchives(false);
   };
 
-  const handleSaveSlot = (slotIdx, overridePointer = null, overrideScenario = null, overrideF = null, _overrideSf = null, overrideSprites = null, overrideBackground = null) => {
+  const handleSaveSlot = (
+    slotIdx: string | number,
+    note: string = '',
+    pinned: boolean = false,
+    overridePointer: number | null = null,
+    overrideScenario: string | null = null,
+    overrideF: any = null,
+    _overrideSf: any = null,
+    overrideSprites: any = null,
+    overrideBackground: any = null
+  ) => {
     const slotKey = `${storagePrefix}_save_slot_${slotIdx}`;
     const targetF = overrideF || f;
     const targetSprites = overrideSprites || sprites;
@@ -1641,7 +1651,9 @@ export function useKagRunner({
       bgm: bgmPlayer.src ? bgmPlayer.src.split('/').pop().replace('.ogg', '') : null,
       callStack: callStackRef.current,
       date: new Date().toLocaleString(),
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      note: note || '',
+      pinned: pinned || false
     };
     // Write lightweight cache to localStorage to prevent QuotaExceededError
     localStorage.setItem(slotKey, JSON.stringify(stripHistoryForLocalStorage(saveData)));
@@ -1664,7 +1676,60 @@ export function useKagRunner({
     }).catch(e => console.error("Failed to save slot to backend", e));
 
     setSaveSlots(prev => ({ ...prev, [slotIdx]: saveData }));
-    setShowSaveLoad(null);
+    setShowArchives(false);
+  };
+
+  const handleUpdateSaveNote = (slotIdx: string | number, note: string) => {
+    const existing = saveSlots[slotIdx];
+    if (!existing) return;
+    const updated = { ...existing, note };
+    const slotKey = `${storagePrefix}_save_slot_${slotIdx}`;
+    localStorage.setItem(slotKey, JSON.stringify(stripHistoryForLocalStorage(updated)));
+    fetch('/api/save-slot', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Username': username,
+        'X-Client-ID': clientIdRef.current
+      },
+      body: JSON.stringify({ slot: String(slotIdx), data: updated })
+    }).catch(e => console.error("Failed to update save note on backend", e));
+    setSaveSlots(prev => ({ ...prev, [slotIdx]: updated }));
+  };
+
+  const handleTogglePinSave = (slotIdx: string | number) => {
+    const existing = saveSlots[slotIdx];
+    if (!existing) return;
+    const updated = { ...existing, pinned: !existing.pinned };
+    const slotKey = `${storagePrefix}_save_slot_${slotIdx}`;
+    localStorage.setItem(slotKey, JSON.stringify(stripHistoryForLocalStorage(updated)));
+    fetch('/api/save-slot', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Username': username,
+        'X-Client-ID': clientIdRef.current
+      },
+      body: JSON.stringify({ slot: String(slotIdx), data: updated })
+    }).catch(e => console.error("Failed to update save pin on backend", e));
+    setSaveSlots(prev => ({ ...prev, [slotIdx]: updated }));
+  };
+
+  const handleDeleteSave = (slotIdx: string | number) => {
+    const slotKey = `${storagePrefix}_save_slot_${slotIdx}`;
+    localStorage.removeItem(slotKey);
+    fetch(`/api/save-slot?slot=${slotIdx}`, {
+      method: 'DELETE',
+      headers: {
+        'X-Username': username,
+        'X-Client-ID': clientIdRef.current
+      }
+    }).catch(e => console.error("Failed to delete save slot on backend", e));
+    setSaveSlots(prev => {
+      const next = { ...prev };
+      delete next[slotIdx];
+      return next;
+    });
   };
 
   const handleSelectOption = (opt) => {
@@ -1867,7 +1932,7 @@ export function useKagRunner({
         e.preventDefault();
         if (showSettings) {
           setShowSettings(false);
-        } else if (!showSaveLoad && !showHistory && !showChoiceGraph) {
+        } else if (!showArchives && !showHistory && !showChoiceGraph) {
           if (!isAudioUnlocked) setIsAudioUnlocked(true);
           setShowSettings(true);
         }
@@ -1879,34 +1944,22 @@ export function useKagRunner({
         return;
       }
 
-      // 2. Save screen toggle
-      if (DEFAULT_SHORTCUTS.TOGGLE_SAVE.includes(code)) {
+      // 2. Toggle Document Archives (Save/Load)
+      if (DEFAULT_SHORTCUTS.TOGGLE_SAVE.includes(code) || DEFAULT_SHORTCUTS.TOGGLE_LOAD.includes(code)) {
         e.preventDefault();
-        if (showSaveLoad === 'SAVE') {
-          setShowSaveLoad(null);
-        } else if (!showSaveLoad && !showHistory) {
+        if (showArchives) {
+          setShowArchives(false);
+        } else if (!showHistory) {
           if (!isAudioUnlocked) setIsAudioUnlocked(true);
-          setShowSaveLoad('SAVE');
+          setShowArchives(true);
         }
         return;
       }
 
-      // 3. Load screen toggle
-      if (DEFAULT_SHORTCUTS.TOGGLE_LOAD.includes(code)) {
-        e.preventDefault();
-        if (showSaveLoad === 'LOAD') {
-          setShowSaveLoad(null);
-        } else if (!showSaveLoad && !showHistory) {
-          if (!isAudioUnlocked) setIsAudioUnlocked(true);
-          setShowSaveLoad('LOAD');
-        }
-        return;
-      }
-
-      // 4. Open search history backlog (Slash key - focuses search input)
+      // 3. Open search history backlog (Slash key - focuses search input)
       if (DEFAULT_SHORTCUTS.OPEN_HISTORY_SEARCH.includes(code)) {
         e.preventDefault();
-        if (!showSaveLoad && !showHistory) {
+        if (!showArchives && !showHistory) {
           if (!isAudioUnlocked) setIsAudioUnlocked(true);
           setHistorySearchFocused(true);
           setShowHistory(true);
@@ -1919,7 +1972,7 @@ export function useKagRunner({
         e.preventDefault();
         if (showHistory) {
           setShowHistory(false);
-        } else if (!showSaveLoad) {
+        } else if (!showArchives) {
           if (!isAudioUnlocked) setIsAudioUnlocked(true);
           setHistorySearchFocused(false);
           setShowHistory(true);
@@ -1928,7 +1981,7 @@ export function useKagRunner({
       }
 
       // If dialogue history or save/load overlays are active (and it wasn't the toggle key), ignore gameplay keys
-      if (showSaveLoad || showHistory) {
+      if (showArchives || showHistory) {
         return;
       }
 
@@ -2013,7 +2066,7 @@ export function useKagRunner({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState, showSaveLoad, showSettings, showChoiceGraph, showHistory, isAudioUnlocked, toggleBgm]);
+  }, [gameState, showArchives, showSettings, showChoiceGraph, showHistory, isAudioUnlocked, toggleBgm]);
 
   const replayCurrentVoice = () => {
     if (currentVoice) {
@@ -2051,8 +2104,8 @@ export function useKagRunner({
     isWaiting,
     showOptions,
     sideNarration,
-    showSaveLoad,
-    setShowSaveLoad,
+    showArchives,
+    setShowArchives,
     showSettings,
     setShowSettings,
     showChoiceGraph,
@@ -2082,6 +2135,9 @@ export function useKagRunner({
     rewindToLastScene,
     loadSaveSlot,
     handleSaveSlot,
+    handleUpdateSaveNote,
+    handleTogglePinSave,
+    handleDeleteSave,
     quitToTitle,
     jumpToHistorySnapshot,
     jumpToChoiceSnapshot,
