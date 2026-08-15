@@ -43,11 +43,12 @@ function Sprite({ spriteName, resolveAsset, positionClass }: SpriteProps) {
     }
   }
 
-  let height = '580px';
+  let height = '530px';
   if (positionInfo && positionInfo.base_h) {
     const isStandard = cleanName.endsWith('_s');
     const refH = isStandard ? 1120 : 1728;
-    height = `${580 * (positionInfo.base_h / refH)}px`;
+    const computedH = Math.min(580, Math.round(525 * (positionInfo.base_h / refH)));
+    height = `${computedH}px`;
   }
 
   if (positionInfo) {

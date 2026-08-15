@@ -245,7 +245,8 @@
 .sprite-img {
   position: absolute;
   bottom: 0;
-  height: 580px;
+  height: 530px;
+  max-height: 580px;
   animation: fade-in 0.3s ease-out;
   transition: left 0.3s ease, transform 0.3s ease;
 }
