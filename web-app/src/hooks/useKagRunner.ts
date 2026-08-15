@@ -28,14 +28,25 @@ export function useKagRunner({
 }) {
   const storagePrefix = config?.storagePrefix || 'school';
 
-  const [username, setUsernameState] = useState(() => localStorage.getItem('school_username') || 'default');
+  const [username, setUsernameState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const queryUser = params.get('user') || params.get('username');
+      if (queryUser) {
+        localStorage.setItem('school_username', queryUser);
+        return queryUser;
+      }
+      return localStorage.getItem('school_username') || 'default';
+    }
+    return 'default';
+  });
 
-  const setUsername = (newUsername) => {
+  const setUsername = (newUsername: string) => {
     localStorage.setItem('school_username', newUsername);
     setUsernameState(newUsername);
   };
 
-  const clientIdRef = useRef(null);
+  const clientIdRef = useRef<string | null>(null);
   if (!clientIdRef.current) {
     let id = typeof window !== 'undefined' ? sessionStorage.getItem('session_client_id') : null;
     if (!id) {
@@ -50,6 +61,17 @@ export function useKagRunner({
   }
 
   const [sessionConflict, setSessionConflict] = useState(false);
+
+  const forceTakeoverSession = () => {
+    const newId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : Math.random().toString(36).substring(2) + Date.now().toString(36);
+    clientIdRef.current = newId;
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('session_client_id', newId);
+    }
+    setSessionConflict(false);
+  };
 
   // Heartbeat loop to detect concurrent sessions
   useEffect(() => {
@@ -2156,6 +2178,7 @@ export function useKagRunner({
     storagePrefix,
     username,
     setUsername,
-    sessionConflict
+    sessionConflict,
+    forceTakeoverSession
   };
 }

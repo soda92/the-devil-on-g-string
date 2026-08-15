@@ -503,9 +503,30 @@ export default function App() {
                 ? `用户 "${runner.username}" 已在另一个浏览器窗口中登录并处于活跃状态。为了防止存档损坏，该窗口的操作已被暂停。`
                 : `User "${runner.username}" is already active in another browser window. This session has been suspended to prevent save data corruption.`}
             </p>
-            <div style={{ display: 'flex', gap: '15px' }}>
-              <button className="control-btn active" onClick={() => window.location.reload()}>
-                {runner.language === 'JP' ? '刷新此窗口' : 'Refresh This Tab'}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
+              <button 
+                className="control-btn active" 
+                onClick={runner.forceTakeoverSession}
+                style={{ background: 'linear-gradient(135deg, #a855f7, #6366f1)', border: 'none', color: '#fff', padding: '8px 18px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
+              >
+                ⚡ {runner.language === 'JP' ? '强制接管此会话' : 'Force Take Over'}
+              </button>
+              <button 
+                className="control-btn" 
+                onClick={() => {
+                  setNewUsernameInput(runner.username);
+                  setShowUserModal(true);
+                }}
+                style={{ padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}
+              >
+                👤 {runner.language === 'JP' ? '切换用户' : 'Switch User'}
+              </button>
+              <button 
+                className="control-btn" 
+                onClick={() => window.location.reload()}
+                style={{ padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}
+              >
+                🔄 {runner.language === 'JP' ? '刷新此窗口' : 'Refresh'}
               </button>
             </div>
           </div>

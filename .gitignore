@@ -42,3 +42,9 @@ book/
 # Web App build output
 web-app/dist/
 web-app/node_modules/
+
+# Test & E2E Screenshots & Artifacts
+docs/screenshots/
+screenshots/
+e2e/.venv/
+e2e/__pycache__/
