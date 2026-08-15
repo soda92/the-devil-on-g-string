@@ -1,13 +1,16 @@
 import fileMap from '../file_map.json';
+import { Language } from '../types/kag';
+
+const typedFileMap: Record<string, string> = fileMap as Record<string, string>;
 
 // --- Asset Resolution Helper ---
-export const resolveAsset = (filename, defaultFolder = '') => {
+export const resolveAsset = (filename?: string | null, defaultFolder = ''): string => {
   if (!filename) return '';
   const cleanName = filename.split('.')[0]; // strip extension
   
-  let mapped = fileMap[cleanName];
+  let mapped = typedFileMap[cleanName];
   if (!mapped) {
-    mapped = fileMap['st_' + cleanName];
+    mapped = typedFileMap['st_' + cleanName];
   }
   if (mapped) return mapped;
   
@@ -20,7 +23,11 @@ export const resolveAsset = (filename, defaultFolder = '') => {
 };
 
 // --- Character Name translation resolution ---
-export const resolveCharacterName = (name, lang, nameMap = {}) => {
+export const resolveCharacterName = (
+  name?: string | null,
+  lang?: Language | string,
+  nameMap: Record<string, string> = {}
+): string => {
   if (!name) return '';
   if (lang === 'EN') {
     const trimmed = name.trim();
@@ -32,8 +39,8 @@ export const resolveCharacterName = (name, lang, nameMap = {}) => {
 };
 
 // --- Text Tokenization for Typewriter (char-by-char for JP, word-by-word for EN) ---
-export const tokenizeText = (text, lang) => {
-  const tokens = [];
+export const tokenizeText = (text: string, lang?: Language | string): string[] => {
+  const tokens: string[] = [];
   let index = 0;
   const length = text.length;
 

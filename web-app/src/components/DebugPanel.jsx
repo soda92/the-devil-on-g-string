@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import scenarioNames from '../scenario_names.json';
-import { resolveAsset } from '../utils/gameUtils';
 
 export default function DebugPanel({ 
   currentScenario, 

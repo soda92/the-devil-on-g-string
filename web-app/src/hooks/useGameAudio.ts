@@ -1,5 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, MutableRefObject } from 'react';
 import { resolveAsset } from '../utils/gameUtils';
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __bgmPlayer__: HTMLAudioElement | undefined;
+  // eslint-disable-next-line no-var
+  var __sePlayer__: HTMLAudioElement | undefined;
+  // eslint-disable-next-line no-var
+  var __voicePlayer__: HTMLAudioElement | undefined;
+}
 
 // --- Singleton Audio Elements (Persisted globally to survive Vite HMR) ---
 if (!globalThis.__bgmPlayer__) {
@@ -13,19 +22,36 @@ if (!globalThis.__voicePlayer__) {
   globalThis.__voicePlayer__ = new Audio();
 }
 
-const bgmPlayer = globalThis.__bgmPlayer__;
-const sePlayer = globalThis.__sePlayer__;
-const voicePlayer = globalThis.__voicePlayer__;
+interface ExtendedAudioElement extends HTMLAudioElement {
+  __wasAutoPaused__?: boolean;
+}
 
-export function useGameAudio(vol = 8, sevol = 8) {
-  const currentVoiceRef = useRef(null);
-  const [isBgmPlaying, setIsBgmPlaying] = useState(false);
+const bgmPlayer: ExtendedAudioElement = globalThis.__bgmPlayer__ as ExtendedAudioElement;
+const sePlayer: ExtendedAudioElement = globalThis.__sePlayer__ as ExtendedAudioElement;
+const voicePlayer: ExtendedAudioElement = globalThis.__voicePlayer__ as ExtendedAudioElement;
+
+export interface GameAudioHook {
+  playBgm: (storage: string) => void;
+  stopBgm: () => void;
+  toggleBgm: () => void;
+  isBgmPlaying: boolean;
+  playSe: (storage: string) => void;
+  playVoice: (storage: string) => void;
+  bgmPlayer: ExtendedAudioElement;
+  sePlayer: ExtendedAudioElement;
+  voicePlayer: ExtendedAudioElement;
+  currentVoiceRef: MutableRefObject<string | null>;
+}
+
+export function useGameAudio(vol = 8, sevol = 8): GameAudioHook {
+  const currentVoiceRef = useRef<string | null>(null);
+  const [isBgmPlaying, setIsBgmPlaying] = useState<boolean>(false);
   
   // Track persistent mute preference in localStorage
-  const [isMuted, setIsMuted] = useState(() => {
+  const [isMuted, setIsMuted] = useState<boolean>(() => {
     return localStorage.getItem('school_bgm_muted') === 'true';
   });
-  const isMutedRef = useRef(isMuted);
+  const isMutedRef = useRef<boolean>(isMuted);
 
   useEffect(() => {
     isMutedRef.current = isMuted;
@@ -54,7 +80,7 @@ export function useGameAudio(vol = 8, sevol = 8) {
     voicePlayer.volume = seVol / 10;
   }, [vol, sevol]);
 
-  const playBgm = (storage) => {
+  const playBgm = (storage: string) => {
     if (!storage) return;
     const url = resolveAsset(storage, 'bgm');
     const fullUrl = window.location.origin + url;
@@ -75,14 +101,14 @@ export function useGameAudio(vol = 8, sevol = 8) {
     bgmPlayer.pause();
   };
 
-  const playSe = (storage) => {
+  const playSe = (storage: string) => {
     if (!storage) return;
     const url = resolveAsset(storage, 'sound');
     sePlayer.src = url;
     sePlayer.play().catch(err => console.log("SE play interrupted", err));
   };
 
-  const playVoice = (storage) => {
+  const playVoice = (storage: string) => {
     if (!storage) return;
     const url = resolveAsset(storage, 'voice');
     voicePlayer.src = url;

@@ -1,10 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { HistoryLogItem, Language } from '../types/kag';
 
-export default function HistoryModal({ onClose, historyLog, language, onJumpToSnapshot, onReplayVoice, autoFocusSearch = true }) {
-  const contentAreaRef = useRef(null);
-  const searchInputRef = useRef(null);
-  const [confirmSnapshot, setConfirmSnapshot] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
+export interface HistoryModalProps {
+  onClose: () => void;
+  historyLog: HistoryLogItem[];
+  language: Language | string;
+  onJumpToSnapshot: (snapshot: any, index?: number) => void;
+  onReplayVoice?: (voice: string) => void;
+  autoFocusSearch?: boolean;
+}
+
+export default function HistoryModal({
+  onClose,
+  historyLog,
+  language,
+  onJumpToSnapshot,
+  onReplayVoice,
+  autoFocusSearch = true
+}: HistoryModalProps) {
+  const contentAreaRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [confirmSnapshot, setConfirmSnapshot] = useState<{ snapshot: any; index: number } | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Auto scroll to the bottom of the log when opened
   useEffect(() => {
@@ -32,7 +49,8 @@ export default function HistoryModal({ onClose, historyLog, language, onJumpToSn
     });
 
   // Highlight search text safely (avoiding HTML tag corruption)
-  const highlightText = (htmlText) => {
+  const highlightText = (htmlText?: string) => {
+    if (!htmlText) return '';
     if (!searchQuery) return htmlText;
     const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`(${escapedQuery})(?![^<>]*>)`, 'gi');
@@ -97,7 +115,7 @@ export default function HistoryModal({ onClose, historyLog, language, onJumpToSn
             filteredLog.map((entry, idx) => {
               const speaker = language === 'JP' ? entry.speakerJp : entry.speakerEn;
               const text = language === 'JP' ? entry.textJp : entry.textEn;
-              const isClickable = !!entry.snapshot || (!!entry.currentScenario && entry.pointer !== undefined);
+              const isClickable = !!entry.snapshot;
               
               return (
                 <div 

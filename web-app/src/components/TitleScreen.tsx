@@ -1,11 +1,50 @@
 import React, { useState, useEffect } from 'react';
+import { GameVariables, Language } from '../types/kag';
 
-export default function TitleScreen({ f, resolveAsset, startNewGame, onShowLoad, onShowGallery, onShowMusic, onShowSettings, hasActiveGame, onResume, language, hasHistory, onRewind, onShowFlowchart, isBgmPlaying, onToggleBgm, showNextChapter, onNextChapter }) {
-  const [isMenuVisible, setIsMenuVisible] = useState(true);
+export interface TitleScreenProps {
+  f: GameVariables;
+  resolveAsset: (name?: string | null, type?: string) => string;
+  startNewGame: () => void;
+  onShowLoad: () => void;
+  onShowGallery: () => void;
+  onShowMusic: () => void;
+  onShowSettings: () => void;
+  hasActiveGame: boolean;
+  onResume: () => void;
+  language: Language | string;
+  hasHistory: boolean;
+  onRewind: () => void;
+  onShowFlowchart?: () => void;
+  isBgmPlaying: boolean;
+  onToggleBgm: () => void;
+  showNextChapter: boolean;
+  onNextChapter: () => void;
+}
+
+export default function TitleScreen({
+  f,
+  resolveAsset,
+  startNewGame,
+  onShowLoad,
+  onShowGallery,
+  onShowMusic,
+  onShowSettings,
+  hasActiveGame,
+  onResume,
+  language,
+  hasHistory,
+  onRewind,
+  onShowFlowchart,
+  isBgmPlaying,
+  onToggleBgm,
+  showNextChapter,
+  onNextChapter
+}: TitleScreenProps) {
+  const [isMenuVisible, setIsMenuVisible] = useState<boolean>(true);
 
   // Render hourly background image for title screen
   const getTitleBg = () => {
-    const hour = f.chour;
+    const hour = f.chour ?? new Date().getHours();
     if (hour >= 7 && hour <= 16) return 'bg_02a'; // Day
     if (hour >= 17 && hour <= 19) return 'bg_02b'; // Evening
     return 'bg_02c'; // Night
@@ -13,7 +52,7 @@ export default function TitleScreen({ f, resolveAsset, startNewGame, onShowLoad,
 
   // Keyboard shortcut for space to hide/show menu
   useEffect(() => {
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space') {
         e.preventDefault();
         setIsMenuVisible(prev => !prev);

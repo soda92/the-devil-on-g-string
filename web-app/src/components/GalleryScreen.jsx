@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import GALLERY_ITEMS from '../gallery_items.json';
 
-export default function GalleryScreen({ sf, resolveAsset, onBack, setCgViewerUrl }) {
+export default function GalleryScreen({ sf, resolveAsset, onBack, setCgViewerUrl: _setCgViewerUrl }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [viewingVariants, setViewingVariants] = useState(null);
   const [viewingIdx, setViewingIdx] = useState(0);

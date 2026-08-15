@@ -1,4 +1,4 @@
-import { GameVariables, SystemFlags, ChoiceHistoryItem, HistoryLogItem, SaveSlotData } from '../types/kag';
+import { GameVariables, SystemFlags, ChoiceHistoryItem, HistoryLogItem } from '../types/kag';
 
 export const cleanKagExpression = (exp: string): string => {
   if (!exp) return '';

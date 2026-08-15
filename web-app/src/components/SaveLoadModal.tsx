@@ -1,18 +1,27 @@
 import React, { useState } from 'react';
+import { SaveSlotData } from '../types/kag';
 
-const stripHtml = (html) => {
+const stripHtml = (html?: string | null): string => {
   if (!html) return '';
   return html.replace(/<[^>]*>/g, '');
 };
 
-export default function SaveLoadModal({ mode, onClose, onSaveSlot, onLoadSlot, saveSlots }) {
+export interface SaveLoadModalProps {
+  mode: 'SAVE' | 'LOAD';
+  onClose: () => void;
+  onSaveSlot: (slotIdx: number) => void;
+  onLoadSlot: (slotData: SaveSlotData) => void;
+  saveSlots?: Record<string | number, SaveSlotData>;
+}
+
+export default function SaveLoadModal({ mode, onClose, onSaveSlot, onLoadSlot, saveSlots }: SaveLoadModalProps) {
   // Remember and load the last selected page tab from localStorage
-  const [currentPage, setCurrentPage] = useState(() => {
+  const [currentPage, setCurrentPage] = useState<number>(() => {
     const saved = localStorage.getItem('school_last_save_page');
     return saved ? parseInt(saved, 10) : 1;
   });
 
-  const handlePageChange = (pageNumber) => {
+  const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
     localStorage.setItem('school_last_save_page', pageNumber.toString());
   };
@@ -81,7 +90,7 @@ export default function SaveLoadModal({ mode, onClose, onSaveSlot, onLoadSlot, s
             const slotKey = `school_save_slot_${idx}`;
             const slotDataRaw = localStorage.getItem(slotKey);
             const localSlotData = slotDataRaw ? JSON.parse(slotDataRaw) : null;
-            const slotData = (saveSlots && saveSlots[idx]) || localSlotData;
+            const slotData: SaveSlotData | null = (saveSlots && saveSlots[idx]) || localSlotData;
             
             return (
               <div key={idx} className="save-slot-card glass-panel">

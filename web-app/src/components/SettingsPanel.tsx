@@ -1,4 +1,19 @@
 import React from 'react';
+import { Language, SystemFlags } from '../types/kag';
+
+export interface SettingsPanelProps {
+  language: Language | string;
+  setLanguage: (lang: Language) => void;
+  sf: SystemFlags;
+  setSf: (updater: (prev: SystemFlags) => SystemFlags) => void;
+  onBack: () => void;
+  isGameplay: boolean;
+  onSave?: () => void;
+  onLoad?: () => void;
+  onQuit?: () => void;
+  username?: string;
+  onSwitchUser?: () => void;
+}
 
 export default function SettingsPanel({ 
   language, 
@@ -9,10 +24,10 @@ export default function SettingsPanel({
   isGameplay, 
   onSave, 
   onLoad, 
-  onQuit,
+  onQuit, 
   username = 'default',
   onSwitchUser
-}) {
+}: SettingsPanelProps) {
   const vol = sf.vol !== undefined && !isNaN(sf.vol) ? sf.vol : 8;
   const sevol = sf.sevol !== undefined && !isNaN(sf.sevol) ? sf.sevol : 8;
   const avgOpacity = sf.avgOpacity !== undefined && !isNaN(sf.avgOpacity) ? sf.avgOpacity : 6;
@@ -29,9 +44,11 @@ export default function SettingsPanel({
           <label className="settings-label">{language === 'JP' ? '当前用户 / Profile' : 'Current Profile'}</label>
           <div className="settings-control-buttons" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ color: '#ce9178', fontWeight: 'bold', minWidth: '80px' }}>👤 {username}</span>
-            <button className="control-btn" onClick={onSwitchUser}>
-              {language === 'JP' ? '切换用户' : 'Switch User'}
-            </button>
+            {onSwitchUser && (
+              <button className="control-btn" onClick={onSwitchUser}>
+                {language === 'JP' ? '切换用户' : 'Switch User'}
+              </button>
+            )}
           </div>
         </div>
 
@@ -129,7 +146,7 @@ export default function SettingsPanel({
             max="10" 
             value={vol} 
             onChange={(e) => {
-              const newVol = parseInt(e.target.value) || 0;
+              const newVol = parseInt(e.target.value, 10) || 0;
               setSf(prev => ({ ...prev, vol: newVol }));
             }}
             className="volume-slider"
@@ -145,7 +162,7 @@ export default function SettingsPanel({
             max="10" 
             value={sevol} 
             onChange={(e) => {
-              const newVol = parseInt(e.target.value) || 0;
+              const newVol = parseInt(e.target.value, 10) || 0;
               setSf(prev => ({ ...prev, sevol: newVol }));
             }}
             className="volume-slider"
@@ -161,7 +178,7 @@ export default function SettingsPanel({
             max="10" 
             value={avgOpacity} 
             onChange={(e) => {
-              const newOpacity = parseInt(e.target.value) || 0;
+              const newOpacity = parseInt(e.target.value, 10) || 0;
               setSf(prev => ({ ...prev, avgOpacity: newOpacity }));
             }}
             className="volume-slider"
@@ -177,7 +194,7 @@ export default function SettingsPanel({
             max="20" 
             value={avgBlur} 
             onChange={(e) => {
-              const newBlur = parseInt(e.target.value) || 0;
+              const newBlur = parseInt(e.target.value, 10) || 0;
               setSf(prev => ({ ...prev, avgBlur: newBlur }));
             }}
             className="volume-slider"
@@ -193,7 +210,7 @@ export default function SettingsPanel({
             max="10" 
             value={novelOpacity} 
             onChange={(e) => {
-              const newOpacity = parseInt(e.target.value) || 0;
+              const newOpacity = parseInt(e.target.value, 10) || 0;
               setSf(prev => ({ ...prev, novelOpacity: newOpacity }));
             }}
             className="volume-slider"
@@ -209,7 +226,7 @@ export default function SettingsPanel({
             max="20" 
             value={novelBlur} 
             onChange={(e) => {
-              const newBlur = parseInt(e.target.value) || 0;
+              const newBlur = parseInt(e.target.value, 10) || 0;
               setSf(prev => ({ ...prev, novelBlur: newBlur }));
             }}
             className="volume-slider"

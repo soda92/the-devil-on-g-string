@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const BGM_TRACKS = [
   { id: "bgm_01", name: "G弦上的咏叹调 - 主题曲", desc: "巴赫 《G弦上的咏叹调》 (Air on the G String)", composer: "J.S. Bach" },

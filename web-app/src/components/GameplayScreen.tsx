@@ -1,18 +1,36 @@
 import React from 'react';
 import DialogueBox from './DialogueBox';
 import spritePositions from '../sprite_positions.json';
+import { DialogueMode, Language, SpritesState, SystemFlags, ChoiceOption } from '../types/kag';
 
-function Sprite({ spriteName, resolveAsset, positionClass }) {
+interface PositionInfo {
+  base: string;
+  base_h?: number;
+  base_w?: number;
+  left_pct?: number;
+  top_pct?: number;
+  width_pct?: number;
+}
+
+const typedSpritePositions: Record<string, PositionInfo> = spritePositions as unknown as Record<string, PositionInfo>;
+
+interface SpriteProps {
+  spriteName?: string | null;
+  resolveAsset: (name?: string | null, type?: string) => string;
+  positionClass: string;
+}
+
+function Sprite({ spriteName, resolveAsset, positionClass }: SpriteProps) {
   if (!spriteName) return null;
   const cleanName = spriteName.split('.')[0];
-  let positionInfo = spritePositions[cleanName] || spritePositions['st_' + cleanName];
+  let positionInfo: PositionInfo | undefined = typedSpritePositions[cleanName] || typedSpritePositions['st_' + cleanName];
   
   let isBaseBodyOnly = false;
   if (!positionInfo) {
     // Find any key in sprite_positions that uses this as base body
     const searchBaseName = cleanName.startsWith('st_') ? cleanName : 'st_' + cleanName;
     const cleanSearchBaseName = cleanName.startsWith('st_') ? cleanName.slice(3) : cleanName;
-    const foundEntry = Object.values(spritePositions).find(
+    const foundEntry = Object.values(typedSpritePositions).find(
       posVal => posVal.base === searchBaseName || posVal.base === cleanSearchBaseName
     );
     if (foundEntry) {
@@ -58,6 +76,41 @@ function Sprite({ spriteName, resolveAsset, positionClass }) {
   return <img className={`sprite-img ${positionClass}`} src={resolveAsset(spriteName, 'fgimage')} alt={`${positionClass} sprite`} style={{ height }} />;
 }
 
+export interface GameplayScreenProps {
+  language: Language | string;
+  background: string;
+  sprites: SpritesState;
+  faceIcon?: string | null;
+  sideNarration?: { visible: boolean; text: string; side: 'left' | 'right'; top: number };
+  textVisible: boolean;
+  speaker?: string;
+  typewriterText: string;
+  dialogueText: string;
+  currentVoice?: string;
+  replayCurrentVoice?: () => void;
+  isWaiting: boolean;
+  showOptions?: ChoiceOption[] | null;
+  resolveAsset: (name?: string | null, type?: string) => string;
+  handleScreenClick: () => void;
+  handleWheel: (e: React.WheelEvent) => void;
+  handleSelectOption: (opt: ChoiceOption) => void;
+  setLanguage: (lang: Language) => void;
+  setShowSaveLoad: (mode: 'SAVE' | 'LOAD') => void;
+  setShowSettings: (show: boolean) => void;
+  quitToTitle: () => void;
+  setShowHistory: (show: boolean) => void;
+  onShowFlowchart?: () => void;
+  dialogueMode: DialogueMode | string;
+  isAutoMode: boolean;
+  isFastForward: boolean;
+  onToggleAuto: () => void;
+  onToggleSkip: () => void;
+  onOpenToc?: () => void;
+  onToggleFlipper?: () => void;
+  sf?: SystemFlags;
+  updateSf?: (sf: SystemFlags) => void;
+}
+
 export default function GameplayScreen({
   language,
   background,
@@ -91,7 +144,7 @@ export default function GameplayScreen({
   onToggleFlipper,
   sf,
   updateSf
-}) {
+}: GameplayScreenProps) {
   return (
     <div className="playing-layer" onClick={handleScreenClick} onWheel={!sf?.disableWheelHistory ? handleWheel : undefined}>
       
@@ -137,7 +190,7 @@ export default function GameplayScreen({
           replayCurrentVoice={replayCurrentVoice}
           isWaiting={isWaiting}
           language={language}
-          setLanguage={setLanguage}
+          _setLanguage={setLanguage}
           onSave={() => setShowSaveLoad('SAVE')}
           onLoad={() => setShowSaveLoad('LOAD')}
           onConfig={() => setShowSettings(true)}

@@ -1,20 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
-import { resolveAsset, resolveCharacterName, tokenizeText } from '../utils/gameUtils';
+import { resolveCharacterName, tokenizeText } from '../utils/gameUtils';
 import { DEFAULT_SHORTCUTS, toggleFullscreen } from '../utils/shortcutManager';
 import {
   applyTranslationImprovements,
-  getStNameHead,
   getFaceIcon,
-  getPrecedingScenario,
   backtrackScenarioState
 } from '../utils/kagHelpers';
 import {
   cleanFForSnapshot,
   cleanChoicesHistoryForSave,
   cleanHistoryLogForSave,
-  stripHistoryForLocalStorage,
-  cleanKagExpression,
-  evaluateExpression
+  stripHistoryForLocalStorage
 } from '../utils/kagEvaluator';
 import { GameVariables, SystemFlags, Language, GameState } from '../types/kag';
 
@@ -125,18 +121,18 @@ export function useKagRunner({
     const initial: Record<string | number, any> = {};
     const auto = localStorage.getItem(`${storagePrefix}_autosave`);
     if (auto) {
-      try { initial.autosave = JSON.parse(auto); } catch (e) { }
+      try { initial.autosave = JSON.parse(auto); } catch (_e) { }
     }
     for (let i = 0; i < 24; i++) {
       const slot = localStorage.getItem(`${storagePrefix}_save_slot_${i}`);
       if (slot) {
-        try { initial[i] = JSON.parse(slot); } catch (e) { }
+        try { initial[i] = JSON.parse(slot); } catch (_e) { }
       }
     }
     // Load special chapter-transition slot 150
     const slot150 = localStorage.getItem(`${storagePrefix}_save_slot_150`);
     if (slot150) {
-      try { initial[150] = JSON.parse(slot150); } catch (e) { }
+      try { initial[150] = JSON.parse(slot150); } catch (_e) { }
     }
     return initial;
   });
@@ -174,7 +170,7 @@ export function useKagRunner({
     if (saved) {
       try {
         return { ...defaults, ...JSON.parse(saved) };
-      } catch (e) { }
+      } catch (_e) { }
     }
     return defaults;
   });
@@ -1512,7 +1508,7 @@ export function useKagRunner({
     if (auto) {
       try {
         loadSaveSlot(JSON.parse(auto));
-      } catch (e) { }
+      } catch (_e) { }
     }
   };
 
@@ -1611,10 +1607,9 @@ export function useKagRunner({
     setShowSaveLoad(null);
   };
 
-  const handleSaveSlot = (slotIdx, overridePointer = null, overrideScenario = null, overrideF = null, overrideSf = null, overrideSprites = null, overrideBackground = null) => {
+  const handleSaveSlot = (slotIdx, overridePointer = null, overrideScenario = null, overrideF = null, _overrideSf = null, overrideSprites = null, overrideBackground = null) => {
     const slotKey = `${storagePrefix}_save_slot_${slotIdx}`;
     const targetF = overrideF || f;
-    const targetSf = overrideSf || sf;
     const targetSprites = overrideSprites || sprites;
     const targetBackground = overrideBackground || background;
     const targetPointer = overridePointer !== null ? overridePointer : pointer;

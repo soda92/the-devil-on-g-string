@@ -1,4 +1,34 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { DialogueMode, Language, SystemFlags } from '../types/kag';
+
+export interface DialogueBoxProps {
+  dialogueMode: DialogueMode | string;
+  speaker?: string;
+  faceIcon?: string | null;
+  resolveAsset: (name?: string | null, type?: string) => string;
+  typewriterText: string;
+  dialogueText: string;
+  currentVoice?: string;
+  replayCurrentVoice?: () => void;
+  isWaiting: boolean;
+  language: Language | string;
+  _setLanguage?: (lang: Language) => void;
+  onSave: () => void;
+  onLoad: () => void;
+  onConfig: () => void;
+  onQuit: () => void;
+  onScreenClick: () => void;
+  onShowHistory: () => void;
+  onShowFlowchart?: () => void;
+  isAutoMode: boolean;
+  isFastForward: boolean;
+  onToggleAuto: () => void;
+  onToggleSkip: () => void;
+  onOpenToc?: () => void;
+  onToggleFlipper?: () => void;
+  sf?: SystemFlags;
+  updateSf?: (sf: SystemFlags) => void;
+}
 
 export default function DialogueBox({ 
   dialogueMode, 
@@ -11,7 +41,6 @@ export default function DialogueBox({
   replayCurrentVoice, 
   isWaiting, 
   language, 
-  setLanguage, 
   onSave, 
   onLoad, 
   onConfig, 
@@ -27,9 +56,9 @@ export default function DialogueBox({
   onToggleFlipper,
   sf,
   updateSf
-}) {
-  const textRef = useRef(null);
-  const [hovered, setHovered] = useState(false);
+}: DialogueBoxProps) {
+  const textRef = useRef<HTMLDivElement>(null);
+  const [hovered, setHovered] = useState<boolean>(false);
 
   const showFace = faceIcon && dialogueMode === 'avg' && !sf?.immerseMode;
 
@@ -47,7 +76,7 @@ export default function DialogueBox({
     ? (sf && sf.novelBlur !== undefined ? sf.novelBlur : 8)
     : (sf && sf.avgBlur !== undefined ? sf.avgBlur : 16);
 
-  const bgStyle = sf?.immerseMode
+  const bgStyle: React.CSSProperties = sf?.immerseMode
     ? {
         backgroundColor: 'transparent',
         backdropFilter: 'none',
@@ -73,7 +102,7 @@ export default function DialogueBox({
 
   const handleExitImmerse = () => {
     if (sf) {
-      const nextSf = { ...sf, immerseMode: false };
+      const nextSf: SystemFlags = { ...sf, immerseMode: false };
       localStorage.setItem('school_sf', JSON.stringify(nextSf));
       if (updateSf) {
         updateSf(nextSf);
@@ -172,12 +201,14 @@ export default function DialogueBox({
                 boxShadow: '0 2px 6px rgba(0,0,0,0.4)'
               }}
               onMouseEnter={(e) => {
-                e.target.style.background = 'rgba(255, 68, 68, 0.45)';
-                e.target.style.color = '#ffffff';
+                const target = e.currentTarget as HTMLElement;
+                target.style.background = 'rgba(255, 68, 68, 0.45)';
+                target.style.color = '#ffffff';
               }}
               onMouseLeave={(e) => {
-                e.target.style.background = 'rgba(255, 68, 68, 0.25)';
-                e.target.style.color = '#ff8a8a';
+                const target = e.currentTarget as HTMLElement;
+                target.style.background = 'rgba(255, 68, 68, 0.25)';
+                target.style.color = '#ff8a8a';
               }}
             >
               {language === 'JP' ? '退出沉浸' : 'Exit Subtitles'}

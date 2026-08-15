@@ -1,19 +1,28 @@
 import React, { useState } from 'react';
+import { GameVariables, Language, ChoiceHistoryItem } from '../types/kag';
 
-export default function ChoiceGraphModal({ onClose, f, language, currentScenario, onJumpToChoice }) {
-  const [confirmChoiceIdx, setConfirmChoiceIdx] = useState(null);
+export interface ChoiceGraphModalProps {
+  onClose: () => void;
+  f: GameVariables;
+  language: Language | string;
+  currentScenario?: string | null;
+  onJumpToChoice: (choiceItem: ChoiceHistoryItem, choiceIdx: number) => void;
+}
+
+export default function ChoiceGraphModal({ onClose, f, language, currentScenario, onJumpToChoice }: ChoiceGraphModalProps) {
+  const [confirmChoiceIdx, setConfirmChoiceIdx] = useState<number | null>(null);
   
-  const choices = f.choicesHistory || [];
+  const choices: ChoiceHistoryItem[] = f.choicesHistory || [];
   
   // G-String heroine route flags mapping
   const routes = [
-    { nameJp: "美轮椿姬", nameEn: "Tsubaki", val: f.flag_tubaki || 0, max: 4, color: "#ec4899" },
-    { nameJp: "美波花音", nameEn: "Kanon", val: f.flag_kanon || 0, max: 3, color: "#3b82f6" },
-    { nameJp: "白鸟水羽", nameEn: "Mizuha", val: f.flag_mizuha || 0, max: 2, color: "#eab308" },
-    { nameJp: "宇佐美哈尔", nameEn: "Haru", val: f.flag_haru || 0, max: 3, color: "#8b5cf6" }
+    { nameJp: "美轮椿姬", nameEn: "Tsubaki", val: (f.flag_tubaki as number) || 0, max: 4, color: "#ec4899" },
+    { nameJp: "美波花音", nameEn: "Kanon", val: (f.flag_kanon as number) || 0, max: 3, color: "#3b82f6" },
+    { nameJp: "白鸟水羽", nameEn: "Mizuha", val: (f.flag_mizuha as number) || 0, max: 2, color: "#eab308" },
+    { nameJp: "宇佐美哈尔", nameEn: "Haru", val: (f.flag_haru as number) || 0, max: 3, color: "#8b5cf6" }
   ];
 
-  const getActiveRoute = () => {
+  const getActiveRoute = (): string | null => {
     if (!currentScenario) return null;
     const scen = currentScenario.toLowerCase();
     if (scen.startsWith('gt') || scen.startsWith('gth') || scen === 'gted') return 'Tsubaki';
@@ -30,8 +39,6 @@ export default function ChoiceGraphModal({ onClose, f, language, currentScenario
     if (f.game_clear) return 'Haru';
     return null;
   };
-
-  const activeRouteName = getActiveRoute();
 
   return (
     <div className="modal-overlay" onClick={onClose}>
