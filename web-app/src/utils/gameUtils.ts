@@ -1,7 +1,9 @@
 import fileMap from '../file_map.json';
+import scenarioBgMap from '../scenario_bg_map.json';
 import { Language } from '../types/kag';
 
 const typedFileMap: Record<string, string> = fileMap as Record<string, string>;
+const typedScenarioBgMap: Record<string, string> = scenarioBgMap as Record<string, string>;
 
 // --- Asset Resolution Helper ---
 export const resolveAsset = (filename?: string | null, defaultFolder = ''): string => {
@@ -20,6 +22,20 @@ export const resolveAsset = (filename?: string | null, defaultFolder = ''): stri
     return `/${defaultFolder}/${filename}${ext}`;
   }
   return filename;
+};
+
+// --- Scene Thumbnail Resolution Helper (skips pure black to first meaningful visual) ---
+export const getSceneThumbnailAsset = (bg?: string | null, scenario?: string | null): string => {
+  if (bg && bg !== 'black' && bg !== 'white') {
+    return resolveAsset(bg, 'bgimage');
+  }
+  if (scenario && typedScenarioBgMap[scenario]) {
+    return resolveAsset(typedScenarioBgMap[scenario], 'bgimage');
+  }
+  if (bg) {
+    return resolveAsset(bg, 'bgimage');
+  }
+  return '';
 };
 
 // --- Character Name translation resolution ---
@@ -88,6 +104,7 @@ export const isSensitiveAsset = (assetName?: string | null, scenarioName?: strin
   if (!assetName && !scenarioName) return false;
   const a = (assetName || '').toLowerCase();
   const s = (scenarioName || '').toLowerCase();
+  const fallbackBg = scenarioName && typedScenarioBgMap[scenarioName] ? typedScenarioBgMap[scenarioName].toLowerCase() : '';
 
   // 1. Explicit H-scene image identifiers
   if (
@@ -100,13 +117,27 @@ export const isSensitiveAsset = (assetName?: string | null, scenarioName?: strin
     a.includes('ev_haru_h') ||
     a.includes('ev_kanon_h') ||
     a.includes('ev_tubaki_h') ||
-    a.includes('ev_mizuha_h')
+    a.includes('ev_mizuha_h') ||
+    fallbackBg.includes('_h_') ||
+    fallbackBg.includes('ev_haru_h') ||
+    fallbackBg.includes('ev_kanon_h') ||
+    fallbackBg.includes('ev_tubaki_h') ||
+    fallbackBg.includes('ev_mizuha_h')
   ) {
     return true;
   }
 
-  // 2. Scenario specific H-scenes
-  if (s.includes('_h') || s.endsWith('h')) {
+  // 2. Scenario specific H-scenes (including Bad End versions gthb, gkhb)
+  if (
+    s.includes('_h') ||
+    s.endsWith('h') ||
+    s.includes('h1') ||
+    s.includes('h2') ||
+    s.includes('hb') ||
+    s.startsWith('gt08') ||
+    s.startsWith('gk07') ||
+    s.startsWith('gm08')
+  ) {
     return true;
   }
 

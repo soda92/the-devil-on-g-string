@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import GALLERY_ITEMS from '../gallery_items.json';
-import { SystemFlags } from '../types/kag';
+import { SystemFlags, Language } from '../types/kag';
+import { isSensitiveAsset, getSceneThumbnailAsset } from '../utils/gameUtils';
 
 interface GalleryItem {
   id: string | number;
@@ -10,24 +11,193 @@ interface GalleryItem {
 
 const typedGalleryItems: GalleryItem[] = GALLERY_ITEMS as GalleryItem[];
 
+export interface SpecialScene {
+  id: string;
+  scenario: string;
+  heroine: 'Tsubaki' | 'Kanon' | 'Mizuha' | 'Haru';
+  heroineNameJp: string;
+  heroineNameEn: string;
+  titleJp: string;
+  titleEn: string;
+  descJp: string;
+  descEn: string;
+  cgBase: string;
+  color: string;
+}
+
+const SPECIAL_SCENES: SpecialScene[] = [
+  // Tsubaki Miwa
+  {
+    id: 'gth1',
+    scenario: 'gth1',
+    heroine: 'Tsubaki',
+    heroineNameJp: '宇佐美 椿姬',
+    heroineNameEn: 'Tsubaki Miwa',
+    titleJp: '初夜 · 誓言之夜',
+    titleEn: 'First Night · The Vow',
+    descJp: '椿姬路线 第一个特殊场景',
+    descEn: 'Tsubaki Route First Intimate Scene',
+    cgBase: 'ev_tubaki_h_01a',
+    color: '#ec4899'
+  },
+  {
+    id: 'gth2',
+    scenario: 'gth2',
+    heroine: 'Tsubaki',
+    heroineNameJp: '宇佐美 椿姬',
+    heroineNameEn: 'Tsubaki Miwa',
+    titleJp: '恋人们的温存',
+    titleEn: 'Lovers’ Warmth',
+    descJp: '椿姬路线 第二个特殊场景',
+    descEn: 'Tsubaki Route Second Intimate Scene',
+    cgBase: 'ev_tubaki_h_03a',
+    color: '#ec4899'
+  },
+  {
+    id: 'gthb',
+    scenario: 'gthb',
+    heroine: 'Tsubaki',
+    heroineNameJp: '宇佐美 椿姬',
+    heroineNameEn: 'Tsubaki Miwa',
+    titleJp: '椿姬 坏结局特别篇',
+    titleEn: 'Tsubaki Bad End Special',
+    descJp: '椿姬路线 坏结局 (Bad End) 特殊场景',
+    descEn: 'Tsubaki Route Bad End Intimate Scene',
+    cgBase: 'ev_tubaki_h_05a',
+    color: '#f43f5e'
+  },
+  // Kanon Mizuhara
+  {
+    id: 'gkh1',
+    scenario: 'gkh1',
+    heroine: 'Kanon',
+    heroineNameJp: '美轮 花音',
+    heroineNameEn: 'Kanon Mizuhara',
+    titleJp: '冰场后的秘密',
+    titleEn: 'Secret After the Rink',
+    descJp: '花音路线 第一个特殊场景',
+    descEn: 'Kanon Route First Intimate Scene',
+    cgBase: 'ev_kanon_h_04a',
+    color: '#3b82f6'
+  },
+  {
+    id: 'gkh2',
+    scenario: 'gkh2',
+    heroine: 'Kanon',
+    heroineNameJp: '美轮 花音',
+    heroineNameEn: 'Kanon Mizuhara',
+    titleJp: '相互依偎的温度',
+    titleEn: 'Warmth of Closeness',
+    descJp: '花音路线 第二个特殊场景',
+    descEn: 'Kanon Route Second Intimate Scene',
+    cgBase: 'ev_kanon_h_05a',
+    color: '#3b82f6'
+  },
+  {
+    id: 'gkhb',
+    scenario: 'gkhb',
+    heroine: 'Kanon',
+    heroineNameJp: '美轮 花音',
+    heroineNameEn: 'Kanon Mizuhara',
+    titleJp: '花音 坏结局特别篇',
+    titleEn: 'Kanon Bad End Special',
+    descJp: '花音路线 坏结局 (Bad End) 特殊场景',
+    descEn: 'Kanon Route Bad End Intimate Scene',
+    cgBase: 'ev_kanon_h_02a',
+    color: '#f43f5e'
+  },
+  // Mizuha Shiratori
+  {
+    id: 'gmh1',
+    scenario: 'gmh1',
+    heroine: 'Mizuha',
+    heroineNameJp: '白鸟 水羽',
+    heroineNameEn: 'Mizuha Shiratori',
+    titleJp: '属于两人的房间',
+    titleEn: 'A Room for Two',
+    descJp: '水羽路线 第一个特殊场景',
+    descEn: 'Mizuha Route First Intimate Scene',
+    cgBase: 'ev_mizuha_h_01a',
+    color: '#eab308'
+  },
+  {
+    id: 'gmh2',
+    scenario: 'gmh2',
+    heroine: 'Mizuha',
+    heroineNameJp: '白鸟 水羽',
+    heroineNameEn: 'Mizuha Shiratori',
+    titleJp: '心意相通之夜',
+    titleEn: 'Night of United Hearts',
+    descJp: '水羽路线 第二个特殊场景',
+    descEn: 'Mizuha Route Second Intimate Scene',
+    cgBase: 'ev_mizuha_h_05a',
+    color: '#eab308'
+  },
+  // Haru Usami (True Route)
+  {
+    id: 'ghh1',
+    scenario: 'ghh1',
+    heroine: 'Haru',
+    heroineNameJp: '宇佐美 春',
+    heroineNameEn: 'Haru Usami',
+    titleJp: '真实的情感与温度',
+    titleEn: 'True Emotion & Warmth',
+    descJp: '真实路线 第一个特殊场景',
+    descEn: 'True Route First Intimate Scene',
+    cgBase: 'ev_haru_h_01b',
+    color: '#8b5cf6'
+  },
+  {
+    id: 'ghh2',
+    scenario: 'ghh2',
+    heroine: 'Haru',
+    heroineNameJp: '宇佐美 春',
+    heroineNameEn: 'Haru Usami',
+    titleJp: '决战前夕的约定',
+    titleEn: 'Promise Before the Climax',
+    descJp: '真实路线 第二个特殊场景',
+    descEn: 'True Route Second Intimate Scene',
+    cgBase: 'ev_haru_h_05a',
+    color: '#8b5cf6'
+  }
+];
+
 export interface GalleryScreenProps {
   sf: SystemFlags;
   resolveAsset: (name?: string | null, type?: string) => string;
   onBack: () => void;
   setCgViewerUrl?: (url: string | null) => void;
+  language?: Language | string;
+  onPlayScene?: (scenario: string) => void;
 }
 
-export default function GalleryScreen({ sf, resolveAsset, onBack, setCgViewerUrl: _setCgViewerUrl }: GalleryScreenProps) {
+export default function GalleryScreen({ 
+  sf, 
+  resolveAsset, 
+  onBack, 
+  setCgViewerUrl: _setCgViewerUrl,
+  language = 'JP',
+  onPlayScene 
+}: GalleryScreenProps) {
+  const [viewMode, setViewMode] = useState<'CG' | 'SCENES'>('CG');
+  const [heroineFilter, setHeroineFilter] = useState<'ALL' | 'Tsubaki' | 'Kanon' | 'Mizuha' | 'Haru'>('ALL');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [viewingVariants, setViewingVariants] = useState<string[] | null>(null);
   const [viewingIdx, setViewingIdx] = useState<number>(0);
+  const [revealedThumbs, setRevealedThumbs] = useState<Set<string>>(new Set());
 
   const ITEMS_PER_PAGE = 12;
   const totalPages = Math.ceil(typedGalleryItems.length / ITEMS_PER_PAGE);
   
-  // Filter items by page
+  // Filter CG items by page
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const filteredItems = typedGalleryItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Filter scenes by selected heroine
+  const filteredScenes = useMemo(() => {
+    if (heroineFilter === 'ALL') return SPECIAL_SCENES;
+    return SPECIAL_SCENES.filter(s => s.heroine === heroineFilter);
+  }, [heroineFilter]);
 
   const handleItemClick = (item: GalleryItem) => {
     const unlocked = item.variants.filter(v => sf[v] === 1);
@@ -44,6 +214,16 @@ export default function GalleryScreen({ sf, resolveAsset, onBack, setCgViewerUrl
     } else {
       setViewingVariants(null);
     }
+  };
+
+  const toggleReveal = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRevealedThumbs(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   // Keyboard controls for CG Viewer
@@ -66,20 +246,20 @@ export default function GalleryScreen({ sf, resolveAsset, onBack, setCgViewerUrl
   }, [viewingVariants, viewingIdx]);
 
   return (
-    <div className="gallery-layer glass-panel">
+    <div className="gallery-layer glass-panel" style={{ width: '820px', maxHeight: '580px', padding: '24px 30px' }}>
       <style>{`
         .gallery-tabs {
           display: flex;
           gap: 15px;
-          margin-bottom: 20px;
+          margin-bottom: 16px;
         }
         .gallery-tab-btn {
           background: var(--color-glass-light);
           border: 1px solid var(--color-border);
           color: var(--color-text-muted);
-          padding: 8px 20px;
+          padding: 6px 16px;
           border-radius: 6px;
-          font-size: 14px;
+          font-size: 13px;
           cursor: pointer;
           transition: all 0.2s ease;
         }
@@ -134,49 +314,362 @@ export default function GalleryScreen({ sf, resolveAsset, onBack, setCgViewerUrl
         }
       `}</style>
 
-      <h2 className="screen-title">CG GALLERY</h2>
+      {/* Header & Mode Switcher */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h2 className="screen-title" style={{ margin: 0, fontSize: '20px', letterSpacing: '1px' }}>
+          {viewMode === 'CG' ? 'CG 鉴赏 / CG GALLERY' : '场景回顾 / SCENE REPLAY'}
+        </h2>
 
-      <div className="gallery-tabs" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'center', marginBottom: '20px' }}>
-        {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-          <button 
-            key={pageNum}
-            className={`gallery-tab-btn ${currentPage === pageNum ? 'active' : ''}`}
-            onClick={() => setCurrentPage(pageNum)}
-            style={{ minWidth: '40px', padding: '6px 12px', margin: '2px' }}
+        {/* View Mode Toggle */}
+        <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '8px' }}>
+          <button
+            onClick={() => setViewMode('CG')}
+            style={{
+              padding: '5px 14px',
+              fontSize: '12px',
+              fontWeight: viewMode === 'CG' ? 600 : 400,
+              borderRadius: '6px',
+              border: 'none',
+              background: viewMode === 'CG' ? 'var(--color-primary)' : 'transparent',
+              color: viewMode === 'CG' ? '#fff' : 'rgba(255, 255, 255, 0.6)',
+              cursor: 'pointer'
+            }}
           >
-            {pageNum}
+            🎨 CG 鉴赏
           </button>
-        ))}
+          <button
+            onClick={() => setViewMode('SCENES')}
+            style={{
+              padding: '5px 14px',
+              fontSize: '12px',
+              fontWeight: viewMode === 'SCENES' ? 600 : 400,
+              borderRadius: '6px',
+              border: 'none',
+              background: viewMode === 'SCENES' ? 'var(--color-primary)' : 'transparent',
+              color: viewMode === 'SCENES' ? '#fff' : 'rgba(255, 255, 255, 0.6)',
+              cursor: 'pointer'
+            }}
+          >
+            🎬 场景回顾
+          </button>
+        </div>
       </div>
-      
-      <div className="gallery-grid-container">
-        {filteredItems.map((item) => {
-          const unlockedVariants = item.variants.filter(v => sf[v] === 1);
-          const isUnlocked = unlockedVariants.length > 0;
-          const thumbName = isUnlocked ? unlockedVariants[0] : null;
-          
-          return (
-            <div 
-              key={item.id} 
-              className="gallery-grid-item glass-panel" 
-              onClick={() => isUnlocked && handleItemClick(item)}
-            >
-              {isUnlocked ? (
-                <img 
-                  src={resolveAsset(thumbName, 'bgimage')} 
-                  alt={item.title} 
-                  className="gallery-thumb" 
-                />
-              ) : (
-                <div className="gallery-locked">🔒 LOCKED</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      
-      <button className="back-btn glass-panel" onClick={onBack}>Back to Title</button>
 
+      {/* === CG GALLERY VIEW === */}
+      {viewMode === 'CG' && (
+        <>
+          <div className="gallery-tabs" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center', marginBottom: '16px' }}>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+              <button 
+                key={pageNum}
+                className={`gallery-tab-btn ${currentPage === pageNum ? 'active' : ''}`}
+                onClick={() => setCurrentPage(pageNum)}
+                style={{ minWidth: '36px', padding: '4px 10px', margin: '1px' }}
+              >
+                {pageNum}
+              </button>
+            ))}
+          </div>
+          
+          <div className="gallery-grid-container" style={{ maxHeight: '380px', overflowY: 'auto' }}>
+            {filteredItems.map((item) => {
+              const unlockedVariants = item.variants.filter(v => sf[v] === 1);
+              const isUnlocked = unlockedVariants.length > 0;
+              const thumbName = isUnlocked ? unlockedVariants[0] : null;
+              const isSensitive = isSensitiveAsset(thumbName);
+              const isRevealed = revealedThumbs.has(String(item.id));
+              const shouldBlur = isSensitive && !isRevealed;
+              
+              return (
+                <div 
+                  key={item.id} 
+                  className="gallery-grid-item glass-panel" 
+                  onClick={() => isUnlocked && handleItemClick(item)}
+                  style={{ position: 'relative', overflow: 'hidden' }}
+                >
+                  {isUnlocked ? (
+                    <>
+                      <img 
+                        src={resolveAsset(thumbName, 'bgimage')} 
+                        alt={item.title} 
+                        className="gallery-thumb"
+                        style={{
+                          filter: shouldBlur ? 'blur(10px) brightness(0.6)' : 'none',
+                          transform: shouldBlur ? 'scale(1.1)' : 'none',
+                          transition: 'all 0.3s ease'
+                        }}
+                      />
+                      {shouldBlur && (
+                        <div 
+                          onClick={(e) => toggleReveal(String(item.id), e)}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: 'rgba(0, 0, 0, 0.4)',
+                            color: '#fda4af',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            zIndex: 2
+                          }}
+                        >
+                          <span>🔞</span>
+                          <span>点击揭开</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="gallery-locked">🔒 LOCKED</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* === SCENE REPLAY VIEW === */}
+      {viewMode === 'SCENES' && (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '430px' }}>
+          {/* Heroine Filter Pills */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', justifyContent: 'center' }}>
+            <button
+              onClick={() => setHeroineFilter('ALL')}
+              style={{
+                padding: '4px 12px',
+                fontSize: '12px',
+                borderRadius: '6px',
+                border: 'none',
+                background: heroineFilter === 'ALL' ? 'rgba(168, 85, 247, 0.3)' : 'rgba(255,255,255,0.06)',
+                color: heroineFilter === 'ALL' ? '#c084fc' : 'rgba(255,255,255,0.6)',
+                cursor: 'pointer'
+              }}
+            >
+              全部场景 (All)
+            </button>
+            <button
+              onClick={() => setHeroineFilter('Tsubaki')}
+              style={{
+                padding: '4px 12px',
+                fontSize: '12px',
+                borderRadius: '6px',
+                border: 'none',
+                background: heroineFilter === 'Tsubaki' ? 'rgba(236, 72, 153, 0.3)' : 'rgba(255,255,255,0.06)',
+                color: heroineFilter === 'Tsubaki' ? '#f472b6' : 'rgba(255,255,255,0.6)',
+                cursor: 'pointer'
+              }}
+            >
+              🌸 宇佐美椿姬
+            </button>
+            <button
+              onClick={() => setHeroineFilter('Kanon')}
+              style={{
+                padding: '4px 12px',
+                fontSize: '12px',
+                borderRadius: '6px',
+                border: 'none',
+                background: heroineFilter === 'Kanon' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(255,255,255,0.06)',
+                color: heroineFilter === 'Kanon' ? '#60a5fa' : 'rgba(255,255,255,0.6)',
+                cursor: 'pointer'
+              }}
+            >
+              ❄️ 美轮花音
+            </button>
+            <button
+              onClick={() => setHeroineFilter('Mizuha')}
+              style={{
+                padding: '4px 12px',
+                fontSize: '12px',
+                borderRadius: '6px',
+                border: 'none',
+                background: heroineFilter === 'Mizuha' ? 'rgba(234, 179, 8, 0.3)' : 'rgba(255,255,255,0.06)',
+                color: heroineFilter === 'Mizuha' ? '#facc15' : 'rgba(255,255,255,0.6)',
+                cursor: 'pointer'
+              }}
+            >
+              🍁 白鸟水羽
+            </button>
+            <button
+              onClick={() => setHeroineFilter('Haru')}
+              style={{
+                padding: '4px 12px',
+                fontSize: '12px',
+                borderRadius: '6px',
+                border: 'none',
+                background: heroineFilter === 'Haru' ? 'rgba(139, 92, 246, 0.3)' : 'rgba(255,255,255,0.06)',
+                color: heroineFilter === 'Haru' ? '#a78bfa' : 'rgba(255,255,255,0.6)',
+                cursor: 'pointer'
+              }}
+            >
+              🎻 宇佐美春
+            </button>
+          </div>
+
+          {/* Scene Cards Grid */}
+          <div 
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '12px',
+              paddingRight: '6px'
+            }}
+          >
+            {filteredScenes.map((scene) => {
+              // Unlocked if player read the scenario or saw any variant of the CG
+              const isSceneUnlocked = Boolean(
+                (sf.readScenarios && sf.readScenarios[scene.scenario]) ||
+                sf[scene.cgBase] === 1 ||
+                sf[scene.cgBase.replace(/[a-z]$/, '')] === 1
+              );
+              const thumbUrl = getSceneThumbnailAsset(scene.cgBase, scene.scenario);
+              const isRevealed = revealedThumbs.has(scene.id);
+
+              return (
+                <div 
+                  key={scene.id}
+                  className="glass-panel"
+                  style={{
+                    display: 'flex',
+                    gap: '12px',
+                    padding: '10px',
+                    borderRadius: '8px',
+                    borderLeft: `4px solid ${scene.color}`,
+                    background: 'rgba(255, 255, 255, 0.04)',
+                    borderTop: '1px solid rgba(255,255,255,0.08)',
+                    borderRight: '1px solid rgba(255,255,255,0.08)',
+                    borderBottom: '1px solid rgba(255,255,255,0.08)',
+                    alignItems: 'center'
+                  }}
+                >
+                  {/* Thumbnail with Sensitive Blur (skips true black to first non-black visual) */}
+                  <div 
+                    onClick={(e) => toggleReveal(scene.id, e)}
+                    title={!isRevealed ? "🔞 点击揭开预览" : "点击重新模糊"}
+                    style={{
+                      width: '110px',
+                      height: '75px',
+                      borderRadius: '6px',
+                      overflow: 'hidden',
+                      position: 'relative',
+                      background: '#000',
+                      flexShrink: 0,
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {thumbUrl ? (
+                      <img 
+                        src={thumbUrl} 
+                        alt={scene.titleJp}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          filter: !isRevealed ? 'blur(10px) brightness(0.6)' : 'none',
+                          transform: !isRevealed ? 'scale(1.15)' : 'none',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                      />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', background: '#1e1b4b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                        🎬
+                      </div>
+                    )}
+                    {!isRevealed && (
+                      <div 
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: 'rgba(0,0,0,0.3)',
+                          color: '#fda4af',
+                          fontSize: '10px',
+                          fontWeight: 600
+                        }}
+                      >
+                        <span style={{ fontSize: '14px' }}>🔞</span>
+                        <span>点击揭开</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Scene Metadata & Play Button */}
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', height: '100%' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                        <span 
+                          style={{
+                            fontSize: '10px',
+                            fontWeight: 600,
+                            padding: '1px 6px',
+                            borderRadius: '4px',
+                            background: `${scene.color}22`,
+                            color: scene.color,
+                            border: `1px solid ${scene.color}44`
+                          }}
+                        >
+                          {language === 'JP' ? scene.heroineNameJp : scene.heroineNameEn}
+                        </span>
+                        <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)' }}>
+                          [{scene.scenario}]
+                        </span>
+                      </div>
+
+                      <h4 style={{ margin: 0, fontSize: '13px', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {language === 'JP' ? scene.titleJp : scene.titleEn}
+                      </h4>
+                      <p style={{ margin: '2px 0 0', fontSize: '11px', color: 'rgba(255,255,255,0.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {language === 'JP' ? scene.descJp : scene.descEn}
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                      <button
+                        onClick={() => onPlayScene?.(scene.scenario)}
+                        style={{
+                          padding: '4px 12px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          borderRadius: '4px',
+                          border: 'none',
+                          background: isSceneUnlocked ? 'linear-gradient(135deg, #ec4899, #8b5cf6)' : 'rgba(255, 255, 255, 0.1)',
+                          color: isSceneUnlocked ? '#fff' : 'rgba(255, 255, 255, 0.4)',
+                          cursor: 'pointer',
+                          boxShadow: isSceneUnlocked ? '0 2px 8px rgba(236, 72, 153, 0.4)' : 'none'
+                        }}
+                      >
+                        ▶️ {language === 'JP' ? '回顾场景' : 'Replay Scene'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      
+      <button className="back-btn glass-panel" onClick={onBack} style={{ marginTop: '14px' }}>
+        {language === 'JP' ? '返回主菜单' : 'Back to Title'}
+      </button>
+
+      {/* Fullscreen CG Variant Viewer */}
       {viewingVariants && (
         <div className="cg-viewer-overlay" onClick={handleNextCg}>
           <div 

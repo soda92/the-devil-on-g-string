@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { SaveSlotData, Language } from '../types/kag';
-import { resolveAsset, resolveCharacterName, isSensitiveAsset } from '../utils/gameUtils';
+import { resolveCharacterName, isSensitiveAsset, getSceneThumbnailAsset } from '../utils/gameUtils';
 
 export interface ArchivesModalProps {
   isOpen: boolean;
@@ -164,7 +164,7 @@ export const ArchivesModal: React.FC<ArchivesModalProps> = ({
   const renderSlotCard = (slot: SaveSlotData) => {
     const meta = getChapterMeta(slot.currentScenario);
     const isAutosave = slot.slotId === 'autosave';
-    const bgUrl = resolveAsset(slot.background || 'black', 'bgimage');
+    const bgUrl = getSceneThumbnailAsset(slot.background, slot.currentScenario);
     const translatedSpeaker = resolveCharacterName(slot.speaker, language, config?.characterNames);
     const isSensitive = isSensitiveAsset(slot.background, slot.currentScenario);
     const isRevealed = Boolean(slot.slotId !== undefined && revealedSlots.has(slot.slotId));

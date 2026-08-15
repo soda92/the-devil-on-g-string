@@ -306,13 +306,21 @@ export default function App() {
           />
         )}
 
-        {/* === CG GALLERY SCREEN VIEW === */}
+        {/* === CG & SCENE GALLERY SCREEN VIEW === */}
         {runner.gameState === 'GALLERY' && (
           <GalleryScreen 
             sf={runner.sf}
             resolveAsset={resolveAsset}
             onBack={runner.quitToTitle}
             setCgViewerUrl={setCgViewerUrl}
+            language={runner.language}
+            onPlayScene={(scenario) => {
+              if (!runner.isAudioUnlocked) {
+                runner.setIsAudioUnlocked(true);
+              }
+              runner.setGameState('PLAYING');
+              runner.loadScenario(scenario, null, 0);
+            }}
           />
         )}
 
