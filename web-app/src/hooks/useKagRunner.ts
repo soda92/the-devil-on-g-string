@@ -1,203 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
 import { resolveAsset, resolveCharacterName, tokenizeText } from '../utils/gameUtils';
 import { DEFAULT_SHORTCUTS, toggleFullscreen } from '../utils/shortcutManager';
-import translationImprovements from '../utils/translation_improvements.json';
-
-// --- Translation Improvements Overlay ---
-const applyTranslationImprovements = (instructions) => {
-  if (!instructions) return instructions;
-  return instructions.map(inst => {
-    if (inst.type === 'text') {
-      const patched = { ...inst };
-      if (translationImprovements[inst.text_jp]) {
-        patched.text_jp = translationImprovements[inst.text_jp];
-      }
-      if (translationImprovements[inst.text_en]) {
-        patched.text_en = translationImprovements[inst.text_en];
-      }
-      return patched;
-    }
-    return inst;
-  });
-};
-
-// --- Miniface Face Icon Helper Functions ---
-const getStNameHead = (name) => {
-  if (!name) return '';
-  const trimmed = name.trim();
-  switch (trimmed) {
-    case 'ハル':
-    case '春':
-    case '宇佐美':
-      return 'haru';
-    case '椿姫':
-    case '椿姬':
-    case '白鸟':
-      return 'tuba';
-    case '花音':
-      return 'kano';
-    case '水羽':
-      return 'mizu';
-    case 'ユキ':
-    case '由岐':
-    case '雪':
-      return 'yuki';
-    case '栄一':
-    case '荣一':
-      return 'eiic';
-    case '浅井権三':
-    case '浅井权三':
-      return 'gonz';
-    case '広明':
-    case '广明':
-      return 'hiro';
-    case '郁子':
-      return 'ikuk';
-    case '恭平':
-    case 'まおう':
-    case '魔王':
-      return 'maou';
-    default:
-      return '';
-  }
-};
-
-const getFaceIcon = (speakerName, currentF) => {
-  if (!speakerName) return null;
-  const head = getStNameHead(speakerName);
-  if (!head) return null;
-
-  const faceRecord = currentF?.faceRecord || {};
-  const activeSprite = faceRecord[head];
-  if (!activeSprite) return null;
-
-  let faceName = activeSprite;
-  if (faceName.endsWith('_b')) {
-    faceName = faceName.slice(0, -2) + '_f';
-  } else if (faceName.endsWith('_s')) {
-    faceName = faceName.slice(0, -2) + '_f';
-  } else if (!faceName.endsWith('_f')) {
-    faceName = faceName + '_f';
-  }
-
-  return faceName;
-};
-
-// --- Programmatic Scenario Backtracking for Deep Links ---
-const getPrecedingScenario = (name) => {
-  if (!name) return null;
-  if (name === 'gt01') return 'g23';
-  if (name === 'gk01') return 'g34';
-  if (name === 'gm01') return 'g42';
-
-  const match = name.match(/^([a-zA-Z]+)(\d+)$/);
-  if (match) {
-    const prefix = match[1];
-    const num = parseInt(match[2]);
-    if (num > 1) {
-      const prevNum = String(num - 1).padStart(2, '0');
-      return `${prefix}${prevNum}`;
-    }
-  }
-  return null;
-};
-
-const backtrackScenarioState = async (scenName, depth = 0) => {
-  const state = { bg: 'white', bgm: '' };
-  if (depth >= 3 || !scenName) return state;
-  const prevScen = getPrecedingScenario(scenName);
-  if (!prevScen) return state;
-
-  try {
-    const response = await fetch(`/scenarios/${prevScen}.json`);
-    if (!response.ok) return state;
-    const prevData = await response.json();
-
-    let foundBg = false;
-    let foundBgm = false;
-
-    for (let i = prevData.instructions.length - 1; i >= 0; i--) {
-      const inst = prevData.instructions[i];
-      if (inst.type === 'command') {
-        if (!foundBg && (inst.name === 'bg' || inst.name === 'back' || inst.name === 'image')) {
-          if (inst.name === 'image' && inst.args.storage && inst.args.layer === 'base') {
-            state.bg = inst.args.storage;
-            foundBg = true;
-          } else if (inst.name !== 'image' && inst.args.storage) {
-            state.bg = inst.args.storage;
-            foundBg = true;
-          }
-        } else if (!foundBg && inst.name === 'black') {
-          state.bg = 'black';
-          foundBg = true;
-        } else if (!foundBgm && inst.name === 'bgm') {
-          if (inst.args.storage) {
-            state.bgm = inst.args.storage;
-            foundBgm = true;
-          }
-        } else if (!foundBgm && (inst.name === 'fobgm' || inst.name === 'stopbgm')) {
-          state.bgm = '';
-          foundBgm = true;
-        }
-      }
-      if (foundBg && foundBgm) break;
-    }
-
-    // If any state is still missing, recurse deeper to find it
-    if (!foundBg || !foundBgm) {
-      const deeperState = await backtrackScenarioState(prevScen, depth + 1);
-      if (!foundBg) state.bg = deeperState.bg;
-      if (!foundBgm) state.bgm = deeperState.bgm;
-    }
-
-    return state;
-  } catch (e) {
-    console.warn("Backtrack failed for", prevScen, e);
-    return state;
-  }
-};
-
-// --- Save State Cleaners for Flowchart Nested Snapshots ---
-const cleanFForSnapshot = (originalF) => {
-  if (!originalF) return {};
-  const clean = { ...originalF };
-  delete clean.choicesHistory;
-  return clean;
-};
-
-const cleanChoicesHistoryForSave = (history) => {
-  if (!history) return [];
-  return history.map(entry => ({
-    ...entry,
-    snapshot: {
-      ...entry.snapshot,
-      f: cleanFForSnapshot(entry.snapshot.f)
-    }
-  }));
-};
-
-const cleanHistoryLogForSave = (history) => {
-  if (!history) return [];
-  return history.map(entry => {
-    if (!entry.snapshot) return entry;
-    return {
-      ...entry,
-      snapshot: {
-        ...entry.snapshot,
-        f: cleanFForSnapshot(entry.snapshot.f)
-      }
-    };
-  });
-};
-
-const stripHistoryForLocalStorage = (saveData) => {
-  if (!saveData) return saveData;
-  const copy = { ...saveData };
-  if (copy.historyLog && copy.historyLog.length > 50) {
-    copy.historyLog = copy.historyLog.slice(-50);
-  }
-  return copy;
-};
+import {
+  applyTranslationImprovements,
+  getStNameHead,
+  getFaceIcon,
+  getPrecedingScenario,
+  backtrackScenarioState
+} from '../utils/kagHelpers';
+import {
+  cleanFForSnapshot,
+  cleanChoicesHistoryForSave,
+  cleanHistoryLogForSave,
+  stripHistoryForLocalStorage,
+  cleanKagExpression,
+  evaluateExpression
+} from '../utils/kagEvaluator';
 
 export function useKagRunner({
   config,
@@ -1959,6 +1777,8 @@ export function useKagRunner({
     setIsWaiting(true);
     setGameState('PLAYING');
     setShowHistory(false);
+    setShowTableOfContents(false);
+    setShowPageFlipper(false);
   };
 
   const jumpToChoiceSnapshot = async (choice, choiceIdx) => {
@@ -2153,6 +1973,20 @@ export function useKagRunner({
 
       // Toggle Page Flipper Bar (Key B)
       if (DEFAULT_SHORTCUTS.TOGGLE_FLIPPER.includes(code)) {
+        e.preventDefault();
+        setShowPageFlipper(prev => !prev);
+        return;
+      }
+
+      // Toggle Table of Contents Modal (Key T)
+      if (DEFAULT_SHORTCUTS.TOGGLE_TOC && DEFAULT_SHORTCUTS.TOGGLE_TOC.includes(code)) {
+        e.preventDefault();
+        setShowTableOfContents(prev => !prev);
+        return;
+      }
+
+      // Toggle Page Flipper Bar (Key B)
+      if (DEFAULT_SHORTCUTS.TOGGLE_FLIPPER && DEFAULT_SHORTCUTS.TOGGLE_FLIPPER.includes(code)) {
         e.preventDefault();
         setShowPageFlipper(prev => !prev);
         return;
