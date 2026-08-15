@@ -27,7 +27,7 @@ type SaveProgress struct {
 	SlotID       string `gorm:"primaryKey"`
 	EntryIndex   int    `gorm:"primaryKey"`
 	ScenarioName string `gorm:"not null"`
-	Pointer      int    `gorm:"not null"`
+ 	Pointer      int    `gorm:"not null"`
 	SpeakerJP    string
 	SpeakerEN    string
 	TextJP       string

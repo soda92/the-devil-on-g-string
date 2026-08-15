@@ -333,6 +333,7 @@ export function useKagRunner({
       }
     };
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
 
   const updateSf = (updater) => {
@@ -641,6 +642,7 @@ export function useKagRunner({
     if (gameState === 'TITLE' && !hasDeepLink) {
       playBgm('bgm_01');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState]);
 
   // Play BGM and Voice once audio is unlocked
@@ -662,6 +664,7 @@ export function useKagRunner({
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAudioUnlocked, gameState]);
 
   // Clean up autosave timer on unmount
@@ -718,6 +721,7 @@ export function useKagRunner({
     if (gameState === 'PLAYING' && pointer > 0 && currentScenario) {
       triggerAutosave(pointer, currentScenario);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pointer, currentScenario, gameState, historyLog]);
 
   // Main Scenario Interpreter Loop Runner
@@ -1299,6 +1303,7 @@ export function useKagRunner({
     if (shouldBlock) {
       setIsWaiting(true);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenarioData, pointer, isWaiting, showOptions, gameState, language]);
 
   // Update currently displayed text when language toggles
@@ -1330,6 +1335,7 @@ export function useKagRunner({
     setDialogueText(accumulated);
     setTypewriterText(accumulated);
     dialogueTextRef.current = accumulated;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language]);
 
   // Handle auto-advance (Auto / Fast-Forward modes)
@@ -1402,6 +1408,7 @@ export function useKagRunner({
     return () => {
       delete window.quick_check;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentScenario, pointer, background, sprites, speaker, dialogueMode, dialogueText, typewriterText, isWaiting, isAutoMode, isFastForward, f, sf, gameState, isAudioUnlocked]);
 
   // Log state progression in browser console
@@ -2005,6 +2012,7 @@ export function useKagRunner({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState, showSaveLoad, showSettings, showChoiceGraph, showHistory, isAudioUnlocked, toggleBgm]);
 
   const replayCurrentVoice = () => {

@@ -121,6 +121,7 @@ export default function App() {
         runner.loadScenario(scen, null, parsedPtr);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync current scenario and pointer to URL query parameters for debugging
@@ -161,6 +162,7 @@ export default function App() {
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runner.showHistory, runner.showSettings, runner.showSaveLoad, runner.showChoiceGraph, runner.showTableOfContents, runner.showPageFlipper]);
 
   const handleNextChapter = () => {

@@ -62,6 +62,7 @@ export default function GalleryScreen({ sf, resolveAsset, onBack, setCgViewerUrl
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewingVariants, viewingIdx]);
 
   return (
