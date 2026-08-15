@@ -476,7 +476,7 @@ export default function App() {
         {runner.showPageFlipper && runner.gameState === 'PLAYING' && (
           <PageFlipperBar 
             pointer={runner.pointer}
-            maxPointer={runner.scenarioData?.instructions?.length || 1000}
+            maxPointer={Array.isArray(runner.scenarioData) ? runner.scenarioData.length : (runner.scenarioData?.instructions?.length || 1000)}
             currentScenario={runner.currentScenario}
             currentDialogueText={runner.dialogueText}
             speaker={runner.speaker}
