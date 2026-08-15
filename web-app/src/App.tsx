@@ -303,6 +303,7 @@ export default function App() {
             }}
             sf={runner.sf}
             updateSf={runner.updateSf}
+            isSceneReplayMode={runner.isSceneReplayMode}
           />
         )}
 
@@ -314,10 +315,12 @@ export default function App() {
             onBack={runner.quitToTitle}
             setCgViewerUrl={setCgViewerUrl}
             language={runner.language}
+            initialViewMode={runner.isSceneReplayMode ? 'SCENES' : 'CG'}
             onPlayScene={(scenario) => {
               if (!runner.isAudioUnlocked) {
                 runner.setIsAudioUnlocked(true);
               }
+              runner.setIsSceneReplayMode(true);
               runner.setGameState('PLAYING');
               runner.loadScenario(scenario, null, 0);
             }}

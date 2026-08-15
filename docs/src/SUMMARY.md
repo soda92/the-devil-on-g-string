@@ -29,6 +29,7 @@
 # Book Reading Experience
 - [Table of Contents & Scene Indexing](reading-features/table-of-contents.md)
 - [Page Flipper & Timeline Scrubbing](reading-features/page-flipper.md)
+- [CG Gallery & Scene Replay Mode](reading-features/scene-gallery-and-replay.md)
 
 # Developer & QA Guide
 - [Engine Debugger & Diagnostics](dev-guide/debug-panel.md)

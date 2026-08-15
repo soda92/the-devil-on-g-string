@@ -27,6 +27,7 @@ export interface DialogueBoxProps {
   onToggleSkip: () => void;
   onOpenToc?: () => void;
   onToggleFlipper?: () => void;
+  isSceneReplayMode?: boolean;
   sf?: SystemFlags;
   updateSf?: (sf: SystemFlags) => void;
 }
@@ -56,6 +57,7 @@ export default function DialogueBox({
   onToggleSkip, 
   onOpenToc,
   onToggleFlipper,
+  isSceneReplayMode,
   sf,
   updateSf
 }: DialogueBoxProps) {
@@ -230,7 +232,7 @@ export default function DialogueBox({
           <button className={`sys-action-btn ${isFastForward ? 'active-skip' : ''}`} onClick={onToggleSkip}>快进</button>
           <button className="sys-action-btn" onClick={onOpenArchives || onSave || onLoad} style={{ color: '#c084fc', fontWeight: 'bold' }}>档案</button>
           <button className="sys-action-btn" onClick={onConfig}>设置</button>
-          <button className="sys-action-btn" onClick={onQuit}>菜单</button>
+          <button className="sys-action-btn" onClick={onQuit}>{isSceneReplayMode ? '鉴赏' : '菜单'}</button>
         </div>
       )}
     </div>

@@ -116,6 +116,7 @@ export function useKagRunner({
 
   const [quakeActive, setQuakeActive] = useState<boolean>(false);
   const [flashActive, setFlashActive] = useState<any>(null);
+  const [isSceneReplayMode, setIsSceneReplayMode] = useState<boolean>(false);
 
   const [saveSlots, setSaveSlots] = useState<Record<string | number, any>>(() => {
     const initial: Record<string | number, any> = {};
@@ -1522,7 +1523,12 @@ export function useKagRunner({
   const quitToTitle = () => {
     stopBgm();
     setTf({});
-    setGameState('TITLE');
+    if (isSceneReplayMode) {
+      setIsSceneReplayMode(false);
+      setGameState('GALLERY');
+    } else {
+      setGameState('TITLE');
+    }
   };
 
   const rewindToLastScene = () => {
@@ -2143,6 +2149,8 @@ export function useKagRunner({
     jumpToChoiceSnapshot,
     isAudioUnlocked,
     setIsAudioUnlocked,
+    isSceneReplayMode,
+    setIsSceneReplayMode,
     quakeActive,
     flashActive,
     storagePrefix,

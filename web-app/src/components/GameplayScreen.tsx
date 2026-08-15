@@ -108,6 +108,7 @@ export interface GameplayScreenProps {
   onToggleSkip: () => void;
   onOpenToc?: () => void;
   onToggleFlipper?: () => void;
+  isSceneReplayMode?: boolean;
   sf?: SystemFlags;
   updateSf?: (sf: SystemFlags) => void;
 }
@@ -144,6 +145,7 @@ export default function GameplayScreen({
   onToggleSkip,
   onOpenToc,
   onToggleFlipper,
+  isSceneReplayMode,
   sf,
   updateSf
 }: GameplayScreenProps) {
@@ -179,6 +181,50 @@ export default function GameplayScreen({
         </div>
       )}
 
+      {/* Floating Scene Replay Return Badge (Only in Scene Replay Mode) */}
+      {isSceneReplayMode && (
+        <div 
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            zIndex: 60,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(0, 0, 0, 0.75)',
+            backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(236, 72, 153, 0.4)',
+            borderRadius: '20px',
+            padding: '4px 12px',
+            boxShadow: '0 4px 15px rgba(0, 0, 0, 0.5)',
+            animation: 'fade-in 0.3s ease'
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span style={{ fontSize: '11px', color: '#f472b6', fontWeight: 600 }}>🎬 场景回顾中</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              quitToTitle();
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #ec4899, #8b5cf6)',
+              border: 'none',
+              borderRadius: '12px',
+              color: '#fff',
+              fontSize: '11px',
+              fontWeight: 600,
+              padding: '2px 10px',
+              cursor: 'pointer',
+              boxShadow: '0 2px 6px rgba(236, 72, 153, 0.4)'
+            }}
+          >
+            ⬅️ {language === 'JP' ? '返回鉴赏' : 'Return to Gallery'}
+          </button>
+        </div>
+      )}
+
       {/* Text Dialogue Layer */}
       {textVisible && (
         <DialogueBox 
@@ -207,6 +253,7 @@ export default function GameplayScreen({
           isFastForward={isFastForward}
           onToggleAuto={onToggleAuto}
           onToggleSkip={onToggleSkip}
+          isSceneReplayMode={isSceneReplayMode}
           sf={sf}
           updateSf={updateSf}
         />

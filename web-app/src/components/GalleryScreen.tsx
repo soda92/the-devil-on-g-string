@@ -6,10 +6,58 @@ import { isSensitiveAsset, getSceneThumbnailAsset } from '../utils/gameUtils';
 interface GalleryItem {
   id: string | number;
   title: string;
+  base: string;
   variants: string[];
 }
 
 const typedGalleryItems: GalleryItem[] = GALLERY_ITEMS as GalleryItem[];
+
+interface CgCategoryMeta {
+  key: string;
+  labelJp: string;
+  labelEn: string;
+  icon: string;
+  color: string;
+}
+
+const CG_CATEGORIES: CgCategoryMeta[] = [
+  { key: 'ALL', labelJp: '全部', labelEn: 'All CGs', icon: '🌟', color: '#c084fc' },
+  { key: 'Haru', labelJp: '宇佐美 春', labelEn: 'Haru Usami', icon: '🎻', color: '#8b5cf6' },
+  { key: 'Tsubaki', labelJp: '宇佐美 椿姬', labelEn: 'Tsubaki Miwa', icon: '🌸', color: '#ec4899' },
+  { key: 'Kanon', labelJp: '美轮 花音', labelEn: 'Kanon Mizuhara', icon: '❄️', color: '#3b82f6' },
+  { key: 'Mizuha', labelJp: '白鸟 水羽', labelEn: 'Mizuha Shiratori', icon: '🍁', color: '#eab308' },
+  { key: 'Maou', labelJp: '魔王', labelEn: 'Maou', icon: '🎭', color: '#ef4444' },
+  { key: 'Other', labelJp: '剧情事件', labelEn: 'Story / Others', icon: '🏙️', color: '#10b981' }
+];
+
+const getCgCategoryKey = (base: string): string => {
+  const b = base.toLowerCase();
+  if (b.startsWith('ev_haru')) return 'Haru';
+  if (b.startsWith('ev_tubaki')) return 'Tsubaki';
+  if (b.startsWith('ev_kanon') || b.startsWith('st_kanon')) return 'Kanon';
+  if (b.startsWith('ev_mizuha')) return 'Mizuha';
+  if (b.startsWith('ev_maou')) return 'Maou';
+  return 'Other';
+};
+
+const formatCgTitle = (base: string, fallbackTitle: string): string => {
+  const b = base.toLowerCase();
+  const match = b.match(/ev_([a-z]+)_(?:(h)_)?(\d+[a-z]?)/i) || b.match(/st_([a-z]+)_(\d+[a-z]?)/i);
+  if (!match) return fallbackTitle;
+
+  const charMap: Record<string, string> = {
+    haru: '春',
+    tubaki: '椿姬',
+    kanon: '花音',
+    mizuha: '水羽',
+    maou: '魔王',
+    other: '事件'
+  };
+  const char = charMap[match[1]] || match[1];
+  const isH = match[2] ? ' 🔞' : '';
+  const num = match[3] || '';
+  return `${char}${isH} · ${num}`;
+};
 
 export interface SpecialScene {
   id: string;
@@ -169,6 +217,7 @@ export interface GalleryScreenProps {
   setCgViewerUrl?: (url: string | null) => void;
   language?: Language | string;
   onPlayScene?: (scenario: string) => void;
+  initialViewMode?: 'CG' | 'SCENES';
 }
 
 export default function GalleryScreen({ 
@@ -177,9 +226,11 @@ export default function GalleryScreen({
   onBack, 
   setCgViewerUrl: _setCgViewerUrl,
   language = 'JP',
-  onPlayScene 
+  onPlayScene,
+  initialViewMode = 'CG'
 }: GalleryScreenProps) {
-  const [viewMode, setViewMode] = useState<'CG' | 'SCENES'>('CG');
+  const [viewMode, setViewMode] = useState<'CG' | 'SCENES'>(initialViewMode);
+  const [cgCategoryFilter, setCgCategoryFilter] = useState<string>('ALL');
   const [heroineFilter, setHeroineFilter] = useState<'ALL' | 'Tsubaki' | 'Kanon' | 'Mizuha' | 'Haru'>('ALL');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [viewingVariants, setViewingVariants] = useState<string[] | null>(null);
@@ -187,11 +238,47 @@ export default function GalleryScreen({
   const [revealedThumbs, setRevealedThumbs] = useState<Set<string>>(new Set());
 
   const ITEMS_PER_PAGE = 12;
-  const totalPages = Math.ceil(typedGalleryItems.length / ITEMS_PER_PAGE);
+
+  // Filter CG items by category
+  const filteredCategoryItems = useMemo(() => {
+    if (cgCategoryFilter === 'ALL') return typedGalleryItems;
+    return typedGalleryItems.filter(item => getCgCategoryKey(item.base) === cgCategoryFilter);
+  }, [cgCategoryFilter]);
+
+  const totalPages = Math.ceil(filteredCategoryItems.length / ITEMS_PER_PAGE) || 1;
   
-  // Filter CG items by page
+  // Reset page to 1 when changing category
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [cgCategoryFilter]);
+
+  // Filter CG items by current page
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const filteredItems = typedGalleryItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const filteredItems = filteredCategoryItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  // Calculate unlock statistics per category
+  const categoryStats = useMemo(() => {
+    const stats: Record<string, { total: number; unlocked: number }> = {};
+    for (const cat of CG_CATEGORIES) {
+      stats[cat.key] = { total: 0, unlocked: 0 };
+    }
+
+    for (const item of typedGalleryItems) {
+      const catKey = getCgCategoryKey(item.base);
+      const isItemUnlocked = item.variants.some(v => sf[v] === 1);
+
+      // Add to ALL
+      stats['ALL'].total++;
+      if (isItemUnlocked) stats['ALL'].unlocked++;
+
+      // Add to specific category
+      if (stats[catKey]) {
+        stats[catKey].total++;
+        if (isItemUnlocked) stats[catKey].unlocked++;
+      }
+    }
+    return stats;
+  }, [sf]);
 
   // Filter scenes by selected heroine
   const filteredScenes = useMemo(() => {
@@ -246,20 +333,20 @@ export default function GalleryScreen({
   }, [viewingVariants, viewingIdx]);
 
   return (
-    <div className="gallery-layer glass-panel" style={{ width: '820px', maxHeight: '580px', padding: '24px 30px' }}>
+    <div className="gallery-layer glass-panel" style={{ width: '100%', height: '100%', padding: '16px 20px', boxSizing: 'border-box' }}>
       <style>{`
         .gallery-tabs {
           display: flex;
-          gap: 15px;
-          margin-bottom: 16px;
+          gap: 8px;
+          margin-bottom: 12px;
         }
         .gallery-tab-btn {
           background: var(--color-glass-light);
           border: 1px solid var(--color-border);
           color: var(--color-text-muted);
-          padding: 6px 16px;
+          padding: 4px 12px;
           border-radius: 6px;
-          font-size: 13px;
+          font-size: 12px;
           cursor: pointer;
           transition: all 0.2s ease;
         }
@@ -314,18 +401,25 @@ export default function GalleryScreen({
         }
       `}</style>
 
-      {/* Header & Mode Switcher */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h2 className="screen-title" style={{ margin: 0, fontSize: '20px', letterSpacing: '1px' }}>
-          {viewMode === 'CG' ? 'CG 鉴赏 / CG GALLERY' : '场景回顾 / SCENE REPLAY'}
-        </h2>
+      {/* Header Bar with Title, Mode Switcher, and Back Button */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <h2 className="screen-title" style={{ margin: 0, fontSize: '18px', letterSpacing: '1px' }}>
+            {viewMode === 'CG' ? 'CG 鉴赏' : '场景回顾'}
+          </h2>
+          {viewMode === 'CG' && (
+            <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.5)', background: 'rgba(0,0,0,0.3)', padding: '2px 8px', borderRadius: '10px' }}>
+              已解锁 {categoryStats[cgCategoryFilter]?.unlocked || 0} / {categoryStats[cgCategoryFilter]?.total || 0}
+            </span>
+          )}
+        </div>
 
         {/* View Mode Toggle */}
-        <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.3)', padding: '4px', borderRadius: '8px' }}>
+        <div style={{ display: 'flex', gap: '6px', background: 'rgba(0,0,0,0.35)', padding: '3px', borderRadius: '8px' }}>
           <button
             onClick={() => setViewMode('CG')}
             style={{
-              padding: '5px 14px',
+              padding: '4px 12px',
               fontSize: '12px',
               fontWeight: viewMode === 'CG' ? 600 : 400,
               borderRadius: '6px',
@@ -340,7 +434,7 @@ export default function GalleryScreen({
           <button
             onClick={() => setViewMode('SCENES')}
             style={{
-              padding: '5px 14px',
+              padding: '4px 12px',
               fontSize: '12px',
               fontWeight: viewMode === 'SCENES' ? 600 : 400,
               borderRadius: '6px',
@@ -353,25 +447,90 @@ export default function GalleryScreen({
             🎬 场景回顾
           </button>
         </div>
+
+        {/* Top-Right Compact Back Button */}
+        <button 
+          onClick={onBack}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '4px 12px',
+            fontSize: '12px',
+            borderRadius: '6px',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            background: 'rgba(255, 255, 255, 0.08)',
+            color: '#e2e8f0',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.background = 'rgba(255, 255, 255, 0.18)';
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.background = 'rgba(255, 255, 255, 0.08)';
+          }}
+        >
+          ⬅️ {language === 'JP' ? '返回主菜单' : 'Back to Title'}
+        </button>
       </div>
 
       {/* === CG GALLERY VIEW === */}
       {viewMode === 'CG' && (
         <>
-          <div className="gallery-tabs" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center', marginBottom: '16px' }}>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-              <button 
-                key={pageNum}
-                className={`gallery-tab-btn ${currentPage === pageNum ? 'active' : ''}`}
-                onClick={() => setCurrentPage(pageNum)}
-                style={{ minWidth: '36px', padding: '4px 10px', margin: '1px' }}
-              >
-                {pageNum}
-              </button>
-            ))}
+          {/* Character / Category Filter Tabs */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center', marginBottom: '10px' }}>
+            {CG_CATEGORIES.map((cat) => {
+              const active = cgCategoryFilter === cat.key;
+              const stats = categoryStats[cat.key];
+              return (
+                <button
+                  key={cat.key}
+                  onClick={() => setCgCategoryFilter(cat.key)}
+                  style={{
+                    padding: '3px 10px',
+                    fontSize: '11px',
+                    fontWeight: active ? 600 : 400,
+                    borderRadius: '6px',
+                    border: `1px solid ${active ? cat.color : 'rgba(255,255,255,0.08)'}`,
+                    background: active ? `${cat.color}33` : 'rgba(255,255,255,0.04)',
+                    color: active ? '#fff' : 'rgba(255,255,255,0.65)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <span>{cat.icon}</span>
+                  <span>{language === 'JP' ? cat.labelJp : cat.labelEn}</span>
+                  {stats && (
+                    <span style={{ fontSize: '10px', opacity: 0.7 }}>
+                      ({stats.unlocked}/{stats.total})
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
+
+          {/* Pagination Tabs (if > 1 page in this category) */}
+          {totalPages > 1 && (
+            <div className="gallery-tabs" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', justifyContent: 'center', marginBottom: '10px' }}>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button 
+                  key={pageNum}
+                  className={`gallery-tab-btn ${currentPage === pageNum ? 'active' : ''}`}
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{ minWidth: '32px', padding: '3px 8px' }}
+                >
+                  {pageNum}
+                </button>
+              ))}
+            </div>
+          )}
           
-          <div className="gallery-grid-container" style={{ maxHeight: '380px', overflowY: 'auto' }}>
+          <div className="gallery-grid-container" style={{ maxHeight: totalPages > 1 ? '420px' : '450px', overflowY: 'auto' }}>
             {filteredItems.map((item) => {
               const unlockedVariants = item.variants.filter(v => sf[v] === 1);
               const isUnlocked = unlockedVariants.length > 0;
@@ -379,6 +538,7 @@ export default function GalleryScreen({
               const isSensitive = isSensitiveAsset(thumbName);
               const isRevealed = revealedThumbs.has(String(item.id));
               const shouldBlur = isSensitive && !isRevealed;
+              const formattedTitle = formatCgTitle(item.base, item.title);
               
               return (
                 <div 
@@ -399,6 +559,31 @@ export default function GalleryScreen({
                           transition: 'all 0.3s ease'
                         }}
                       />
+
+                      {/* Bottom title label */}
+                      <div 
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          padding: '2px 6px',
+                          background: 'linear-gradient(transparent, rgba(0,0,0,0.85))',
+                          fontSize: '10px',
+                          color: '#e2e8f0',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          zIndex: 3
+                        }}
+                      >
+                        <span>{formattedTitle}</span>
+                        {unlockedVariants.length > 1 && (
+                          <span style={{ fontSize: '9px', color: '#c084fc' }}>
+                            {unlockedVariants.length}P
+                          </span>
+                        )}
+                      </div>
+
                       {shouldBlur && (
                         <div 
                           onClick={(e) => toggleReveal(String(item.id), e)}
@@ -417,7 +602,7 @@ export default function GalleryScreen({
                             fontSize: '11px',
                             fontWeight: 600,
                             cursor: 'pointer',
-                            zIndex: 2
+                            zIndex: 4
                           }}
                         >
                           <span>🔞</span>
@@ -437,7 +622,7 @@ export default function GalleryScreen({
 
       {/* === SCENE REPLAY VIEW === */}
       {viewMode === 'SCENES' && (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '430px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '500px' }}>
           {/* Heroine Filter Pills */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', justifyContent: 'center' }}>
             <button
@@ -664,10 +849,6 @@ export default function GalleryScreen({
           </div>
         </div>
       )}
-      
-      <button className="back-btn glass-panel" onClick={onBack} style={{ marginTop: '14px' }}>
-        {language === 'JP' ? '返回主菜单' : 'Back to Title'}
-      </button>
 
       {/* Fullscreen CG Variant Viewer */}
       {viewingVariants && (
