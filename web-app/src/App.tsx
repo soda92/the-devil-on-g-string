@@ -324,6 +324,14 @@ export default function App() {
               runner.setGameState('PLAYING');
               runner.loadScenario(scenario, null, 0);
             }}
+            onJumpToStory={(scenario, pointer) => {
+              if (!runner.isAudioUnlocked) {
+                runner.setIsAudioUnlocked(true);
+              }
+              runner.setIsSceneReplayMode(false);
+              runner.setGameState('PLAYING');
+              runner.loadScenario(scenario, null, pointer);
+            }}
           />
         )}
 

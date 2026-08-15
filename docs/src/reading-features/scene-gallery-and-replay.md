@@ -6,9 +6,10 @@ The engine includes a dedicated **Gallery & Memories Hub** ([`GalleryScreen.tsx`
 
 ## 🎨 1. CG Gallery (`CG 鉴赏`)
 
-- **Manifest**: Driven by `gallery_items.json` containing 100+ event illustration groups.
-- **Unlocking**: Automatically unlocked in global `sf` flags whenever `[ev storage="..."]` commands execute.
+- **Character & Story Categories**: Filter illustrations by character (🎻 宇佐美春, 🌸 宇佐美椿姬, ❄️ 美轮花音, 🍁 白鸟水羽, 🎭 魔王, 🏙️ 剧情事件).
+- **Live Unlock Progression**: Real-time unlock ratio indicators for every character tab.
 - **Multi-Variant Slideshow**: Fullscreen viewer supporting keyboard navigation (`Arrow Right`, `Arrow Left`, `Space`, `Enter`, `Esc`) to cycle through expressions, lighting, and cut-in variations.
+- **📖 Jump to Dialogue from CG**: Pre-indexed mapping (`cg_scenario_map.json`, 308 mapped variants) enabling one-click deep jumps from any CG directly to the exact story dialogue moment with full state reconstruction via the engine's Pre-Scanner.
 - **Privacy Shield**: Adult / H-scene illustrations are automatically blurred by default (`filter: blur(10px) brightness(0.6)`) and feature interactive click-to-reveal.
 
 ---

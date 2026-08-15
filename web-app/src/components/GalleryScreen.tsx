@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import GALLERY_ITEMS from '../gallery_items.json';
+import CG_SCENARIO_MAP from '../cg_scenario_map.json';
 import { SystemFlags, Language } from '../types/kag';
 import { isSensitiveAsset, getSceneThumbnailAsset } from '../utils/gameUtils';
 
@@ -10,7 +11,15 @@ interface GalleryItem {
   variants: string[];
 }
 
+interface CgStoryLocation {
+  scenario: string;
+  pointer: number;
+  speaker?: string;
+  previewText?: string;
+}
+
 const typedGalleryItems: GalleryItem[] = GALLERY_ITEMS as GalleryItem[];
+const typedCgScenarioMap: Record<string, CgStoryLocation> = CG_SCENARIO_MAP as Record<string, CgStoryLocation>;
 
 interface CgCategoryMeta {
   key: string;
@@ -217,6 +226,7 @@ export interface GalleryScreenProps {
   setCgViewerUrl?: (url: string | null) => void;
   language?: Language | string;
   onPlayScene?: (scenario: string) => void;
+  onJumpToStory?: (scenario: string, pointer: number) => void;
   initialViewMode?: 'CG' | 'SCENES';
 }
 
@@ -227,6 +237,7 @@ export default function GalleryScreen({
   setCgViewerUrl: _setCgViewerUrl,
   language = 'JP',
   onPlayScene,
+  onJumpToStory,
   initialViewMode = 'CG'
 }: GalleryScreenProps) {
   const [viewMode, setViewMode] = useState<'CG' | 'SCENES'>(initialViewMode);
@@ -539,6 +550,7 @@ export default function GalleryScreen({
               const isRevealed = revealedThumbs.has(String(item.id));
               const shouldBlur = isSensitive && !isRevealed;
               const formattedTitle = formatCgTitle(item.base, item.title);
+              const storyLoc = thumbName ? typedCgScenarioMap[thumbName] : null;
               
               return (
                 <div 
@@ -560,7 +572,7 @@ export default function GalleryScreen({
                         }}
                       />
 
-                      {/* Bottom title label */}
+                      {/* Bottom title label & story jump */}
                       <div 
                         style={{
                           position: 'absolute',
@@ -573,15 +585,39 @@ export default function GalleryScreen({
                           color: '#e2e8f0',
                           display: 'flex',
                           justifyContent: 'space-between',
+                          alignItems: 'center',
                           zIndex: 3
                         }}
                       >
                         <span>{formattedTitle}</span>
-                        {unlockedVariants.length > 1 && (
-                          <span style={{ fontSize: '9px', color: '#c084fc' }}>
-                            {unlockedVariants.length}P
-                          </span>
-                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          {unlockedVariants.length > 1 && (
+                            <span style={{ fontSize: '9px', color: '#c084fc' }}>
+                              {unlockedVariants.length}P
+                            </span>
+                          )}
+                          {storyLoc && onJumpToStory && (
+                            <button
+                              title={language === 'JP' ? `跳转到剧情 [${storyLoc.scenario}]` : `Jump to Dialog [${storyLoc.scenario}]`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onJumpToStory(storyLoc.scenario, storyLoc.pointer);
+                              }}
+                              style={{
+                                background: 'rgba(168, 85, 247, 0.35)',
+                                border: '1px solid rgba(168, 85, 247, 0.6)',
+                                borderRadius: '3px',
+                                color: '#e9d5ff',
+                                fontSize: '9px',
+                                padding: '1px 4px',
+                                cursor: 'pointer',
+                                lineHeight: 1
+                              }}
+                            >
+                              📖
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {shouldBlur && (
@@ -860,6 +896,40 @@ export default function GalleryScreen({
               backgroundImage: `url(${resolveAsset(viewingVariants[viewingIdx], 'bgimage')})` 
             }} 
           />
+
+          {/* Jump to Dialog in Story Button */}
+          {typedCgScenarioMap[viewingVariants[viewingIdx]] && onJumpToStory && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const loc = typedCgScenarioMap[viewingVariants[viewingIdx]];
+                onJumpToStory(loc.scenario, loc.pointer);
+              }}
+              style={{
+                position: 'absolute',
+                top: '24px',
+                right: '24px',
+                background: 'linear-gradient(135deg, #a855f7, #6366f1)',
+                border: 'none',
+                borderRadius: '20px',
+                color: '#fff',
+                padding: '8px 18px',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(168, 85, 247, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                zIndex: 10001
+              }}
+              title={typedCgScenarioMap[viewingVariants[viewingIdx]].previewText ? `"${typedCgScenarioMap[viewingVariants[viewingIdx]].previewText}"` : undefined}
+            >
+              📖 {language === 'JP' ? '跳转到剧情' : 'Jump to Dialog'}
+              <span style={{ fontSize: '11px', opacity: 0.8 }}>[{typedCgScenarioMap[viewingVariants[viewingIdx]].scenario}]</span>
+            </button>
+          )}
+
           <div className="cg-viewer-counter">
             {viewingIdx + 1} / {viewingVariants.length} — Click to cycle, Esc to close
           </div>
