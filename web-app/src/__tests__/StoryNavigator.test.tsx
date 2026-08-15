@@ -277,4 +277,45 @@ describe('StoryNavigator Component', () => {
 
     expect(onClose).toHaveBeenCalled();
   });
+
+  it('handles novel/story mode sequential lines when stepping backwards and forwards', () => {
+    const novelScenarioData = {
+      instructions: [
+        { type: 'command', name: 'novel', args: {} },
+        { type: 'text', text_jp: '十月刚刚过去了一半。', text_en: 'Mid October.' }, // 1
+        { type: 'line_feed' }, // 2
+        { type: 'text', text_jp: '那天却吹着凛冽的偏北风。', text_en: 'Cold north wind.' }, // 3
+        { type: 'line_feed' }, // 4
+        { type: 'text', text_jp: '街道随着落日渐渐失去色彩。', text_en: 'Streets lost color.' }, // 5
+        { type: 'page_break' }, // 6
+        { type: 'text', text_jp: '新的一页开始。', text_en: 'New page begins.' } // 7
+      ]
+    };
+
+    const onSeekPointer = vi.fn();
+
+    render(
+      <StoryNavigator
+        initialTab="flipper"
+        pointer={5} // At line 5 ("街道随着落日渐渐失去色彩。")
+        maxPointer={8}
+        currentScenario="g01"
+        scenarioData={novelScenarioData}
+        currentDialogueText="十月刚刚过去了一半。<br />那天却吹着凛冽的偏北风。<br />街道随着落日渐渐失去色彩。"
+        speaker=""
+        onSeekPointer={onSeekPointer}
+        onSelectTopic={vi.fn()}
+        onClose={vi.fn()}
+        language="JP"
+        isSidebar={true}
+      />
+    );
+
+    // Step -1 should jump back to line 3
+    const stepPrevBtn = screen.getByText('◀ -1');
+    act(() => {
+      fireEvent.click(stepPrevBtn);
+    });
+    expect(onSeekPointer).toHaveBeenCalledWith(3);
+  });
 });

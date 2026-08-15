@@ -502,6 +502,7 @@ export function useKagRunner({
           let initialDialogueMode = 'avg';
           let initialVoice = '';
           let hasNm = false;
+          let initialNovelText = '';
           const synthesizedHistory: any[] = [];
 
           for (let i = 0; i < startIdx; i++) {
@@ -511,7 +512,21 @@ export function useKagRunner({
                 initialSpeaker = '';
                 initialVoice = '';
                 hasNm = false;
+                initialNovelText = '';
+              } else if (inst.type === 'line_feed') {
+                if (initialDialogueMode === 'novel' && initialNovelText !== '') {
+                  initialNovelText += '<br />';
+                }
               } else if (inst.type === 'text') {
+                const txt = language === 'JP' ? (inst.text_jp || inst.text || '') : (inst.text_en || inst.text || '');
+                if (initialDialogueMode === 'novel') {
+                  if (initialNovelText !== '') {
+                    const sep = (initialNovelText.endsWith('<br />') || initialNovelText.endsWith('<br/>')) ? '' : '<br />';
+                    initialNovelText += sep + txt;
+                  } else {
+                    initialNovelText = txt;
+                  }
+                }
                 const resolvedSpJp = initialSpeaker ? resolveCharacterName(initialSpeaker, 'JP', config?.characterNames) : '';
                 const resolvedSpEn = initialSpeaker ? resolveCharacterName(initialSpeaker, 'EN', config?.characterNames) : '';
                 synthesizedHistory.push({
@@ -637,9 +652,20 @@ export function useKagRunner({
                   initialDialogueMode = 'novel';
                 } else if (inst.name === 'avg' || inst.name === 'avg_with_name') {
                   initialDialogueMode = 'avg';
+                  initialNovelText = '';
+                } else if (inst.name === 'cm' || inst.name === 'ct') {
+                  initialNovelText = '';
                 }
               }
             }
+          }
+
+          if (initialDialogueMode === 'novel' && initialNovelText !== '') {
+            updateDialogueText(initialNovelText);
+            setTypewriterText(initialNovelText);
+          } else {
+            updateDialogueText('');
+            setTypewriterText('');
           }
 
           if (synthesizedHistory.length > 0) {
