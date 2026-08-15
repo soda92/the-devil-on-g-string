@@ -16,6 +16,7 @@ import {
   cleanKagExpression,
   evaluateExpression
 } from '../utils/kagEvaluator';
+import { GameVariables, SystemFlags, Language, GameState } from '../types/kag';
 
 export function useKagRunner({
   config,
@@ -84,8 +85,8 @@ export function useKagRunner({
     return () => clearInterval(interval);
   }, [username]);
 
-  const [language, setLanguage] = useState('JP');
-  const [gameState, setGameState] = useState('TITLE');
+  const [language, setLanguage] = useState<Language>('JP');
+  const [gameState, setGameState] = useState<GameState>('TITLE');
 
   // Visual Novel States
   const [currentScenario, setCurrentScenario] = useState(config?.initial?.scenario || 'g01');
@@ -102,26 +103,26 @@ export function useKagRunner({
   const [typewriterText, setTypewriterText] = useState('');
   const [faceIcon, setFaceIcon] = useState(null);
   const [textVisible, setTextVisible] = useState(false);
-  const [historyLog, setHistoryLog] = useState([]);
-  const [dialogueMode, setDialogueMode] = useState('avg');
-  const [isAutoMode, setIsAutoMode] = useState(false);
-  const [isFastForward, setIsFastForward] = useState(false);
-  const [isWaiting, setIsWaiting] = useState(false);
-  const [showOptions, setShowOptions] = useState(false);
-  const [sideNarration, setSideNarration] = useState({ visible: false, text: '', side: 'left', top: 130 });
-  const [showSaveLoad, setShowSaveLoad] = useState(null);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showChoiceGraph, setShowChoiceGraph] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showTableOfContents, setShowTableOfContents] = useState(false);
-  const [showPageFlipper, setShowPageFlipper] = useState(false);
-  const [historySearchFocused, setHistorySearchFocused] = useState(true);
+  const [historyLog, setHistoryLog] = useState<any[]>([]);
+  const [dialogueMode, setDialogueMode] = useState<any>('avg');
+  const [isAutoMode, setIsAutoMode] = useState<boolean>(false);
+  const [isFastForward, setIsFastForward] = useState<boolean>(false);
+  const [isWaiting, setIsWaiting] = useState<boolean>(false);
+  const [showOptions, setShowOptions] = useState<any>(false);
+  const [sideNarration, setSideNarration] = useState<any>({ visible: false, text: '', side: 'left', top: 130 });
+  const [showSaveLoad, setShowSaveLoad] = useState<any>(null);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showChoiceGraph, setShowChoiceGraph] = useState<boolean>(false);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [showTableOfContents, setShowTableOfContents] = useState<boolean>(false);
+  const [showPageFlipper, setShowPageFlipper] = useState<boolean>(false);
+  const [historySearchFocused, setHistorySearchFocused] = useState<boolean>(true);
 
-  const [quakeActive, setQuakeActive] = useState(false);
-  const [flashActive, setFlashActive] = useState(null);
+  const [quakeActive, setQuakeActive] = useState<boolean>(false);
+  const [flashActive, setFlashActive] = useState<any>(null);
 
-  const [saveSlots, setSaveSlots] = useState(() => {
-    const initial = {};
+  const [saveSlots, setSaveSlots] = useState<Record<string | number, any>>(() => {
+    const initial: Record<string | number, any> = {};
     const auto = localStorage.getItem(`${storagePrefix}_autosave`);
     if (auto) {
       try { initial.autosave = JSON.parse(auto); } catch (e) { }
@@ -140,7 +141,7 @@ export function useKagRunner({
     return initial;
   });
 
-  const [f, setF] = useState(() => {
+  const [f, setF] = useState<GameVariables>(() => {
     return {
       ...(config?.defaultF || {}),
       choicesHistory: [],
@@ -148,9 +149,9 @@ export function useKagRunner({
     };
   });
 
-  const [sf, setSf] = useState(() => {
+  const [sf, setSf] = useState<SystemFlags>(() => {
     const saved = localStorage.getItem(`${storagePrefix}_sf`);
-    const defaults = {
+    const defaults: SystemFlags = {
       game_clear: 0,
       kanon_clear: 0,
       mizuha_clear: 0,
@@ -167,6 +168,7 @@ export function useKagRunner({
       vAlign: 'TOP',
       hAlign: 'LEFT',
       immerseMode: false,
+      skipMode: 'READ_ONLY',
       ...(config?.defaultSf || {})
     };
     if (saved) {
@@ -177,7 +179,7 @@ export function useKagRunner({
     return defaults;
   });
 
-  const [tf, setTf] = useState({});
+  const [tf, setTf] = useState<Record<string, any>>({});
   const tfRef = useRef({});
   useEffect(() => {
     tfRef.current = tf;
@@ -684,6 +686,7 @@ export function useKagRunner({
       background,
       speaker,
       currentSpeaker: currentSpeakerRef.current,
+      currentVoice,
       dialogueText: dialogueTextRef.current,
       dialogueMode,
       language,
@@ -697,13 +700,9 @@ export function useKagRunner({
       timestamp: Date.now()
     };
 
-    // 1. Instantly write to local storage (lightweight cache to prevent QuotaExceededError)
     localStorage.setItem(`${storagePrefix}_autosave`, JSON.stringify(stripHistoryForLocalStorage(saveData)));
-
-    // 2. Update React slots state
     setSaveSlots(prev => ({ ...prev, autosave: saveData }));
 
-    // 3. Debounced/throttled backend post to avoid network spam
     if (autosaveTimeoutRef.current) clearTimeout(autosaveTimeoutRef.current);
     autosaveTimeoutRef.current = setTimeout(() => {
       fetch('/api/save-slot', {
@@ -714,8 +713,8 @@ export function useKagRunner({
           'X-Client-ID': clientIdRef.current
         },
         body: JSON.stringify({ slot: 'autosave', data: saveData })
-      }).catch(e => console.error("Failed to auto-save to backend", e));
-    }, 2000);
+      }).catch(e => console.error('Failed to save autosave to backend', e));
+    }, 500);
   };
 
   // Trigger autosave when pointer, scenario, or history log changes
@@ -731,12 +730,12 @@ export function useKagRunner({
 
     let p = pointer;
     let shouldBlock = false;
-    let newF = { ...fRef.current };
-    let newSf = { ...sfRef.current };
-    let newTf = { ...tfRef.current };
-    let tempSprites = { ...spritesRef.current };
-    let tempBackground = backgroundRef.current;
-    let collectedOptions = [];
+    let newF: any = { ...fRef.current };
+    let newSf: any = { ...sfRef.current };
+    let newTf: any = { ...tfRef.current };
+    let tempSprites: any = { ...spritesRef.current };
+    let tempBackground: any = backgroundRef.current;
+    const collectedOptions: any[] = [];
 
     while (p < scenarioData.length && !shouldBlock) {
       const inst = scenarioData[p];
@@ -975,7 +974,7 @@ export function useKagRunner({
               exp: args.exp || null
             });
           } else if (inst.name === 'showexlink') {
-            let finalOptions = collectedOptions;
+            const finalOptions = collectedOptions;
             if (finalOptions.length === 0) {
               let searchP = p - 2;
               while (searchP >= 0) {
@@ -1218,7 +1217,7 @@ export function useKagRunner({
             if (nextInst.type === 'link_start') {
               let textValJp = "";
               let textValEn = "";
-              let linkTextInst = scenarioData[tempP + 1];
+              const linkTextInst = scenarioData[tempP + 1];
               if (linkTextInst && linkTextInst.type === 'text') {
                 textValJp = linkTextInst.text_jp;
                 textValEn = linkTextInst.text_en;

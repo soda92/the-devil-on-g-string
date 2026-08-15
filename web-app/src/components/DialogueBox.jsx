@@ -103,7 +103,7 @@ export default function DialogueBox({
           className="dialogue-speaker" 
           onClick={currentVoice ? (e) => {
             e.stopPropagation();
-            replayCurrentVoice && replayCurrentVoice();
+            replayCurrentVoice?.();
           } : undefined}
           style={{ 
             cursor: currentVoice ? 'pointer' : 'default'

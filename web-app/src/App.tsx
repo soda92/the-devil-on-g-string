@@ -24,11 +24,11 @@ import { resolveAsset } from './utils/gameUtils';
 
 export default function App() {
   // Screen scaling to fit browser viewport
-  const [scale, setScale] = useState(1);
-  const [cgViewerUrl, setCgViewerUrl] = useState(null);
-  const [debugOpen, setDebugOpen] = useState(false);
-  const [showUserModal, setShowUserModal] = useState(false);
-  const [newUsernameInput, setNewUsernameInput] = useState('');
+  const [scale, setScale] = useState<number>(1);
+  const [cgViewerUrl, setCgViewerUrl] = useState<string | null>(null);
+  const [debugOpen, setDebugOpen] = useState<boolean>(false);
+  const [showUserModal, setShowUserModal] = useState<boolean>(false);
+  const [newUsernameInput, setNewUsernameInput] = useState<string>('');
 
   useEffect(() => {
     const handleResize = () => {
@@ -47,8 +47,9 @@ export default function App() {
 
   // Keydown listener in App to toggle debug panel
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
         return;
       }
       if (e.key === 'd' || e.key === 'D') {
@@ -69,7 +70,7 @@ export default function App() {
       const parsed = JSON.parse(savedSfStr);
       if (parsed.vol !== undefined) initialVol = parsed.vol;
       if (parsed.sevol !== undefined) initialSeVol = parsed.sevol;
-    } catch (e) {}
+    } catch (_e) {}
   }
 
   const audio = useGameAudio(initialVol, initialSeVol);
@@ -92,10 +93,10 @@ export default function App() {
   useEffect(() => {
     const vol = runner.sf.vol !== undefined ? runner.sf.vol : 8;
     const sevol = runner.sf.sevol !== undefined ? runner.sf.sevol : 8;
-    audio.bgmPlayer.volume = vol / 10;
-    audio.sePlayer.volume = sevol / 10;
-    audio.voicePlayer.volume = sevol / 10;
-  }, [runner.sf.vol, runner.sf.sevol]);
+    if (audio.bgmPlayer) audio.bgmPlayer.volume = vol / 10;
+    if (audio.sePlayer) audio.sePlayer.volume = sevol / 10;
+    if (audio.voicePlayer) audio.voicePlayer.volume = sevol / 10;
+  }, [runner.sf.vol, runner.sf.sevol, audio.bgmPlayer, audio.sePlayer, audio.voicePlayer]);
 
   // Read URL search params on mount, restoring from autosave if they match the URL scenario/pointer
   useEffect(() => {
@@ -103,7 +104,7 @@ export default function App() {
     const scen = params.get('scen');
     const ptr = params.get('ptr');
     if (scen) {
-      const parsedPtr = parseInt(ptr) || 0;
+      const parsedPtr = parseInt(ptr || '0', 10) || 0;
       const autoStr = localStorage.getItem('school_autosave');
       let loadedFromAuto = false;
       if (autoStr) {
@@ -113,7 +114,7 @@ export default function App() {
             runner.loadSaveSlot(autoData);
             loadedFromAuto = true;
           }
-        } catch (e) {}
+        } catch (_e) {}
       }
       if (!loadedFromAuto) {
         runner.setGameState('PLAYING');
@@ -141,7 +142,7 @@ export default function App() {
 
   // Handle ESC key to close active overlays
   useEffect(() => {
-    const handleEsc = (e) => {
+    const handleEsc = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (runner.showHistory) {
           runner.setShowHistory(false);
@@ -201,7 +202,7 @@ export default function App() {
             onShowFlowchart={() => runner.setShowChoiceGraph(true)}
             isBgmPlaying={audio.isBgmPlaying}
             onToggleBgm={audio.toggleBgm}
-            showNextChapter={runner.sf.show_next_chapter === 1 || runner.sf.show_next_chapter === true || runner.sf.show_next_chapter === 'true'}
+            showNextChapter={Boolean(runner.sf.show_next_chapter)}
             onNextChapter={handleNextChapter}
           />
         )}
@@ -227,13 +228,13 @@ export default function App() {
             handleWheel={runner.handleWheel}
             handleSelectOption={runner.handleSelectOption}
             setLanguage={runner.setLanguage}
-            setShowSaveLoad={(mode) => {
+            setShowSaveLoad={(mode: any) => {
               if (!runner.isAudioUnlocked) {
                 runner.setIsAudioUnlocked(true);
               }
               runner.setShowSaveLoad(mode);
             }}
-            setShowSettings={(show) => {
+            setShowSettings={(show: boolean) => {
               if (!runner.isAudioUnlocked) {
                 runner.setIsAudioUnlocked(true);
               }
@@ -245,7 +246,7 @@ export default function App() {
               }
               runner.quitToTitle();
             }}
-            setShowHistory={(show) => {
+            setShowHistory={(show: boolean) => {
               if (!runner.isAudioUnlocked) {
                 runner.setIsAudioUnlocked(true);
               }
@@ -296,7 +297,7 @@ export default function App() {
               if (!runner.isAudioUnlocked) {
                 runner.setIsAudioUnlocked(true);
               }
-              runner.setShowPageFlipper(prev => !prev);
+              runner.setShowPageFlipper((prev: boolean) => !prev);
             }}
             sf={runner.sf}
             updateSf={runner.updateSf}
@@ -318,7 +319,7 @@ export default function App() {
           <MusicRoom 
             playBgm={audio.playBgm}
             stopBgm={audio.stopBgm}
-            currentBgmName={audio.bgmPlayer.src ? audio.bgmPlayer.src.split('/').pop().split('.')[0] : ''}
+            currentBgmName={audio.bgmPlayer.src ? audio.bgmPlayer.src.split('/').pop()?.split('.')[0] || '' : ''}
             onBack={runner.quitToTitle}
             sf={runner.sf}
             setSf={runner.updateSf}
@@ -334,6 +335,9 @@ export default function App() {
             setSf={runner.updateSf}
             onBack={runner.quitToTitle}
             isGameplay={false}
+            onSave={() => {}}
+            onLoad={() => {}}
+            onQuit={() => {}}
             username={runner.username}
             onSwitchUser={() => {
               setNewUsernameInput(runner.username);
@@ -420,7 +424,7 @@ export default function App() {
             historyLog={runner.historyLog}
             language={runner.language}
             onJumpToSnapshot={runner.jumpToHistorySnapshot}
-            onReplayVoice={(voice) => {
+            onReplayVoice={(voice: string) => {
               setTimeout(() => {
                 audio.playVoice(voice);
               }, 150);

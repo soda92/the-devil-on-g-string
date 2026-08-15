@@ -114,7 +114,7 @@ export default function HistoryModal({ onClose, historyLog, language, onJumpToSn
                         className="backlog-voice-btn" 
                         onClick={(e) => {
                           e.stopPropagation();
-                          onReplayVoice && onReplayVoice(entry.voice);
+                          onReplayVoice?.(entry.voice);
                         }}
                         style={{
                           background: 'none',

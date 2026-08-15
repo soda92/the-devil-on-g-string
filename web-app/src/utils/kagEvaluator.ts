@@ -100,9 +100,11 @@ export const cleanHistoryLogForSave = (log: HistoryLogItem[] | undefined): any[]
   });
 };
 
-export const stripHistoryForLocalStorage = (saveData: SaveSlotData | null): SaveSlotData | null => {
+export const stripHistoryForLocalStorage = (saveData: any): any => {
   if (!saveData) return saveData;
-  const copy: SaveSlotData = { ...saveData };
-  delete copy.historyLog;
+  const copy = { ...saveData };
+  if (copy.historyLog && copy.historyLog.length > 50) {
+    copy.historyLog = copy.historyLog.slice(-50);
+  }
   return copy;
 };
