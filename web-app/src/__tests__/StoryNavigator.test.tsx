@@ -318,4 +318,38 @@ describe('StoryNavigator Component', () => {
     });
     expect(onSeekPointer).toHaveBeenCalledWith(3);
   });
+
+  it('renders dialogue context history and allows clicking preceding lines to seek', () => {
+    const onSeekPointer = vi.fn();
+
+    render(
+      <StoryNavigator
+        initialTab="flipper"
+        pointer={8} // Current line is Text at index 7 ("这是第二句台词。")
+        maxPointer={15}
+        currentScenario="g44"
+        scenarioData={mockScenarioData}
+        currentDialogueText="这是第二句台词。"
+        speaker="ハル"
+        onSeekPointer={onSeekPointer}
+        onSelectTopic={vi.fn()}
+        onClose={vi.fn()}
+        language="JP"
+        isSidebar={true}
+      />
+    );
+
+    // Verify context header
+    expect(screen.getByText(/台词预览与上下文/)).toBeDefined();
+
+    // Verify preceding line 2 is visible in context
+    const prevLine = screen.getByText('这是第一句台词。');
+    expect(prevLine).toBeDefined();
+
+    // Click preceding line to seek directly to index 2
+    act(() => {
+      fireEvent.click(prevLine);
+    });
+    expect(onSeekPointer).toHaveBeenCalledWith(2);
+  });
 });

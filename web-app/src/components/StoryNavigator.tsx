@@ -88,35 +88,57 @@ export default function StoryNavigator({
     }
   }, [pointer, numChunks, selectedChunk]);
 
-  // Synchronously compute preview dialogue text from scenarioData while scrubbing
-  const previewData = useMemo(() => {
+  interface DialogueContextItem {
+    index: number;
+    role: 'prev' | 'current' | 'next';
+    speaker: string;
+    text: string;
+  }
+
+  // Synchronously compute dialogue preview & preceding history context from scenarioData
+  const previewContext = useMemo<DialogueContextItem[]>(() => {
     const list = Array.isArray(scenarioData) ? scenarioData : scenarioData?.instructions;
     if (!list || !Array.isArray(list) || list.length === 0) {
-      return {
+      if (currentDialogueText) {
+        return [{
+          index: pointer,
+          role: 'current',
+          speaker,
+          text: currentDialogueText
+        }];
+      }
+      return [];
+    }
+
+    let curIdx = Math.min(scrubValue, list.length - 1);
+    while (curIdx >= 0 && list[curIdx]?.type !== 'text') {
+      curIdx--;
+    }
+
+    if (curIdx < 0) {
+      return [{
+        index: scrubValue,
+        role: 'current',
         speaker,
-        text: currentDialogueText
-      };
+        text: currentDialogueText || (language === 'JP' ? '(无对话文本)' : '(No dialogue text)')
+      }];
     }
 
-    let targetIdx = Math.min(scrubValue, list.length - 1);
-    while (targetIdx >= 0 && list[targetIdx]?.type !== 'text') {
-      targetIdx--;
-    }
-
-    if (targetIdx >= 0 && list[targetIdx]) {
+    const resolveItemSpeaker = (targetIdx: number) => {
       const inst = list[targetIdx];
-      const txt = language === 'JP' 
-        ? (inst.text_jp || inst.textJp || inst.text || '') 
-        : (inst.text_en || inst.textEn || inst.text || '');
       let spk = language === 'JP' 
         ? (inst.speaker_jp || inst.speakerJp || inst.speaker || '') 
         : (inst.speaker_en || inst.speakerEn || inst.speaker || '');
-
       if (!spk) {
         let sIdx = targetIdx;
         while (sIdx >= 0) {
           const item = list[sIdx];
-          if (item?.type === 'speaker' || item?.speaker || item?.speaker_jp) {
+          if (item?.type === 'command' && (item?.name === 'nm' || item?.name === 'name')) {
+            spk = language === 'JP' 
+              ? (item.args?.txt || item.args?.t || '') 
+              : (item.args?.txt_en || item.args?.t_en || item.args?.txt || item.args?.t || '');
+            break;
+          } else if (item?.type === 'speaker' || item?.speaker || item?.speaker_jp) {
             spk = language === 'JP' 
               ? (item.speaker_jp || item.speakerJp || item.speaker || '') 
               : (item.speaker_en || item.speakerEn || item.speaker || '');
@@ -125,18 +147,66 @@ export default function StoryNavigator({
           sIdx--;
         }
       }
+      return spk;
+    };
 
-      return {
-        speaker: spk || speaker,
-        text: txt || currentDialogueText
-      };
+    const resolveItemText = (targetIdx: number) => {
+      const inst = list[targetIdx];
+      return language === 'JP' 
+        ? (inst.text_jp || inst.textJp || inst.text || '') 
+        : (inst.text_en || inst.textEn || inst.text || '');
+    };
+
+    // Collect up to 2 preceding lines
+    const prevIndices: number[] = [];
+    let pIdx = curIdx - 1;
+    while (pIdx >= 0 && prevIndices.length < 2) {
+      if (list[pIdx]?.type === 'text') {
+        prevIndices.push(pIdx);
+      }
+      pIdx--;
+    }
+    prevIndices.reverse();
+
+    // Collect 1 upcoming line
+    const nextIndices: number[] = [];
+    let nIdx = curIdx + 1;
+    while (nIdx < list.length && nextIndices.length < 1) {
+      if (list[nIdx]?.type === 'text') {
+        nextIndices.push(nIdx);
+      }
+      nIdx++;
     }
 
-    return {
-      speaker,
-      text: currentDialogueText
-    };
-  }, [scenarioData, scrubValue, language, speaker, currentDialogueText]);
+    const items: DialogueContextItem[] = [];
+
+    for (const idx of prevIndices) {
+      items.push({
+        index: idx,
+        role: 'prev',
+        speaker: resolveItemSpeaker(idx),
+        text: resolveItemText(idx)
+      });
+    }
+
+    items.push({
+      index: curIdx,
+      role: 'current',
+      speaker: resolveItemSpeaker(curIdx) || speaker,
+      text: resolveItemText(curIdx) || currentDialogueText
+    });
+
+    for (const idx of nextIndices) {
+      items.push({
+        index: idx,
+        role: 'next',
+        speaker: resolveItemSpeaker(idx),
+        text: resolveItemText(idx)
+      });
+    }
+
+    return items;
+  }, [scenarioData, scrubValue, language, speaker, currentDialogueText, pointer]);
 
   const activeRange = useMemo(() => {
     if (selectedChunk === 'ALL' || !chunks[selectedChunk]) {
@@ -614,12 +684,12 @@ export default function StoryNavigator({
           </div>
         </div>
 
-        {/* 5. Live Dialogue Preview Card (Scrollable) */}
+        {/* 5. Live Dialogue Preview & Context History Card (Scrollable) */}
         <div style={{ 
           flex: 1, 
           minHeight: 0,
           background: 'rgba(0, 0, 0, 0.45)', 
-          padding: '10px 12px', 
+          padding: '8px 10px', 
           borderRadius: '10px', 
           borderLeft: '4px solid #f59e0b',
           borderTop: '1px solid rgba(255, 255, 255, 0.05)',
@@ -630,16 +700,72 @@ export default function StoryNavigator({
           gap: '6px',
           overflowY: 'auto'
         }}>
-          <div style={{ fontSize: '11px', color: '#9ca3af', fontWeight: 600, borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '4px' }}>
-            💬 {language === 'JP' ? '当前台词预览' : 'Live Dialogue Preview'}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#9ca3af', fontWeight: 600, borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '4px' }}>
+            <span>💬 {language === 'JP' ? '台词预览与上下文' : 'Dialogue Preview & Context'}</span>
+            <span style={{ fontSize: '10px', color: '#6b7280' }}>{language === 'JP' ? '点击前文可跳转' : 'Click line to jump'}</span>
           </div>
-          {previewData.speaker && (
-            <div style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '13px' }}>
-              【{previewData.speaker}】
-            </div>
-          )}
-          <div style={{ fontSize: '12px', color: '#f1f5f9', lineHeight: 1.6, wordBreak: 'break-word' }}>
-            {previewData.text || <span style={{ color: '#64748b', fontStyle: 'italic' }}>{language === 'JP' ? '(无对话文本)' : '(No dialogue text)'}</span>}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {previewContext.map((item) => {
+              if (item.role === 'current') {
+                return (
+                  <div
+                    key={`${item.role}-${item.index}`}
+                    style={{
+                      background: 'rgba(245, 158, 11, 0.15)',
+                      borderLeft: '3px solid #f59e0b',
+                      borderRadius: '6px',
+                      padding: '6px 8px',
+                      boxShadow: '0 0 10px rgba(245, 158, 11, 0.15)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <span style={{ color: '#fbbf24', fontWeight: 'bold', fontSize: '12px' }}>
+                        {item.speaker ? `【${item.speaker}】` : '【旁白 / Narration】'}
+                      </span>
+                      <span style={{ fontSize: '10px', background: '#f59e0b', color: '#000', padding: '1px 5px', borderRadius: '3px', fontWeight: 'bold' }}>
+                        📍 L.{item.index}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#ffffff', lineHeight: 1.5, wordBreak: 'break-word', fontWeight: 500 }}>
+                      {item.text || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>{language === 'JP' ? '(无对话文本)' : '(No dialogue text)'}</span>}
+                    </div>
+                  </div>
+                );
+              }
+
+              const isPrev = item.role === 'prev';
+              return (
+                <div
+                  key={`${item.role}-${item.index}`}
+                  onClick={() => onSeekPointer(item.index)}
+                  style={{
+                    background: isPrev ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.01)',
+                    borderLeft: isPrev ? '2px solid rgba(148, 163, 184, 0.4)' : '2px dashed rgba(100, 116, 139, 0.3)',
+                    borderRadius: '4px',
+                    padding: '4px 6px',
+                    cursor: 'pointer',
+                    opacity: isPrev ? 0.75 : 0.6,
+                    transition: 'all 0.15s ease'
+                  }}
+                  title={language === 'JP' ? `点击跳转至第 ${item.index} 行` : `Jump to line ${item.index}`}
+                  onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.opacity = isPrev ? '0.75' : '0.6'; e.currentTarget.style.background = isPrev ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.01)'; }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', marginBottom: '2px' }}>
+                    <span style={{ color: isPrev ? '#cbd5e1' : '#94a3b8', fontWeight: 600 }}>
+                      {isPrev ? '⏮ ' : '🔜 '}{item.speaker ? `【${item.speaker}】` : ''}
+                    </span>
+                    <span style={{ fontSize: '9px', color: '#64748b' }}>
+                      L.{item.index}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: isPrev ? '#94a3b8' : '#64748b', lineHeight: 1.4, wordBreak: 'break-word' }}>
+                    {item.text}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
