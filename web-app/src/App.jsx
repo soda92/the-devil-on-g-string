@@ -12,6 +12,8 @@ import GameplayScreen from './components/GameplayScreen';
 import ChoiceGraphModal from './components/ChoiceGraphModal';
 import DebugPanel from './components/DebugPanel';
 import MusicRoom from './components/MusicRoom';
+import TableOfContentsModal from './components/TableOfContentsModal';
+import PageFlipperBar from './components/PageFlipperBar';
 
 // --- Custom Hooks ---
 import { useGameAudio } from './hooks/useGameAudio';
@@ -149,12 +151,16 @@ export default function App() {
           runner.setShowSaveLoad(null);
         } else if (runner.showChoiceGraph) {
           runner.setShowChoiceGraph(false);
+        } else if (runner.showTableOfContents) {
+          runner.setShowTableOfContents(false);
+        } else if (runner.showPageFlipper) {
+          runner.setShowPageFlipper(false);
         }
       }
     };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [runner.showHistory, runner.showSettings, runner.showSaveLoad, runner.showChoiceGraph]);
+  }, [runner.showHistory, runner.showSettings, runner.showSaveLoad, runner.showChoiceGraph, runner.showTableOfContents, runner.showPageFlipper]);
 
   const handleNextChapter = () => {
     const slotData = runner.saveSlots[150];

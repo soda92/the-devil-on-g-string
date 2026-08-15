@@ -295,6 +295,8 @@ export function useKagRunner({
   const [showSettings, setShowSettings] = useState(false);
   const [showChoiceGraph, setShowChoiceGraph] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showTableOfContents, setShowTableOfContents] = useState(false);
+  const [showPageFlipper, setShowPageFlipper] = useState(false);
   const [historySearchFocused, setHistorySearchFocused] = useState(true);
 
   const [quakeActive, setQuakeActive] = useState(false);
@@ -466,7 +468,18 @@ export function useKagRunner({
             // Sync autosave
             const autosaveKey = `${storagePrefix}_autosave`;
             if (activeSlots.autosave) {
-              localStorage.setItem(autosaveKey, JSON.stringify(stripHistoryForLocalStorage(activeSlots.autosave)));
+              const auto = activeSlots.autosave;
+              localStorage.setItem(autosaveKey, JSON.stringify(stripHistoryForLocalStorage(auto)));
+              setF(prev => {
+                const nextF = { ...prev, ...auto.f };
+                if (auto.choicesHistory) {
+                  nextF.choicesHistory = auto.choicesHistory;
+                }
+                return nextF;
+              });
+              if (auto.historyLog && auto.historyLog.length > 0) {
+                setHistoryLog(auto.historyLog);
+              }
             } else {
               localStorage.removeItem(autosaveKey);
             }
@@ -1729,7 +1742,7 @@ export function useKagRunner({
 
     if (slotData.historyLog) {
       setHistoryLog(slotData.historyLog);
-    } else {
+    } else if (slotData.slotId !== undefined) {
       setHistoryLog([]);
     }
 
@@ -1991,6 +2004,22 @@ export function useKagRunner({
     setGameState('PLAYING');
   };
 
+  const jumpToTopic = async (scenId, targetPtr = 0, presets = null) => {
+    if (presets) {
+      setF(prev => ({ ...prev, ...presets }));
+    }
+    await loadScenario(scenId, null, targetPtr, true, true);
+    setGameState('PLAYING');
+    setShowTableOfContents(false);
+  };
+
+  const seekPointer = async (targetPtr) => {
+    if (!currentScenario) return;
+    const maxP = scenarioData?.instructions?.length || targetPtr;
+    const safeP = Math.max(0, Math.min(targetPtr, maxP - 1));
+    await loadScenario(currentScenario, null, safeP, true, true);
+  };
+
   // Centralized keyboard shortcut manager
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -2115,6 +2144,20 @@ export function useKagRunner({
         return;
       }
 
+      // Toggle Table of Contents Modal (Key T)
+      if (DEFAULT_SHORTCUTS.TOGGLE_TOC.includes(code)) {
+        e.preventDefault();
+        setShowTableOfContents(prev => !prev);
+        return;
+      }
+
+      // Toggle Page Flipper Bar (Key B)
+      if (DEFAULT_SHORTCUTS.TOGGLE_FLIPPER.includes(code)) {
+        e.preventDefault();
+        setShowPageFlipper(prev => !prev);
+        return;
+      }
+
       // 5. Toggle text visibility
       if (DEFAULT_SHORTCUTS.TOGGLE_TEXT.includes(code)) {
         e.preventDefault();
@@ -2180,6 +2223,12 @@ export function useKagRunner({
     setShowChoiceGraph,
     showHistory,
     setShowHistory,
+    showTableOfContents,
+    setShowTableOfContents,
+    showPageFlipper,
+    setShowPageFlipper,
+    jumpToTopic,
+    seekPointer,
     historySearchFocused,
     saveSlots,
     f,

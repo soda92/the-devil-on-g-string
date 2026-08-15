@@ -11,7 +11,9 @@ export const DEFAULT_SHORTCUTS = {
   QUIT_TO_TITLE: ['KeyQ'],
   ADVANCE_TEXT: ['Enter'],
   TOGGLE_IMMERSE: ['KeyI'],
-  TOGGLE_MUTE: ['KeyM']
+  TOGGLE_MUTE: ['KeyM'],
+  TOGGLE_TOC: ['KeyT'],
+  TOGGLE_FLIPPER: ['KeyB']
 };
 
 // --- Fullscreen API Handler ---

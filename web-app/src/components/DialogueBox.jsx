@@ -23,6 +23,8 @@ export default function DialogueBox({
   isFastForward, 
   onToggleAuto, 
   onToggleSkip, 
+  onOpenToc,
+  onToggleFlipper,
   sf,
   updateSf
 }) {
@@ -189,6 +191,8 @@ export default function DialogueBox({
         <div className="system-actions-bar">
           <button className="sys-action-btn" onClick={onShowHistory}>历史</button>
           {onShowFlowchart && <button className="sys-action-btn" onClick={onShowFlowchart}>路线</button>}
+          {onOpenToc && <button className="sys-action-btn" onClick={onOpenToc} style={{ color: '#f59e0b', fontWeight: 'bold' }}>目录</button>}
+          {onToggleFlipper && <button className="sys-action-btn" onClick={onToggleFlipper} style={{ color: '#f59e0b', fontWeight: 'bold' }}>翻页</button>}
           <button className={`sys-action-btn ${isAutoMode ? 'active-auto' : ''}`} onClick={onToggleAuto}>自动</button>
           <button className={`sys-action-btn ${isFastForward ? 'active-skip' : ''}`} onClick={onToggleSkip}>快进</button>
           <button className="sys-action-btn" onClick={onSave}>保存</button>

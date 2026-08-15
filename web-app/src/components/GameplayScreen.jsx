@@ -87,6 +87,8 @@ export default function GameplayScreen({
   isFastForward,
   onToggleAuto,
   onToggleSkip,
+  onOpenToc,
+  onToggleFlipper,
   sf,
   updateSf
 }) {
@@ -143,6 +145,8 @@ export default function GameplayScreen({
           onScreenClick={handleScreenClick}
           onShowHistory={() => setShowHistory(true)}
           onShowFlowchart={onShowFlowchart}
+          onOpenToc={onOpenToc}
+          onToggleFlipper={onToggleFlipper}
           isAutoMode={isAutoMode}
           isFastForward={isFastForward}
           onToggleAuto={onToggleAuto}
