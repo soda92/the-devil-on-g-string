@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, ChangeEvent } from 'react';
+import React, { useState, useEffect, useMemo, useRef, ChangeEvent } from 'react';
 
 interface PageFlipperBarProps {
   pointer: number;
@@ -27,7 +27,11 @@ export default function PageFlipperBar({
   const [scrubValue, setScrubValue] = useState<number>(pointer);
 
   const CHUNK_SIZE = 1000;
-  const totalLines = Math.max(1, maxPointer || 1000);
+  const maxPointerRef = useRef<number>(maxPointer || 1000);
+  if (maxPointer && maxPointer > 1000) {
+    maxPointerRef.current = maxPointer;
+  }
+  const totalLines = Math.max(maxPointerRef.current, maxPointer || 1000);
   const numChunks = Math.ceil(totalLines / CHUNK_SIZE);
 
   // Generate chunk descriptors

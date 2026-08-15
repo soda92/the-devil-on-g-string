@@ -464,7 +464,9 @@ export function useKagRunner({
     }
 
     const fetchId = ++lastFetchIdRef.current;
-    setScenarioData(null);
+    if (currentScenario !== name) {
+      setScenarioData(null);
+    }
     setIsWaiting(true);
     if (!skipPreScanner) {
       setTypewriterText('');
