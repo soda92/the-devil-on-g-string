@@ -2002,7 +2002,7 @@ export function useKagRunner({
     if (presets) {
       setF(prev => ({ ...prev, ...presets }));
     }
-    await loadScenario(scenId, null, targetPtr, true, false, true);
+    await loadScenario(scenId, null, targetPtr, false, false, true);
     setGameState('PLAYING');
     setShowTableOfContents(false);
   };
@@ -2011,7 +2011,7 @@ export function useKagRunner({
     if (!currentScenario) return;
     const maxP = scenarioData?.length || targetPtr;
     const safeP = Math.max(0, Math.min(targetPtr, maxP - 1));
-    await loadScenario(currentScenario, null, safeP, true, false, true);
+    await loadScenario(currentScenario, null, safeP, false, false, true);
   };
 
   // Centralized keyboard shortcut manager

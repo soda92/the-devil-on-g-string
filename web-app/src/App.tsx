@@ -30,20 +30,7 @@ export default function App() {
   const [showUserModal, setShowUserModal] = useState<boolean>(false);
   const [newUsernameInput, setNewUsernameInput] = useState<string>('');
 
-  useEffect(() => {
-    const handleResize = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      const targetWidth = debugOpen ? 1140 : 800;
-      const scaleX = w / targetWidth;
-      const scaleY = h / 600;
-      const newScale = Math.min(scaleX, scaleY, 1);
-      setScale(newScale);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [debugOpen]);
+
 
   // Keydown listener in App to toggle debug panel
   useEffect(() => {
@@ -88,6 +75,23 @@ export default function App() {
     voicePlayer: audio.voicePlayer,
     toggleBgm: audio.toggleBgm
   });
+
+  // Screen scaling to fit browser viewport (expands canvas when side panels are open)
+  useEffect(() => {
+    const handleResize = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const isSideOpen = debugOpen || (runner.showPageFlipper && runner.gameState === 'PLAYING');
+      const targetWidth = isSideOpen ? 1180 : 800;
+      const scaleX = w / targetWidth;
+      const scaleY = h / 600;
+      const newScale = Math.min(scaleX, scaleY, 1);
+      setScale(newScale);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [debugOpen, runner.showPageFlipper, runner.gameState]);
 
   // Re-sync volume changes when sf settings are updated live in settings panel
   useEffect(() => {
@@ -472,20 +476,6 @@ export default function App() {
           />
         )}
 
-        {/* === PAGE FLIPPER TIMELINE SCRUBBER === */}
-        {runner.showPageFlipper && runner.gameState === 'PLAYING' && (
-          <PageFlipperBar 
-            pointer={runner.pointer}
-            maxPointer={Array.isArray(runner.scenarioData) ? runner.scenarioData.length : (runner.scenarioData?.instructions?.length || 1000)}
-            currentScenario={runner.currentScenario}
-            currentDialogueText={runner.dialogueText}
-            speaker={runner.speaker}
-            onSeekPointer={runner.seekPointer}
-            onOpenToc={() => runner.setShowTableOfContents(true)}
-            onClose={() => runner.setShowPageFlipper(false)}
-            language={runner.language}
-          />
-        )}
 
         {/* === SESSION CONFLICT LOCKOUT OVERLAY === */}
         {runner.sessionConflict && (
@@ -603,6 +593,22 @@ export default function App() {
         )}
 
       </div>
+
+      {/* === PAGE FLIPPER TIMELINE SCRUBBER SIDEBAR === */}
+      {runner.showPageFlipper && runner.gameState === 'PLAYING' && !debugOpen && (
+        <PageFlipperBar 
+          pointer={runner.pointer}
+          maxPointer={Array.isArray(runner.scenarioData) ? runner.scenarioData.length : (runner.scenarioData?.instructions?.length || 1000)}
+          currentScenario={runner.currentScenario}
+          scenarioData={runner.scenarioData}
+          currentDialogueText={runner.dialogueText}
+          speaker={runner.speaker}
+          onSeekPointer={runner.seekPointer}
+          onOpenToc={() => runner.setShowTableOfContents(true)}
+          onClose={() => runner.setShowPageFlipper(false)}
+          language={runner.language}
+        />
+      )}
 
       {/* === DEBUG PANEL OVERLAY === */}
       {debugOpen && (
