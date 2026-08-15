@@ -195,32 +195,68 @@ export default function StoryNavigator({
 
   const handleStep = (delta: number) => {
     const list = Array.isArray(scenarioData) ? scenarioData : scenarioData?.instructions;
-    let target = Math.max(0, Math.min(totalLines, pointer + delta));
-
-    if (list && list.length > 0 && Math.abs(delta) === 1) {
-      let cur = pointer + delta;
-      if (delta > 0) {
-        while (cur < list.length && list[cur]?.type !== 'text') {
-          cur++;
-        }
-      } else {
-        while (cur >= 0 && list[cur]?.type !== 'text') {
-          cur--;
-        }
-      }
-      if (cur >= 0 && cur < list.length) {
-        target = cur;
-      }
+    if (!list || list.length === 0) {
+      const target = Math.max(0, Math.min(totalLines, pointer + delta));
+      setScrubValue(target);
+      onSeekPointer(target);
+      return;
     }
 
-    setScrubValue(target);
-    if (selectedChunk !== 'ALL') {
-      const targetChunk = Math.floor(target / CHUNK_SIZE);
-      if (targetChunk !== selectedChunk && targetChunk < numChunks) {
-        setSelectedChunk(targetChunk);
+    if (delta > 0) {
+      const count = delta === 1 ? 1 : (delta === 10 ? 10 : 1);
+      let cur = pointer;
+      let stepsTaken = 0;
+      while (cur < list.length && stepsTaken < count) {
+        cur++;
+        if (list[cur]?.type === 'text') {
+          stepsTaken++;
+        }
       }
+      const target = Math.min(list.length - 1, cur);
+      setScrubValue(target);
+      if (selectedChunk !== 'ALL') {
+        const targetChunk = Math.floor(target / CHUNK_SIZE);
+        if (targetChunk !== selectedChunk && targetChunk < numChunks) {
+          setSelectedChunk(targetChunk);
+        }
+      }
+      onSeekPointer(target);
+    } else {
+      const count = delta === -1 ? 1 : (delta === -10 ? 10 : 1);
+      // 1. Find the current dialogue text instruction at or before pointer
+      let curTextIdx = Math.min(pointer, list.length - 1);
+      while (curTextIdx >= 0 && list[curTextIdx]?.type !== 'text') {
+        curTextIdx--;
+      }
+
+      // 2. Search backward strictly before curTextIdx for `count` dialogue lines
+      let searchIdx = curTextIdx - 1;
+      let stepsTaken = 0;
+      let target = 0;
+      while (searchIdx >= 0) {
+        if (list[searchIdx]?.type === 'text') {
+          stepsTaken++;
+          target = searchIdx;
+          if (stepsTaken >= count) {
+            break;
+          }
+        }
+        searchIdx--;
+      }
+
+      if (stepsTaken === 0) {
+        target = 0;
+      }
+
+      setScrubValue(target);
+      if (selectedChunk !== 'ALL') {
+        const targetChunk = Math.floor(target / CHUNK_SIZE);
+        if (targetChunk !== selectedChunk && targetChunk < numChunks) {
+          setSelectedChunk(targetChunk);
+        }
+      }
+      onSeekPointer(target);
     }
-    onSeekPointer(target);
   };
 
   // ==========================================
@@ -234,7 +270,7 @@ export default function StoryNavigator({
   useEffect(() => {
     if (currentScenario && lastScrolledScenarioRef.current !== currentScenario) {
       lastScrolledScenarioRef.current = currentScenario;
-      if (activeCardRef.current) {
+      if (activeCardRef.current && typeof activeCardRef.current.scrollIntoView === 'function') {
         activeCardRef.current.scrollIntoView({ behavior: 'auto', block: 'nearest' });
       }
     }
