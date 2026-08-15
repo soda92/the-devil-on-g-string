@@ -1,0 +1,1850 @@
+{
+  "ev_other_09a": {
+    "scenario": "g01",
+    "pointer": 5,
+    "speaker": "",
+    "previewText": "十月刚刚过去了一半，那天却吹着凛冽的偏北风。"
+  },
+  "ev_other_09c": {
+    "scenario": "g01",
+    "pointer": 7,
+    "speaker": "",
+    "previewText": "十月刚刚过去了一半，那天却吹着凛冽的偏北风。"
+  },
+  "ev_other_09b": {
+    "scenario": "g01",
+    "pointer": 58,
+    "speaker": "",
+    "previewText": "少女面对蓬勃发展起来的街道，不免感到些许惊讶。"
+  },
+  "ev_other_09d": {
+    "scenario": "g01",
+    "pointer": 60,
+    "speaker": "",
+    "previewText": "少女面对蓬勃发展起来的街道，不免感到些许惊讶。"
+  },
+  "ev_tubaki_03": {
+    "scenario": "g01",
+    "pointer": 286,
+    "speaker": "",
+    "previewText": "「早上好」"
+  },
+  "ev_haru_01": {
+    "scenario": "g01",
+    "pointer": 2081,
+    "speaker": "",
+    "previewText": "「…………」"
+  },
+  "ev_maou_04b": {
+    "scenario": "g01",
+    "pointer": 4358,
+    "speaker": "",
+    "previewText": "我经常被说成健忘。"
+  },
+  "ev_maou_04a": {
+    "scenario": "g01",
+    "pointer": 4627,
+    "speaker": "",
+    "previewText": "放下电话，我查看了邮箱，随即又拿起了电话。"
+  },
+  "ev_chapter_01": {
+    "scenario": "g01",
+    "pointer": 4789,
+    "speaker": "",
+    "previewText": ""
+  },
+  "ev_maou_02": {
+    "scenario": "g02",
+    "pointer": 1795,
+    "speaker": "",
+    "previewText": "「神啊，好久不见了」"
+  },
+  "ev_kanon_01": {
+    "scenario": "g02",
+    "pointer": 2791,
+    "speaker": "",
+    "previewText": "「哥哥、看啊看啊！」"
+  },
+  "ev_other_04a": {
+    "scenario": "g02",
+    "pointer": 3390,
+    "speaker": "",
+    "previewText": "我立即察觉有些异常之处。"
+  },
+  "ev_other_04b": {
+    "scenario": "g02",
+    "pointer": 3864,
+    "speaker": "",
+    "previewText": "「上了她」"
+  },
+  "ev_mizuha_01": {
+    "scenario": "g03",
+    "pointer": 265,
+    "speaker": "",
+    "previewText": "「呀，早上好」"
+  },
+  "ev_maou_07a": {
+    "scenario": "g03",
+    "pointer": 3856,
+    "speaker": "",
+    "previewText": "大楼最深处，伫立着\"魔王\"的身影。"
+  },
+  "ev_maou_07b": {
+    "scenario": "g03",
+    "pointer": 4048,
+    "speaker": "",
+    "previewText": "「我来介绍。这位是桑岛……」"
+  },
+  "ev_maou_07c": {
+    "scenario": "g03",
+    "pointer": 4173,
+    "speaker": "",
+    "previewText": "「现在，吾和你一共有十只手指」"
+  },
+  "ev_maou_07d": {
+    "scenario": "g03",
+    "pointer": 4282,
+    "speaker": "",
+    "previewText": "说罢，桑島用右手折下自己的拇指。"
+  },
+  "ev_maou_07e": {
+    "scenario": "g03",
+    "pointer": 4295,
+    "speaker": "",
+    "previewText": "\"魔王\"折下自己的拇指。"
+  },
+  "ev_maou_07f": {
+    "scenario": "g03",
+    "pointer": 4312,
+    "speaker": "",
+    "previewText": "桑島带着从容的表情，折下\"魔王\"的食指。"
+  },
+  "ev_maou_07g": {
+    "scenario": "g03",
+    "pointer": 4327,
+    "speaker": "",
+    "previewText": "\"魔王\"接着也是折下两只手指。"
+  },
+  "ev_maou_07h": {
+    "scenario": "g03",
+    "pointer": 4374,
+    "speaker": "",
+    "previewText": "接下来。桑島终于把第七只手指――自己的无名指折下了。"
+  },
+  "ev_maou_07i": {
+    "scenario": "g03",
+    "pointer": 4426,
+    "speaker": "",
+    "previewText": "\"魔王\"折下自己的无名指。"
+  },
+  "ev_maou_05": {
+    "scenario": "g04",
+    "pointer": 35,
+    "speaker": "",
+    "previewText": "「再听我说说以前的事，可以吗？」"
+  },
+  "ev_other_07": {
+    "scenario": "g04",
+    "pointer": 3372,
+    "speaker": "",
+    "previewText": "我手里拿着一张照片。"
+  },
+  "ev_haru_03a": {
+    "scenario": "g05",
+    "pointer": 623,
+    "speaker": "",
+    "previewText": "「…………」"
+  },
+  "ev_haru_03b": {
+    "scenario": "g05",
+    "pointer": 705,
+    "speaker": "",
+    "previewText": "「来，脱掉！」"
+  },
+  "ev_haru_03c": {
+    "scenario": "g05",
+    "pointer": 823,
+    "speaker": "",
+    "previewText": "「呜哇哇、怪物！」"
+  },
+  "ev_haru_02": {
+    "scenario": "g06",
+    "pointer": 296,
+    "speaker": "",
+    "previewText": "「魔王……」"
+  },
+  "ev_maou_03a": {
+    "scenario": "g06",
+    "pointer": 555,
+    "speaker": "",
+    "previewText": "「吾寄过去的信，喜欢吗？」"
+  },
+  "ev_maou_01": {
+    "scenario": "g06",
+    "pointer": 1394,
+    "speaker": "",
+    "previewText": "「人类真有趣。哪怕在人山人海之中，无论周围多么喧闹，只要听到自己的名字被呼唤就一定会回头看」"
+  },
+  "ev_chapter_02": {
+    "scenario": "g07",
+    "pointer": 1925,
+    "speaker": "",
+    "previewText": ""
+  },
+  "ev_tubaki_04": {
+    "scenario": "g08",
+    "pointer": 978,
+    "speaker": "",
+    "previewText": "哎？"
+  },
+  "ev_maou_06": {
+    "scenario": "g10",
+    "pointer": 1925,
+    "speaker": "",
+    "previewText": "――魔王。"
+  },
+  "ev_maou_03b": {
+    "scenario": "g10",
+    "pointer": 2043,
+    "speaker": "",
+    "previewText": "「孩子在吾这里。如果不想他没命，就听从吾的指示。这只是寻常的事情，不允许报警」"
+  },
+  "ev_maou_03c": {
+    "scenario": "g11",
+    "pointer": 3609,
+    "speaker": "",
+    "previewText": "这一瞬间。"
+  },
+  "ev_tubaki_07": {
+    "scenario": "g12",
+    "pointer": 1335,
+    "speaker": "",
+    "previewText": "椿姬屈膝坐在榻榻米上，手足无措地叹着气。"
+  },
+  "ev_tubaki_12": {
+    "scenario": "g13",
+    "pointer": 1640,
+    "speaker": "",
+    "previewText": "重覆着不知道该如何回答的问题。"
+  },
+  "ev_tubaki_09a": {
+    "scenario": "g13",
+    "pointer": 2083,
+    "speaker": "",
+    "previewText": "――好，你过来吧，“魔王”。"
+  },
+  "ev_tubaki_09b": {
+    "scenario": "g13",
+    "pointer": 2160,
+    "speaker": "",
+    "previewText": "说完，传来了手机挂断的声音。"
+  },
+  "ev_tubaki_08": {
+    "scenario": "g13",
+    "pointer": 2238,
+    "speaker": "",
+    "previewText": "她到底奔走了多少地方。"
+  },
+  "ev_tubaki_13a": {
+    "scenario": "g13",
+    "pointer": 2567,
+    "speaker": "",
+    "previewText": "椿姬喘着粗气，终于到达了目的地的汉堡店。"
+  },
+  "ev_tubaki_13b": {
+    "scenario": "g13",
+    "pointer": 2659,
+    "speaker": "",
+    "previewText": "紧紧抓起公文包。"
+  },
+  "ev_tubaki_13c": {
+    "scenario": "g13",
+    "pointer": 2794,
+    "speaker": "",
+    "previewText": "「……！」"
+  },
+  "ev_tubaki_14a": {
+    "scenario": "g13",
+    "pointer": 3673,
+    "speaker": "",
+    "previewText": "「公文包！？」"
+  },
+  "ev_tubaki_14b": {
+    "scenario": "g13",
+    "pointer": 3916,
+    "speaker": "",
+    "previewText": "「这是怎么回事……？」"
+  },
+  "ev_tubaki_05": {
+    "scenario": "g14",
+    "pointer": 2822,
+    "speaker": "",
+    "previewText": "「我有言在先」"
+  },
+  "ev_tubaki_10a": {
+    "scenario": "g22",
+    "pointer": 13,
+    "speaker": "",
+    "previewText": "椿姬爸爸要跟我说的话，是非常无聊的话题。"
+  },
+  "ev_tubaki_10b": {
+    "scenario": "g22",
+    "pointer": 164,
+    "speaker": "",
+    "previewText": "「…………」"
+  },
+  "ev_other_10a": {
+    "scenario": "g23",
+    "pointer": 545,
+    "speaker": "",
+    "previewText": "「在北海道的偏僻村庄」"
+  },
+  "ev_tubaki_06": {
+    "scenario": "g23",
+    "pointer": 2432,
+    "speaker": "",
+    "previewText": "「广明……！」"
+  },
+  "ev_chapter_03": {
+    "scenario": "g24",
+    "pointer": 1238,
+    "speaker": "",
+    "previewText": ""
+  },
+  "ev_kanon_02a": {
+    "scenario": "g28",
+    "pointer": 77,
+    "speaker": "",
+    "previewText": "从跳舞般的木管乐器的调子开始的是，瓦格纳的《Ride of the Valkyries》。"
+  },
+  "ev_kanon_02b": {
+    "scenario": "g28",
+    "pointer": 236,
+    "speaker": "",
+    "previewText": "妖艳。"
+  },
+  "ev_haru_12a": {
+    "scenario": "g31",
+    "pointer": 1105,
+    "speaker": "",
+    "previewText": "「你又在干什么！？」"
+  },
+  "ev_haru_12b": {
+    "scenario": "g31",
+    "pointer": 1242,
+    "speaker": "",
+    "previewText": "她的脸突然紧绷。"
+  },
+  "ev_haru_11c": {
+    "scenario": "g33",
+    "pointer": 663,
+    "speaker": "",
+    "previewText": "「好久没见了，上次我见过您的吧？」"
+  },
+  "ev_haru_11b": {
+    "scenario": "g33",
+    "pointer": 684,
+    "speaker": "",
+    "previewText": "西条收起喷雾剂，窥视着对方的动静。"
+  },
+  "ev_haru_11d": {
+    "scenario": "g33",
+    "pointer": 752,
+    "speaker": "",
+    "previewText": "宇佐美开始翻制服的口袋。"
+  },
+  "ev_haru_11a": {
+    "scenario": "g33",
+    "pointer": 841,
+    "speaker": "",
+    "previewText": "「麻烦你来事务所一趟。」"
+  },
+  "ev_haru_11e": {
+    "scenario": "g33",
+    "pointer": 969,
+    "speaker": "",
+    "previewText": "「知道了……我也到此为止了。」"
+  },
+  "ev_other_22a": {
+    "scenario": "g34",
+    "pointer": 1153,
+    "speaker": "",
+    "previewText": "时田坐在了与西条面对面的地方。"
+  },
+  "ev_other_22b": {
+    "scenario": "g34",
+    "pointer": 1249,
+    "speaker": "",
+    "previewText": "「西条先生。由于我没有帮上任何忙，所以不得不回去。非常遗憾，之后就交给我后面的那伙人了。非常抱歉」"
+  },
+  "ev_other_22c": {
+    "scenario": "g34",
+    "pointer": 1459,
+    "speaker": "",
+    "previewText": "「我和他们不同。我打算认真地听西条先生的讲话。至少我会这样」"
+  },
+  "ev_other_22d": {
+    "scenario": "g34",
+    "pointer": 1661,
+    "speaker": "",
+    "previewText": "「西条先生已经用过餐了吗？」"
+  },
+  "ev_kanon_12a": {
+    "scenario": "g35",
+    "pointer": 1834,
+    "speaker": "",
+    "previewText": "「又是针织帽吗？」"
+  },
+  "ev_kanon_12b": {
+    "scenario": "g35",
+    "pointer": 1929,
+    "speaker": "",
+    "previewText": "……。"
+  },
+  "ev_haru_09a": {
+    "scenario": "g36",
+    "pointer": 414,
+    "speaker": "",
+    "previewText": "「…………」"
+  },
+  "ev_haru_09b": {
+    "scenario": "g36",
+    "pointer": 519,
+    "speaker": "",
+    "previewText": "「啊……」"
+  },
+  "ev_haru_09c": {
+    "scenario": "g36",
+    "pointer": 708,
+    "speaker": "",
+    "previewText": "「呵呵、呵呵哈、呼哈哈哈哈哈哈――！」"
+  },
+  "ev_other_06": {
+    "scenario": "g37",
+    "pointer": 924,
+    "speaker": "",
+    "previewText": "「哦～哦～，头发还是一如既往的长呢」"
+  },
+  "ev_chapter_04": {
+    "scenario": "g37",
+    "pointer": 1777,
+    "speaker": "",
+    "previewText": ""
+  },
+  "ev_other_23a": {
+    "scenario": "g42",
+    "pointer": 1890,
+    "speaker": "",
+    "previewText": "不到一小时，园山组的年轻帮众便聚集在了学校附近。"
+  },
+  "ev_other_23b": {
+    "scenario": "g42",
+    "pointer": 2325,
+    "speaker": "",
+    "previewText": "时田雪掌握犯罪交涉术这一本领，是在她还小的时候。"
+  },
+  "ev_other_23c": {
+    "scenario": "g42",
+    "pointer": 2471,
+    "speaker": "",
+    "previewText": "「时田，你在搞什么！？」"
+  },
+  "ev_other_23d": {
+    "scenario": "g42",
+    "pointer": 3163,
+    "speaker": "",
+    "previewText": "「你，你都写了什么啊？」"
+  },
+  "ev_other_05b": {
+    "scenario": "g42",
+    "pointer": 6061,
+    "speaker": "",
+    "previewText": "时田雪变得一副苦闷的样子，透过理科准备室的窗户，注视着外面一望无际的黑暗。"
+  },
+  "ev_other_05a": {
+    "scenario": "g42",
+    "pointer": 6179,
+    "speaker": "",
+    "previewText": "――若是没有你的话。"
+  },
+  "ev_other_13a": {
+    "scenario": "g42",
+    "pointer": 7055,
+    "speaker": "",
+    "previewText": "那家俱乐部，是在中央街的很偏僻的一个地方。"
+  },
+  "ev_other_13b": {
+    "scenario": "g42",
+    "pointer": 7110,
+    "speaker": "",
+    "previewText": "朝着“魔王”下巴指示的方向望去，那里正有一个肥得流油的中年男子。"
+  },
+  "ev_mizuha_02c": {
+    "scenario": "g42",
+    "pointer": 7722,
+    "speaker": "",
+    "previewText": "「没想到，春一直在追寻的人,就是“魔王”……」"
+  },
+  "ev_mizuha_02a": {
+    "scenario": "g42",
+    "pointer": 7821,
+    "speaker": "",
+    "previewText": "此时有一个人影踏入了这片黑暗。"
+  },
+  "ev_mizuha_02b": {
+    "scenario": "g42",
+    "pointer": 7886,
+    "speaker": "",
+    "previewText": "「你那手是什么意思？」"
+  },
+  "ev_mizuha_03": {
+    "scenario": "g42",
+    "pointer": 8185,
+    "speaker": "",
+    "previewText": "「真是很好的表情呢，就保持这样。我现在要给你拍张照」"
+  },
+  "ev_mizuha_04": {
+    "scenario": "g43",
+    "pointer": 3,
+    "speaker": "",
+    "previewText": "走在两侧种有橡树和栎树的通往神社般的道路上，四周一片雪景。"
+  },
+  "ev_mizuha_05b": {
+    "scenario": "g43",
+    "pointer": 396,
+    "speaker": "",
+    "previewText": "「呵呵……聚集了不少人呢」"
+  },
+  "ev_mizuha_05a": {
+    "scenario": "g43",
+    "pointer": 620,
+    "speaker": "",
+    "previewText": "接通了。"
+  },
+  "ev_mizuha_05c": {
+    "scenario": "g43",
+    "pointer": 1165,
+    "speaker": "",
+    "previewText": "「姐姐，停手吧……这样不像姐姐……」"
+  },
+  "ev_other_25a": {
+    "scenario": "g43",
+    "pointer": 4503,
+    "speaker": "",
+    "previewText": "「看不到吗！？　再过来我就杀了片仓啊！？」"
+  },
+  "ev_other_25b": {
+    "scenario": "g43",
+    "pointer": 4667,
+    "speaker": "",
+    "previewText": "「我还是要说。放了那个人，我不会让你杀人的」"
+  },
+  "ev_other_03a": {
+    "scenario": "g43",
+    "pointer": 5325,
+    "speaker": "",
+    "previewText": "「放开京介」"
+  },
+  "ev_mizuha_06": {
+    "scenario": "g43",
+    "pointer": 5466,
+    "speaker": "",
+    "previewText": "愚蠢的少女，雪这么想。"
+  },
+  "ev_other_03b": {
+    "scenario": "g43",
+    "pointer": 5700,
+    "speaker": "",
+    "previewText": "「――不是很像吗？」"
+  },
+  "ev_other_24a": {
+    "scenario": "g44",
+    "pointer": 1176,
+    "speaker": "",
+    "previewText": "我把宇佐美放了进来。"
+  },
+  "ev_other_24b": {
+    "scenario": "g44",
+    "pointer": 1283,
+    "speaker": "",
+    "previewText": "「……呜……呜……」"
+  },
+  "ev_other_24c": {
+    "scenario": "g44",
+    "pointer": 1375,
+    "speaker": "",
+    "previewText": "「如果我可以的话……那个……」"
+  },
+  "ev_haru_04a": {
+    "scenario": "g44",
+    "pointer": 1507,
+    "speaker": "",
+    "previewText": "「…………」"
+  },
+  "ev_other_24d": {
+    "scenario": "g44",
+    "pointer": 1577,
+    "speaker": "",
+    "previewText": "春遮住内衣的手明显紧张了起来。"
+  },
+  "ev_maou_09a": {
+    "scenario": "g45",
+    "pointer": 1012,
+    "speaker": "",
+    "previewText": "……。"
+  },
+  "ev_maou_09b": {
+    "scenario": "g45",
+    "pointer": 1219,
+    "speaker": "",
+    "previewText": "刹那间。"
+  },
+  "ev_maou_09c": {
+    "scenario": "g45",
+    "pointer": 1242,
+    "speaker": "",
+    "previewText": "咆哮。"
+  },
+  "ev_maou_09d": {
+    "scenario": "g45",
+    "pointer": 1298,
+    "speaker": "",
+    "previewText": "十字线聚焦到权三的胸前。"
+  },
+  "ev_haru_04b": {
+    "scenario": "g45",
+    "pointer": 1904,
+    "speaker": "",
+    "previewText": "「那你在干什么呢？」"
+  },
+  "ev_haru_04c": {
+    "scenario": "g45",
+    "pointer": 2897,
+    "speaker": "",
+    "previewText": "「是，是这样的么……哼……那，有什么事呢？」"
+  },
+  "ev_haru_05b": {
+    "scenario": "g45",
+    "pointer": 3431,
+    "speaker": "",
+    "previewText": "哥哥的丧葬仪式。"
+  },
+  "ev_haru_05a": {
+    "scenario": "g45",
+    "pointer": 3756,
+    "speaker": "",
+    "previewText": "「打扰了!!!」"
+  },
+  "ev_haru_08a": {
+    "scenario": "g45",
+    "pointer": 4490,
+    "speaker": "",
+    "previewText": "「唔……啊、呜！」"
+  },
+  "ev_haru_08b": {
+    "scenario": "g45",
+    "pointer": 4576,
+    "speaker": "",
+    "previewText": "有什么东西，正朝胸口逼近――。"
+  },
+  "ev_haru_08c": {
+    "scenario": "g45",
+    "pointer": 4667,
+    "speaker": "",
+    "previewText": "「原来如此……」"
+  },
+  "ev_haru_04d": {
+    "scenario": "g45",
+    "pointer": 4784,
+    "speaker": "",
+    "previewText": "少女没能说出来。"
+  },
+  "ev_other_08a": {
+    "scenario": "g45",
+    "pointer": 5413,
+    "speaker": "",
+    "previewText": "「——成为保护勇者的，伙伴！」"
+  },
+  "ev_other_08b": {
+    "scenario": "g45",
+    "pointer": 5493,
+    "speaker": "",
+    "previewText": "「作为哥哥，我对弟弟的成长感到高兴」"
+  },
+  "ev_haru_icatch": {
+    "scenario": "g45",
+    "pointer": 5867,
+    "speaker": "",
+    "previewText": ""
+  },
+  "ev_haru_h_03": {
+    "scenario": "g46",
+    "pointer": 921,
+    "speaker": "",
+    "previewText": "「哇，哇啊啊啊啊啊！」"
+  },
+  "ev_haru_h_01a": {
+    "scenario": "g46",
+    "pointer": 983,
+    "speaker": "",
+    "previewText": "「要吃了！」"
+  },
+  "ev_other_21a": {
+    "scenario": "g46",
+    "pointer": 1455,
+    "speaker": "",
+    "previewText": "「义，义父！」"
+  },
+  "ev_other_21b": {
+    "scenario": "g46",
+    "pointer": 1760,
+    "speaker": "",
+    "previewText": "最后的话语，就是这个。"
+  },
+  "ev_other_21c": {
+    "scenario": "g46",
+    "pointer": 1845,
+    "speaker": "",
+    "previewText": "权三，你究竟想要做什么！？"
+  },
+  "ev_haru_14": {
+    "scenario": "g47",
+    "pointer": 642,
+    "speaker": "",
+    "previewText": "那是我喜欢的演奏家的出道专辑。"
+  },
+  "ev_haru_10a": {
+    "scenario": "g47",
+    "pointer": 1316,
+    "speaker": "",
+    "previewText": "在大楼的入口外，停有数台高级轿车。"
+  },
+  "ev_haru_10b": {
+    "scenario": "g47",
+    "pointer": 1352,
+    "speaker": "",
+    "previewText": "春一头雾水，心中只有不安不断汇聚。"
+  },
+  "ev_haru_07a": {
+    "scenario": "g47",
+    "pointer": 2413,
+    "speaker": "",
+    "previewText": "月光洒在宇佐美柔软的肢体上。"
+  },
+  "ev_haru_07b": {
+    "scenario": "g47",
+    "pointer": 2506,
+    "speaker": "",
+    "previewText": "「……恶魔，在吗？」"
+  },
+  "ev_haru_13": {
+    "scenario": "g47",
+    "pointer": 2608,
+    "speaker": "",
+    "previewText": "剧场四处升起浓烟。"
+  },
+  "ev_haru_07c": {
+    "scenario": "g47",
+    "pointer": 2864,
+    "speaker": "",
+    "previewText": "「……不对……是杀掉……！」"
+  },
+  "ev_maou_08a": {
+    "scenario": "g48",
+    "pointer": 25,
+    "speaker": "",
+    "previewText": "憧憬着实业家的父亲鲛岛利胜，我从小就希望出国留学。"
+  },
+  "ev_other_12a": {
+    "scenario": "g48",
+    "pointer": 233,
+    "speaker": "",
+    "previewText": "富万别市内的拘留所。"
+  },
+  "ev_other_12b": {
+    "scenario": "g48",
+    "pointer": 434,
+    "speaker": "",
+    "previewText": "「爸爸是正确的……」"
+  },
+  "ev_maou_08b": {
+    "scenario": "g48",
+    "pointer": 679,
+    "speaker": "",
+    "previewText": "看上去不过是牧场。"
+  },
+  "ev_maou_08c": {
+    "scenario": "g48",
+    "pointer": 1037,
+    "speaker": "",
+    "previewText": "『我的眼光是正确的。你竟然活到现在』"
+  },
+  "ev_maou_10a": {
+    "scenario": "g49",
+    "pointer": 1098,
+    "speaker": "",
+    "previewText": "「打扰了」"
+  },
+  "ev_maou_10b": {
+    "scenario": "g49",
+    "pointer": 1219,
+    "speaker": "",
+    "previewText": "随着枪声响起，两名保镖倒下了。"
+  },
+  "ev_other_11bb": {
+    "scenario": "g49",
+    "pointer": 3098,
+    "speaker": "",
+    "previewText": "「你好，你是本案的负责人吗？」"
+  },
+  "ev_haru_17a": {
+    "scenario": "g49",
+    "pointer": 3497,
+    "speaker": "",
+    "previewText": "全力奔跑。"
+  },
+  "ev_haru_16e": {
+    "scenario": "g49",
+    "pointer": 3646,
+    "speaker": "",
+    "previewText": "「哈啊、哈啊、哈啊……」"
+  },
+  "ev_haru_16f": {
+    "scenario": "g49",
+    "pointer": 3721,
+    "speaker": "",
+    "previewText": "紧接着，透过帘幕，传来脚步声。"
+  },
+  "ev_haru_16g": {
+    "scenario": "g49",
+    "pointer": 3791,
+    "speaker": "",
+    "previewText": "「不要、停手!!!」"
+  },
+  "ev_haru_16h": {
+    "scenario": "g49",
+    "pointer": 3830,
+    "speaker": "",
+    "previewText": "「别乱动，这婊子！」"
+  },
+  "ev_other_11a": {
+    "scenario": "g49",
+    "pointer": 4067,
+    "speaker": "",
+    "previewText": "「……重复。将被不正当逮捕的同志们释放」"
+  },
+  "ev_other_11b": {
+    "scenario": "g49",
+    "pointer": 4068,
+    "speaker": "",
+    "previewText": "「……重复。将被不正当逮捕的同志们释放」"
+  },
+  "ev_other_11c": {
+    "scenario": "g49",
+    "pointer": 4357,
+    "speaker": "",
+    "previewText": "无底的憎恶，无底的恶意，在心中爆发。"
+  },
+  "ev_haru_17b": {
+    "scenario": "g49",
+    "pointer": 4781,
+    "speaker": "",
+    "previewText": "我们在中心街的主干道上飞奔。"
+  },
+  "ev_haru_17c": {
+    "scenario": "g49",
+    "pointer": 4904,
+    "speaker": "",
+    "previewText": "「宇佐美、你一直走吧！」"
+  },
+  "ev_haru_10c": {
+    "scenario": "g50",
+    "pointer": 6,
+    "speaker": "",
+    "previewText": "——京介君应该没事吧。"
+  },
+  "ev_other_26a": {
+    "scenario": "g50",
+    "pointer": 357,
+    "speaker": "",
+    "previewText": "我被铁门“咕咚”关上的声音给吵醒了。。"
+  },
+  "ev_haru_06": {
+    "scenario": "g50",
+    "pointer": 1060,
+    "speaker": "",
+    "previewText": "「京介也在这条街上吧」"
+  },
+  "ev_other_26b": {
+    "scenario": "g50",
+    "pointer": 1833,
+    "speaker": "",
+    "previewText": "桥本出去的时候，当然把门从外面锁上了。"
+  },
+  "ev_other_26c": {
+    "scenario": "g50",
+    "pointer": 2045,
+    "speaker": "",
+    "previewText": "不输给呼吸困难，我猛烈地敲起门来。"
+  },
+  "ev_other_27a": {
+    "scenario": "g50",
+    "pointer": 2334,
+    "speaker": "",
+    "previewText": "「你，你是！？」"
+  },
+  "ev_haru_18a": {
+    "scenario": "g51",
+    "pointer": 68,
+    "speaker": "",
+    "previewText": "春现在在空中。"
+  },
+  "ev_other_27b": {
+    "scenario": "g51",
+    "pointer": 221,
+    "speaker": "",
+    "previewText": "「京介……喂、喂京介……！」"
+  },
+  "ev_other_27c": {
+    "scenario": "g51",
+    "pointer": 559,
+    "speaker": "",
+    "previewText": "「荣一，你一个人逃跑吧……」"
+  },
+  "ev_other_27d": {
+    "scenario": "g51",
+    "pointer": 682,
+    "speaker": "",
+    "previewText": "荣一向出口走去。"
+  },
+  "ev_haru_18aa": {
+    "scenario": "g51",
+    "pointer": 754,
+    "speaker": "",
+    "previewText": "「浅井同学……！」"
+  },
+  "ev_haru_18b": {
+    "scenario": "g51",
+    "pointer": 1135,
+    "speaker": "",
+    "previewText": "吊着吊舱的四根钢丝，已经断了一根。"
+  },
+  "ev_haru_18bb": {
+    "scenario": "g51",
+    "pointer": 1377,
+    "speaker": "",
+    "previewText": "「喂、喂喂、浅井同学吗……？」"
+  },
+  "ev_haru_18bc": {
+    "scenario": "g51",
+    "pointer": 1540,
+    "speaker": "",
+    "previewText": "只是，心中温暖的感觉一下子涌了出来――。"
+  },
+  "ev_other_28a": {
+    "scenario": "g51",
+    "pointer": 1549,
+    "speaker": "",
+    "previewText": "在黑暗中，迈出步伐。"
+  },
+  "ev_other_28b": {
+    "scenario": "g51",
+    "pointer": 1804,
+    "speaker": "",
+    "previewText": "……现在，几层了。"
+  },
+  "ev_haru_18c": {
+    "scenario": "g51",
+    "pointer": 2397,
+    "speaker": "",
+    "previewText": "跟春的预计一样，钢丝无情地断开了。"
+  },
+  "ev_haru_19a": {
+    "scenario": "g51",
+    "pointer": 2614,
+    "speaker": "",
+    "previewText": "「……京介……！」"
+  },
+  "ev_haru_19b": {
+    "scenario": "g51",
+    "pointer": 2777,
+    "speaker": "",
+    "previewText": "在那之后，京介一动不动。"
+  },
+  "ev_other_29a": {
+    "scenario": "g52",
+    "pointer": 1414,
+    "speaker": "",
+    "previewText": "「不想死的话，走开」"
+  },
+  "ev_other_29aa": {
+    "scenario": "g52",
+    "pointer": 1549,
+    "speaker": "",
+    "previewText": "说服了五十人以上。"
+  },
+  "ev_other_29b": {
+    "scenario": "g52",
+    "pointer": 1614,
+    "speaker": "",
+    "previewText": "园山组的男人驾驶客车，鸣着喇叭，向人群当中驶去。"
+  },
+  "ev_other_29c": {
+    "scenario": "g52",
+    "pointer": 2151,
+    "speaker": "",
+    "previewText": "「――不能被骗了!!!」"
+  },
+  "ev_other_29d": {
+    "scenario": "g52",
+    "pointer": 2171,
+    "speaker": "",
+    "previewText": "「哼哼……」"
+  },
+  "ev_other_29dd": {
+    "scenario": "g52",
+    "pointer": 2551,
+    "speaker": "",
+    "previewText": "……宇佐美！"
+  },
+  "ev_haru_20a": {
+    "scenario": "g52",
+    "pointer": 2707,
+    "speaker": "",
+    "previewText": "现场化为地狱。"
+  },
+  "ev_haru_20b": {
+    "scenario": "g52",
+    "pointer": 2864,
+    "speaker": "",
+    "previewText": "「把他杀了，就能继续弹小提琴!!!」"
+  },
+  "ev_haru_20c": {
+    "scenario": "g52",
+    "pointer": 2896,
+    "speaker": "",
+    "previewText": "燃起了火柱。"
+  },
+  "ev_haru_h_04": {
+    "scenario": "g53",
+    "pointer": 825,
+    "speaker": "",
+    "previewText": "「…………」"
+  },
+  "ev_haru_21a": {
+    "scenario": "g54",
+    "pointer": 42,
+    "speaker": "",
+    "previewText": "宇佐美，她现在又在做什么呢。"
+  },
+  "ev_haru_21b": {
+    "scenario": "g54",
+    "pointer": 109,
+    "speaker": "",
+    "previewText": "出现的那少女的容貌，让我怎么看都觉得怀念。"
+  },
+  "ev_haru_21c": {
+    "scenario": "g54",
+    "pointer": 124,
+    "speaker": "",
+    "previewText": "「——我好想你啊，宇佐美」"
+  },
+  "ev_haru_22a": {
+    "scenario": "g54",
+    "pointer": 1074,
+    "speaker": "",
+    "previewText": "「……怎么了，宇佐美？」"
+  },
+  "ev_haru_22b": {
+    "scenario": "g54",
+    "pointer": 1194,
+    "speaker": "",
+    "previewText": "像被落雷击中一般，当场倒在了地上。"
+  },
+  "ev_haru_22c": {
+    "scenario": "g54",
+    "pointer": 1229,
+    "speaker": "",
+    "previewText": "「\"魔王\"……」"
+  },
+  "ev_haru_22d": {
+    "scenario": "g54",
+    "pointer": 1493,
+    "speaker": "",
+    "previewText": "话说到一半，他变得不再动弹。"
+  },
+  "ev_haru_15a": {
+    "scenario": "g54",
+    "pointer": 1776,
+    "speaker": "",
+    "previewText": "「等，等下！　等一下啊！」"
+  },
+  "ev_haru_15b": {
+    "scenario": "g54",
+    "pointer": 2127,
+    "speaker": "",
+    "previewText": "才要推开她。"
+  },
+  "ev_haru_15c": {
+    "scenario": "g54",
+    "pointer": 2220,
+    "speaker": "",
+    "previewText": "「求你了，我求求你了……!!!」"
+  },
+  "ev_chapter_05": {
+    "scenario": "g54",
+    "pointer": 2305,
+    "speaker": "",
+    "previewText": ""
+  },
+  "ev_other_30a": {
+    "scenario": "g55",
+    "pointer": 43,
+    "speaker": "",
+    "previewText": "在那之后，已经过去了三天。"
+  },
+  "ev_other_30b": {
+    "scenario": "g55",
+    "pointer": 756,
+    "speaker": "",
+    "previewText": "「也罢，总之啊就是这么一回事了，刑警先生啊……」"
+  },
+  "ev_other_14a": {
+    "scenario": "g55",
+    "pointer": 1217,
+    "speaker": "",
+    "previewText": "被警察折腾，大概已过去了十天。"
+  },
+  "ev_other_15a": {
+    "scenario": "g55",
+    "pointer": 1268,
+    "speaker": "",
+    "previewText": "会面时间只有２０分钟。"
+  },
+  "ev_other_15b": {
+    "scenario": "g55",
+    "pointer": 1416,
+    "speaker": "",
+    "previewText": "「但是，我却一点也高兴不起来」"
+  },
+  "ev_other_15c": {
+    "scenario": "g55",
+    "pointer": 1430,
+    "speaker": "",
+    "previewText": "「因为，那……那笔钱……一定是……」"
+  },
+  "ev_other_15d": {
+    "scenario": "g55",
+    "pointer": 1461,
+    "speaker": "",
+    "previewText": "「没关系的，浅井……」"
+  },
+  "ev_other_14b": {
+    "scenario": "g55",
+    "pointer": 1685,
+    "speaker": "",
+    "previewText": "……之后的数日后，又有人提出要与我会面了。"
+  },
+  "ev_other_16a": {
+    "scenario": "g55",
+    "pointer": 1703,
+    "speaker": "",
+    "previewText": "「哥，你没事吧？」"
+  },
+  "ev_other_16b": {
+    "scenario": "g55",
+    "pointer": 1775,
+    "speaker": "",
+    "previewText": "霎时，忍耐到极限的花音，忽然哭了起来。"
+  },
+  "ev_other_16d": {
+    "scenario": "g55",
+    "pointer": 1857,
+    "speaker": "",
+    "previewText": "「为，为什么……？」"
+  },
+  "ev_other_16c": {
+    "scenario": "g55",
+    "pointer": 1884,
+    "speaker": "",
+    "previewText": "「不，我不要……！」"
+  },
+  "ev_other_16e": {
+    "scenario": "g55",
+    "pointer": 1916,
+    "speaker": "",
+    "previewText": "「……哥哥……！」"
+  },
+  "ev_other_14c": {
+    "scenario": "g55",
+    "pointer": 2054,
+    "speaker": "",
+    "previewText": "我已经是快要接近极限了。"
+  },
+  "ev_other_14d": {
+    "scenario": "g55",
+    "pointer": 2086,
+    "speaker": "",
+    "previewText": "但是，还真是来了个不得了的人。"
+  },
+  "ev_other_17a": {
+    "scenario": "g55",
+    "pointer": 2112,
+    "speaker": "",
+    "previewText": "「真没想到，你会来这里啊，白鸟……」"
+  },
+  "ev_other_17b": {
+    "scenario": "g55",
+    "pointer": 2225,
+    "speaker": "",
+    "previewText": "「谢、谢谢你……救了我……」"
+  },
+  "ev_other_17c": {
+    "scenario": "g55",
+    "pointer": 2257,
+    "speaker": "",
+    "previewText": "「很，很久以前就想说了……」"
+  },
+  "ev_other_17d": {
+    "scenario": "g55",
+    "pointer": 2290,
+    "speaker": "",
+    "previewText": "「才会，才会变成现在这个样子的……！」"
+  },
+  "ev_other_18a": {
+    "scenario": "g55",
+    "pointer": 2576,
+    "speaker": "",
+    "previewText": "浅井京介仰望天空。"
+  },
+  "ev_other_18b": {
+    "scenario": "g55",
+    "pointer": 2666,
+    "speaker": "",
+    "previewText": "在行尸走肉般的双脚前方，有人的身影。"
+  },
+  "ev_other_19a": {
+    "scenario": "g55",
+    "pointer": 2700,
+    "speaker": "",
+    "previewText": "「初次见面，你好」"
+  },
+  "ev_other_19b": {
+    "scenario": "g55",
+    "pointer": 2923,
+    "speaker": "",
+    "previewText": "一瞬间，恶魔之魂又回到浅井京介的脸上。"
+  },
+  "ev_fin": {
+    "scenario": "g55",
+    "pointer": 3016,
+    "speaker": "",
+    "previewText": ""
+  },
+  "ev_haru_h_01b": {
+    "scenario": "ghh1",
+    "pointer": 343,
+    "speaker": "",
+    "previewText": "咕噜噜……！　哔咕、哔噜、咕噜！！"
+  },
+  "ev_haru_h_02a": {
+    "scenario": "ghh1",
+    "pointer": 447,
+    "speaker": "",
+    "previewText": "宇佐美的姿态如此可人，我看在眼里，下垂的巨物再次昂扬起来。"
+  },
+  "ev_haru_h_02b": {
+    "scenario": "ghh1",
+    "pointer": 699,
+    "speaker": "",
+    "previewText": "龟头撑开狭小的入口，向腔道内侵入。"
+  },
+  "ev_haru_h_02c": {
+    "scenario": "ghh1",
+    "pointer": 1066,
+    "speaker": "",
+    "previewText": "咕、咕噜、咻、咻……"
+  },
+  "ev_haru_h_05a": {
+    "scenario": "ghh2",
+    "pointer": 46,
+    "speaker": "",
+    "previewText": "宇佐美吓得浑身僵直。"
+  },
+  "ev_haru_h_05b": {
+    "scenario": "ghh2",
+    "pointer": 281,
+    "speaker": "",
+    "previewText": "「呜、嗯！　……呀……那儿……」"
+  },
+  "ev_haru_h_05c": {
+    "scenario": "ghh2",
+    "pointer": 515,
+    "speaker": "",
+    "previewText": "「啊、啊、啊、哦」"
+  },
+  "ev_haru_h_06a": {
+    "scenario": "ghh2",
+    "pointer": 774,
+    "speaker": "",
+    "previewText": "「嗯嗯……！」"
+  },
+  "ev_haru_h_06b": {
+    "scenario": "ghh2",
+    "pointer": 1007,
+    "speaker": "",
+    "previewText": "「唔…………嗯哦～～！？」"
+  },
+  "ev_haru_h_06c": {
+    "scenario": "ghh2",
+    "pointer": 1244,
+    "speaker": "",
+    "previewText": "咕嘟！"
+  },
+  "ev_kanon_icatch": {
+    "scenario": "gk01",
+    "pointer": 671,
+    "speaker": "",
+    "previewText": ""
+  },
+  "ev_kanon_13": {
+    "scenario": "gk03",
+    "pointer": 3,
+    "speaker": "",
+    "previewText": "花音对母亲郁子一直很冷淡。"
+  },
+  "ev_kanon_09a": {
+    "scenario": "gk03",
+    "pointer": 210,
+    "speaker": "",
+    "previewText": "时间凝固。"
+  },
+  "ev_kanon_09b": {
+    "scenario": "gk03",
+    "pointer": 286,
+    "speaker": "",
+    "previewText": "……。"
+  },
+  "ev_kanon_03": {
+    "scenario": "gk06",
+    "pointer": 800,
+    "speaker": "",
+    "previewText": "犹豫着要不要打招呼。"
+  },
+  "ev_kanon_07": {
+    "scenario": "gk08",
+    "pointer": 978,
+    "speaker": "",
+    "previewText": "花音没有注意到我的存在。"
+  },
+  "ev_kanon_10a": {
+    "scenario": "gk09",
+    "pointer": 458,
+    "speaker": "",
+    "previewText": "右边的脚踝还一阵阵的跳痛着。"
+  },
+  "ev_kanon_10b": {
+    "scenario": "gk09",
+    "pointer": 700,
+    "speaker": "",
+    "previewText": "「为什么……」"
+  },
+  "ev_kanon_10cc": {
+    "scenario": "gk09",
+    "pointer": 867,
+    "speaker": "",
+    "previewText": "「因为，你是妈妈啊……没办法，对吧……」"
+  },
+  "ev_kanon_10c": {
+    "scenario": "gk09",
+    "pointer": 875,
+    "speaker": "",
+    "previewText": "就在此时。"
+  },
+  "ev_kanon_05a": {
+    "scenario": "gk10",
+    "pointer": 864,
+    "speaker": "",
+    "previewText": "希尔顿教练曾经提出过弃权。"
+  },
+  "ev_kanon_05b": {
+    "scenario": "gk10",
+    "pointer": 936,
+    "speaker": "",
+    "previewText": "――已经没什么好想的了。"
+  },
+  "ev_kanon_08": {
+    "scenario": "gk10",
+    "pointer": 972,
+    "speaker": "",
+    "previewText": "随着美丽的钢琴旋律的开放，花音的翻身跃出冰上。"
+  },
+  "ev_kanon_06a": {
+    "scenario": "gk10",
+    "pointer": 1305,
+    "speaker": "",
+    "previewText": "――好难受！"
+  },
+  "ev_kanon_06b": {
+    "scenario": "gk10",
+    "pointer": 1306,
+    "speaker": "",
+    "previewText": "――好难受！"
+  },
+  "ev_kanon_06c": {
+    "scenario": "gk10",
+    "pointer": 1326,
+    "speaker": "",
+    "previewText": "即便如此，也不得不回应这掌声！"
+  },
+  "ev_kanon_06d": {
+    "scenario": "gk10",
+    "pointer": 1406,
+    "speaker": "",
+    "previewText": "「……呜……呜呜……」"
+  },
+  "ev_kanon_04a": {
+    "scenario": "gk10",
+    "pointer": 1865,
+    "speaker": "",
+    "previewText": "花音的样子很平静。"
+  },
+  "ev_kanon_04c": {
+    "scenario": "gk10",
+    "pointer": 2072,
+    "speaker": "",
+    "previewText": "眼泪一个劲地从脸颊流淌下来。"
+  },
+  "ev_kanon_04b": {
+    "scenario": "gk10",
+    "pointer": 2739,
+    "speaker": "",
+    "previewText": "说着，花音低下了头。"
+  },
+  "ev_kanon_11": {
+    "scenario": "gked",
+    "pointer": 712,
+    "speaker": "",
+    "previewText": "于是，分别的日子终于来到了。"
+  },
+  "ev_kanon_h_04a": {
+    "scenario": "gkh1",
+    "pointer": 25,
+    "speaker": "",
+    "previewText": "少女的躯体压在了我的身上。"
+  },
+  "ev_kanon_h_04b": {
+    "scenario": "gkh1",
+    "pointer": 611,
+    "speaker": "",
+    "previewText": "卜噜、哔噜、卜噜噜……！"
+  },
+  "ev_kanon_h_03a": {
+    "scenario": "gkh1",
+    "pointer": 787,
+    "speaker": "",
+    "previewText": "「嗯……啊、呃……呜……」"
+  },
+  "ev_kanon_h_03b": {
+    "scenario": "gkh1",
+    "pointer": 1028,
+    "speaker": "",
+    "previewText": "「呜、嗯、嗯呜」"
+  },
+  "ev_kanon_h_03c": {
+    "scenario": "gkh1",
+    "pointer": 1276,
+    "speaker": "",
+    "previewText": "哔噜……！　咕咚、哔噜、咕嘟！"
+  },
+  "ev_kanon_h_05a": {
+    "scenario": "gkh2",
+    "pointer": 30,
+    "speaker": "",
+    "previewText": "「在教室里做，我有点紧张……」"
+  },
+  "ev_kanon_h_05b": {
+    "scenario": "gkh2",
+    "pointer": 264,
+    "speaker": "",
+    "previewText": "「哈～呜～……啊～……呼～啊……」"
+  },
+  "ev_kanon_h_05c": {
+    "scenario": "gkh2",
+    "pointer": 496,
+    "speaker": "",
+    "previewText": "「啊～哦……」"
+  },
+  "ev_kanon_h_06a": {
+    "scenario": "gkh2",
+    "pointer": 756,
+    "speaker": "",
+    "previewText": "「呜～～呀～……！」"
+  },
+  "ev_kanon_h_06b": {
+    "scenario": "gkh2",
+    "pointer": 988,
+    "speaker": "",
+    "previewText": "「呃……呵呀～啊……」"
+  },
+  "ev_kanon_h_06c": {
+    "scenario": "gkh2",
+    "pointer": 1233,
+    "speaker": "",
+    "previewText": "咕噜噜、哔噜、呼噜、唔噜唔噜……！"
+  },
+  "ev_kanon_h_02a": {
+    "scenario": "gkhb",
+    "pointer": 37,
+    "speaker": "",
+    "previewText": "「嗯……唔……啾……」"
+  },
+  "ev_kanon_h_02b": {
+    "scenario": "gkhb",
+    "pointer": 298,
+    "speaker": "",
+    "previewText": "「呀、嗯……！？」"
+  },
+  "ev_kanon_h_01a": {
+    "scenario": "gkhb",
+    "pointer": 431,
+    "speaker": "",
+    "previewText": "我四脚朝天地躺着，而花音前倾着上身，双手拄在我的胸板上。"
+  },
+  "ev_kanon_h_01b": {
+    "scenario": "gkhb",
+    "pointer": 917,
+    "speaker": "",
+    "previewText": "哔噜噜……！"
+  },
+  "ev_mizuha_icatch": {
+    "scenario": "gm01",
+    "pointer": 88,
+    "speaker": "",
+    "previewText": "……。"
+  },
+  "ev_mizuha_08a": {
+    "scenario": "gm02",
+    "pointer": 1475,
+    "speaker": "",
+    "previewText": "「呜呜，姐姐，又失败了……！」"
+  },
+  "ev_mizuha_08b": {
+    "scenario": "gm02",
+    "pointer": 1534,
+    "speaker": "",
+    "previewText": "「呜！」"
+  },
+  "ev_mizuha_h_06a": {
+    "scenario": "gm04",
+    "pointer": 1908,
+    "speaker": "",
+    "previewText": "「唔…………吡啾……」"
+  },
+  "ev_mizuha_h_06b": {
+    "scenario": "gm04",
+    "pointer": 2323,
+    "speaker": "",
+    "previewText": "「哈唔……呼、啾呼、啾……唔唔」"
+  },
+  "ev_mizuha_h_06c": {
+    "scenario": "gm04",
+    "pointer": 2772,
+    "speaker": "",
+    "previewText": "一抽、一抽！"
+  },
+  "ev_other_20": {
+    "scenario": "gm04",
+    "pointer": 2943,
+    "speaker": "",
+    "previewText": "完事后，我随手地点了支烟。"
+  },
+  "ev_mizuha_09a": {
+    "scenario": "gm05",
+    "pointer": 1980,
+    "speaker": "",
+    "previewText": "在十二月中旬的一个寒冷的晚上。"
+  },
+  "ev_other_02": {
+    "scenario": "gm06",
+    "pointer": 4,
+    "speaker": "",
+    "previewText": "本来不相似的姐妹。"
+  },
+  "ev_mizuha_07a": {
+    "scenario": "gm06",
+    "pointer": 189,
+    "speaker": "",
+    "previewText": "「完成！」"
+  },
+  "ev_mizuha_10a": {
+    "scenario": "gm06",
+    "pointer": 1429,
+    "speaker": "",
+    "previewText": "「我呢……」"
+  },
+  "ev_mizuha_10b": {
+    "scenario": "gm06",
+    "pointer": 1491,
+    "speaker": "",
+    "previewText": "水羽的眼中闪现出泪光。"
+  },
+  "ev_mizuha_10c": {
+    "scenario": "gm06",
+    "pointer": 1559,
+    "speaker": "",
+    "previewText": "「正因为明白，才那么高兴，才感到抱歉……」"
+  },
+  "ev_mizuha_09b": {
+    "scenario": "gm06",
+    "pointer": 1857,
+    "speaker": "",
+    "previewText": "「但是，姐姐已经不在了」"
+  },
+  "ev_mizuha_11a": {
+    "scenario": "gm06",
+    "pointer": 2125,
+    "speaker": "",
+    "previewText": "「……姐姐？」"
+  },
+  "ev_mizuha_11b": {
+    "scenario": "gm06",
+    "pointer": 2301,
+    "speaker": "",
+    "previewText": "「对不起，让你孤身一人」"
+  },
+  "ev_mizuha_11c": {
+    "scenario": "gm06",
+    "pointer": 2382,
+    "speaker": "",
+    "previewText": "「水羽，我……正如你所想的那样……」"
+  },
+  "ev_mizuha_11d": {
+    "scenario": "gm06",
+    "pointer": 2440,
+    "speaker": "",
+    "previewText": "「要结婚吗？」"
+  },
+  "ev_mizuha_12a": {
+    "scenario": "gmed",
+    "pointer": 56,
+    "speaker": "",
+    "previewText": "「很衬你呢，这身打扮」"
+  },
+  "ev_mizuha_12b": {
+    "scenario": "gmed",
+    "pointer": 174,
+    "speaker": "",
+    "previewText": "「呃、等、等一下，已经开幕了啊？」"
+  },
+  "ev_mizuha_12c": {
+    "scenario": "gmed",
+    "pointer": 240,
+    "speaker": "",
+    "previewText": "「唔……！」"
+  },
+  "ev_mizuha_h_01a": {
+    "scenario": "gmh1",
+    "pointer": 2,
+    "speaker": "",
+    "previewText": "白鸟一丝不挂，满面羞涩地凝视着我。"
+  },
+  "ev_mizuha_h_01b": {
+    "scenario": "gmh1",
+    "pointer": 244,
+    "speaker": "",
+    "previewText": "「嗯嗯啊～……！」"
+  },
+  "ev_mizuha_h_02a": {
+    "scenario": "gmh1",
+    "pointer": 492,
+    "speaker": "",
+    "previewText": "「真、真够大的……」"
+  },
+  "ev_mizuha_h_02b": {
+    "scenario": "gmh1",
+    "pointer": 786,
+    "speaker": "",
+    "previewText": "噗哧……！　哔噜噜噜……！　哔、哔！"
+  },
+  "ev_mizuha_h_03a": {
+    "scenario": "gmh1",
+    "pointer": 906,
+    "speaker": "",
+    "previewText": "「哈啊、嗯嗯」"
+  },
+  "ev_mizuha_h_03b": {
+    "scenario": "gmh1",
+    "pointer": 1147,
+    "speaker": "",
+    "previewText": "「……嗯～、哈啊、唔、嗯嗯」"
+  },
+  "ev_mizuha_h_03c": {
+    "scenario": "gmh1",
+    "pointer": 1382,
+    "speaker": "",
+    "previewText": "哔噜噜噜！　噗哧、噗哧、噗噜！"
+  },
+  "ev_mizuha_h_05a": {
+    "scenario": "gmh2",
+    "pointer": 31,
+    "speaker": "",
+    "previewText": "把脸贴近前，水羽的神秘花园一览无余。"
+  },
+  "ev_mizuha_h_05b": {
+    "scenario": "gmh2",
+    "pointer": 272,
+    "speaker": "",
+    "previewText": "「哦……呀嗯～！」"
+  },
+  "ev_mizuha_h_05c": {
+    "scenario": "gmh2",
+    "pointer": 511,
+    "speaker": "",
+    "previewText": "「啊、呀…………哈啊～～～！！！」"
+  },
+  "ev_mizuha_h_04a": {
+    "scenario": "gmh2",
+    "pointer": 625,
+    "speaker": "",
+    "previewText": "「嘁……呜、唔……哈～」"
+  },
+  "ev_mizuha_h_04b": {
+    "scenario": "gmh2",
+    "pointer": 864,
+    "speaker": "",
+    "previewText": "「咿呀、嗯……哈、呜喔」"
+  },
+  "ev_mizuha_h_04c": {
+    "scenario": "gmh2",
+    "pointer": 1106,
+    "speaker": "",
+    "previewText": "哔噜！　哔噜、刺噜……"
+  },
+  "ev_tubaki_icatch": {
+    "scenario": "gt01",
+    "pointer": 714,
+    "speaker": "",
+    "previewText": ""
+  },
+  "ev_other_01": {
+    "scenario": "gt04",
+    "pointer": 402,
+    "speaker": "",
+    "previewText": "高级俱乐部里弥漫着充满了狂气的金钱欲，热气和烟气。"
+  },
+  "ev_tubaki_02": {
+    "scenario": "gt06",
+    "pointer": 954,
+    "speaker": "",
+    "previewText": "「别吵了，才不是那样的呢」"
+  },
+  "ev_tubaki_01a": {
+    "scenario": "gt09",
+    "pointer": 907,
+    "speaker": "",
+    "previewText": "「该醒过来的，是京介才对――！」"
+  },
+  "ev_tubaki_01b": {
+    "scenario": "gt09",
+    "pointer": 1048,
+    "speaker": "",
+    "previewText": "「不要过来！　请不要来我们家！」"
+  },
+  "ev_tubaki_11": {
+    "scenario": "gt09",
+    "pointer": 2623,
+    "speaker": "",
+    "previewText": "因为，京介是家人啊"
+  },
+  "ev_tubaki_16a": {
+    "scenario": "gted",
+    "pointer": 13,
+    "speaker": "",
+    "previewText": "「京介，你听说了吗？」"
+  },
+  "ev_tubaki_16b": {
+    "scenario": "gted",
+    "pointer": 389,
+    "speaker": "",
+    "previewText": "「啊，京介，那个……」"
+  },
+  "ev_tubaki_h_04aa": {
+    "scenario": "gth1",
+    "pointer": 72,
+    "speaker": "",
+    "previewText": "当衣服全部被我脱掉，椿姬闭上了眼睛。"
+  },
+  "ev_tubaki_h_04b": {
+    "scenario": "gth1",
+    "pointer": 142,
+    "speaker": "",
+    "previewText": "「嗯呒……嗯噢、嗯嗯……」"
+  },
+  "ev_tubaki_h_01a": {
+    "scenario": "gth1",
+    "pointer": 197,
+    "speaker": "",
+    "previewText": "我就势将椿姬按倒在床上。"
+  },
+  "ev_tubaki_h_01b": {
+    "scenario": "gth1",
+    "pointer": 440,
+    "speaker": "",
+    "previewText": "胸部跃动着。"
+  },
+  "ev_tubaki_h_02a": {
+    "scenario": "gth1",
+    "pointer": 768,
+    "speaker": "",
+    "previewText": "椿姬像等待着插入一样挺起了丰润的臀部。"
+  },
+  "ev_tubaki_h_02b": {
+    "scenario": "gth1",
+    "pointer": 1287,
+    "speaker": "",
+    "previewText": "哔噜、哧噜噜、刺噜……！"
+  },
+  "ev_tubaki_h_03a": {
+    "scenario": "gth2",
+    "pointer": 168,
+    "speaker": "",
+    "previewText": "「哈呜……嗯、嗯……唔啾……」"
+  },
+  "ev_tubaki_h_03b": {
+    "scenario": "gth2",
+    "pointer": 463,
+    "speaker": "",
+    "previewText": "噗哧！"
+  },
+  "ev_tubaki_h_05a": {
+    "scenario": "gthb",
+    "pointer": 19,
+    "speaker": "",
+    "previewText": "本来抱紧少女的手趁机伸向了椿姬的胸口。"
+  },
+  "ev_tubaki_h_05b": {
+    "scenario": "gthb",
+    "pointer": 255,
+    "speaker": "",
+    "previewText": "「呀……好、好羞人……」"
+  },
+  "ev_tubaki_h_05e": {
+    "scenario": "gthb",
+    "pointer": 517,
+    "speaker": "",
+    "previewText": "拉下内裤，于是椿姬的神秘花园一览无遗。"
+  },
+  "ev_tubaki_h_05c": {
+    "scenario": "gthb",
+    "pointer": 776,
+    "speaker": "",
+    "previewText": "「嗯……」"
+  },
+  "ev_tubaki_h_05d": {
+    "scenario": "gthb",
+    "pointer": 1061,
+    "speaker": "",
+    "previewText": "哔卜……！　哔噜！"
+  }
+}
