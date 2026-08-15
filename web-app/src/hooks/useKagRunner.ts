@@ -466,6 +466,10 @@ export function useKagRunner({
     const fetchId = ++lastFetchIdRef.current;
     setScenarioData(null);
     setIsWaiting(true);
+    if (!skipPreScanner) {
+      setTypewriterText('');
+      updateDialogueText('');
+    }
     try {
       const response = await fetch(`/scenarios/${name}.json`);
       if (!response.ok) throw new Error(`Failed to fetch scenario: ${name}`);

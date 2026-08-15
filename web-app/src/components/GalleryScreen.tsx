@@ -246,6 +246,7 @@ export default function GalleryScreen({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [viewingVariants, setViewingVariants] = useState<string[] | null>(null);
   const [viewingIdx, setViewingIdx] = useState<number>(0);
+  const [baseIdx, setBaseIdx] = useState<number>(0);
   const [revealedThumbs, setRevealedThumbs] = useState<Set<string>>(new Set());
 
   const ITEMS_PER_PAGE = 12;
@@ -263,9 +264,11 @@ export default function GalleryScreen({
     setCurrentPage(1);
   }, [cgCategoryFilter]);
 
-  // Filter CG items by current page
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const filteredItems = filteredCategoryItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  // Calculate current page items
+  const filteredItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredCategoryItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredCategoryItems, currentPage]);
 
   // Calculate unlock statistics per category
   const categoryStats = useMemo(() => {
@@ -297,20 +300,56 @@ export default function GalleryScreen({
     return SPECIAL_SCENES.filter(s => s.heroine === heroineFilter);
   }, [heroineFilter]);
 
+  const preloadCardVariants = (item: GalleryItem) => {
+    const unlocked = item.variants.filter(v => sf[v] === 1);
+    unlocked.forEach(v => {
+      const img = new Image();
+      img.src = resolveAsset(v, 'bgimage');
+    });
+  };
+
+  const changeVariant = (newIdx: number) => {
+    setBaseIdx(viewingIdx);
+    setViewingIdx(newIdx);
+  };
+
   const handleItemClick = (item: GalleryItem) => {
     const unlocked = item.variants.filter(v => sf[v] === 1);
     if (unlocked.length > 0) {
+      // Preload all variants immediately
+      unlocked.forEach(v => {
+        const img = new Image();
+        img.src = resolveAsset(v, 'bgimage');
+      });
       setViewingVariants(unlocked);
       setViewingIdx(0);
+      setBaseIdx(0);
     }
   };
+
+  // Preload variants whenever viewingVariants changes
+  useEffect(() => {
+    if (viewingVariants && viewingVariants.length > 0) {
+      viewingVariants.forEach(variant => {
+        const img = new Image();
+        img.src = resolveAsset(variant, 'bgimage');
+      });
+    }
+  }, [viewingVariants, resolveAsset]);
 
   const handleNextCg = () => {
     if (!viewingVariants) return;
     if (viewingIdx < viewingVariants.length - 1) {
-      setViewingIdx(prev => prev + 1);
+      changeVariant(viewingIdx + 1);
     } else {
       setViewingVariants(null);
+    }
+  };
+
+  const handlePrevCg = () => {
+    if (!viewingVariants) return;
+    if (viewingIdx > 0) {
+      changeVariant(viewingIdx - 1);
     }
   };
 
@@ -324,24 +363,37 @@ export default function GalleryScreen({
     });
   };
 
-  // Keyboard controls for CG Viewer
+  // Keyboard controls for CG Viewer & Grid Pagination
   useEffect(() => {
-    if (!viewingVariants) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setViewingVariants(null);
-      } else if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
-        handleNextCg();
-      } else if (e.key === 'ArrowLeft') {
-        if (viewingIdx > 0) {
-          setViewingIdx(prev => prev - 1);
+      if (e.target && ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'TEXTAREA')) {
+        return;
+      }
+
+      if (viewingVariants) {
+        if (e.key === 'Escape') {
+          setViewingVariants(null);
+        } else if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+          handleNextCg();
+        } else if (e.key === 'ArrowLeft') {
+          handlePrevCg();
+        }
+      } else {
+        if (e.key === 'Escape') {
+          onBack();
+        } else if (viewMode === 'CG') {
+          if (e.key === 'ArrowRight' || e.key === 'PageDown') {
+            setCurrentPage(prev => Math.min(prev + 1, totalPages));
+          } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+            setCurrentPage(prev => Math.max(prev - 1, 1));
+          }
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewingVariants, viewingIdx]);
+  }, [viewingVariants, viewingIdx, baseIdx, viewMode, totalPages, onBack]);
 
   return (
     <div className="gallery-layer glass-panel" style={{ width: '100%', height: '100%', padding: '16px 20px', boxSizing: 'border-box' }}>
@@ -557,6 +609,7 @@ export default function GalleryScreen({
                   key={item.id} 
                   className="gallery-grid-item glass-panel" 
                   onClick={() => isUnlocked && handleItemClick(item)}
+                  onMouseEnter={() => isUnlocked && preloadCardVariants(item)}
                   style={{ position: 'relative', overflow: 'hidden' }}
                 >
                   {isUnlocked ? (
@@ -890,12 +943,24 @@ export default function GalleryScreen({
       {/* Fullscreen CG Variant Viewer */}
       {viewingVariants && (
         <div className="cg-viewer-overlay" onClick={handleNextCg}>
-          <div 
-            className="cg-viewer-img" 
-            style={{ 
-              backgroundImage: `url(${resolveAsset(viewingVariants[viewingIdx], 'bgimage')})` 
-            }} 
-          />
+          {viewingVariants.map((variant, idx) => {
+            const isCurrent = idx === viewingIdx;
+            const isBase = idx === baseIdx;
+            const isVisible = isCurrent || isBase;
+            
+            return (
+              <div 
+                key={variant}
+                className="cg-viewer-img" 
+                style={{ 
+                  backgroundImage: `url(${resolveAsset(variant, 'bgimage')})`,
+                  opacity: isVisible ? 1 : 0,
+                  zIndex: isCurrent ? 3 : (isBase ? 2 : 1),
+                  transition: isCurrent && viewingIdx !== baseIdx ? 'opacity 0.2s ease-out' : 'none'
+                }} 
+              />
+            );
+          })}
 
           {/* Jump to Dialog in Story Button */}
           {typedCgScenarioMap[viewingVariants[viewingIdx]] && onJumpToStory && (
@@ -931,7 +996,24 @@ export default function GalleryScreen({
           )}
 
           <div className="cg-viewer-counter">
-            {viewingIdx + 1} / {viewingVariants.length} — Click to cycle, Esc to close
+            <span>{viewingIdx + 1} / {viewingVariants.length}</span>
+            {viewingVariants.length > 1 && (
+              <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                {viewingVariants.map((_, dotIdx) => (
+                  <span 
+                    key={dotIdx}
+                    style={{
+                      width: dotIdx === viewingIdx ? '12px' : '5px',
+                      height: '5px',
+                      borderRadius: '3px',
+                      background: dotIdx === viewingIdx ? '#c084fc' : 'rgba(255, 255, 255, 0.3)',
+                      transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+            <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px' }}>— Click / → to cycle, Esc to close</span>
           </div>
         </div>
       )}
