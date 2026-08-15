@@ -12,8 +12,7 @@ import GameplayScreen from './components/GameplayScreen';
 import ChoiceGraphModal from './components/ChoiceGraphModal';
 import DebugPanel from './components/DebugPanel';
 import MusicRoom from './components/MusicRoom';
-import TableOfContentsModal from './components/TableOfContentsModal';
-import PageFlipperBar from './components/PageFlipperBar';
+import StoryNavigator from './components/StoryNavigator';
 
 // --- Custom Hooks ---
 import { useGameAudio } from './hooks/useGameAudio';
@@ -627,19 +626,10 @@ export default function App() {
             />
           )}
 
-          {runner.showTableOfContents && (
-            <TableOfContentsModal 
+          {(runner.showPageFlipper || runner.showTableOfContents) && (
+            <StoryNavigator 
               isSidebar={true}
-              onClose={() => runner.setShowTableOfContents(false)}
-              onSelectTopic={runner.jumpToTopic}
-              currentScenario={runner.currentScenario}
-              pointer={runner.pointer}
-              language={runner.language}
-            />
-          )}
-
-          {runner.showPageFlipper && (
-            <PageFlipperBar 
+              initialTab={runner.showTableOfContents ? 'toc' : 'flipper'}
               pointer={runner.pointer}
               maxPointer={Array.isArray(runner.scenarioData) ? runner.scenarioData.length : (runner.scenarioData?.instructions?.length || 1000)}
               currentScenario={runner.currentScenario}
@@ -647,11 +637,11 @@ export default function App() {
               currentDialogueText={runner.dialogueText}
               speaker={runner.speaker}
               onSeekPointer={runner.seekPointer}
-              onOpenToc={() => {
+              onSelectTopic={runner.jumpToTopic}
+              onClose={() => {
                 runner.setShowPageFlipper(false);
-                runner.setShowTableOfContents(true);
+                runner.setShowTableOfContents(false);
               }}
-              onClose={() => runner.setShowPageFlipper(false)}
               language={runner.language}
             />
           )}
