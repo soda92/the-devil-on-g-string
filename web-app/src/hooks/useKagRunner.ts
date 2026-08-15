@@ -176,16 +176,29 @@ export function useKagRunner({
     if (auto) {
       try { initial.autosave = JSON.parse(auto); } catch (_e) { }
     }
-    for (let i = 0; i < 24; i++) {
-      const slot = localStorage.getItem(`${storagePrefix}_save_slot_${i}`);
-      if (slot) {
-        try { initial[i] = JSON.parse(slot); } catch (_e) { }
+    
+    // Dynamically load all user save document slots
+    const slotPrefix = `${storagePrefix}_save_slot_`;
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(slotPrefix)) {
+          const rawId = key.slice(slotPrefix.length);
+          const slotId = !isNaN(Number(rawId)) ? Number(rawId) : rawId;
+          const slotVal = localStorage.getItem(key);
+          if (slotVal) {
+            try { initial[slotId] = JSON.parse(slotVal); } catch (_e) { }
+          }
+        }
       }
-    }
-    // Load special chapter-transition slot 150
-    const slot150 = localStorage.getItem(`${storagePrefix}_save_slot_150`);
-    if (slot150) {
-      try { initial[150] = JSON.parse(slot150); } catch (_e) { }
+    } catch (_e) {
+      // Fallback loop if localStorage keys enumeration is restricted
+      for (let i = 0; i < 100; i++) {
+        const slot = localStorage.getItem(`${storagePrefix}_save_slot_${i}`);
+        if (slot) {
+          try { initial[i] = JSON.parse(slot); } catch (_e) { }
+        }
+      }
     }
     return initial;
   });
@@ -353,30 +366,36 @@ export function useKagRunner({
               localStorage.removeItem(autosaveKey);
             }
 
-            // Sync manual slots
-            for (let i = 0; i < 24; i++) {
-              const key = `${storagePrefix}_save_slot_${i}`;
-              if (activeSlots[i]) {
-                safeLocalStorageSet(key, JSON.stringify(stripHistoryForLocalStorage(activeSlots[i])));
-              } else {
-                localStorage.removeItem(key);
+            // Sync all active user and transition slots
+            const slotPrefix = `${storagePrefix}_save_slot_`;
+            for (let i = 0; i < localStorage.length; i++) {
+              const k = localStorage.key(i);
+              if (k && k.startsWith(slotPrefix)) {
+                const sId = k.slice(slotPrefix.length);
+                if (!activeSlots[sId]) {
+                  localStorage.removeItem(k);
+                }
               }
             }
 
-            // Sync special transition slot 150
-            const key150 = `${storagePrefix}_save_slot_150`;
-            if (activeSlots[150]) {
-              safeLocalStorageSet(key150, JSON.stringify(stripHistoryForLocalStorage(activeSlots[150])));
-            } else {
-              localStorage.removeItem(key150);
+            for (const [sId, sData] of Object.entries(activeSlots)) {
+              if (sId !== 'autosave' && sData) {
+                const key = `${storagePrefix}_save_slot_${sId}`;
+                safeLocalStorageSet(key, JSON.stringify(stripHistoryForLocalStorage(sData)));
+              }
             }
           } else {
             setSaveSlots({});
             localStorage.removeItem(`${storagePrefix}_autosave`);
-            for (let i = 0; i < 24; i++) {
-              localStorage.removeItem(`${storagePrefix}_save_slot_${i}`);
+            const slotPrefix = `${storagePrefix}_save_slot_`;
+            const keysToRemove: string[] = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const k = localStorage.key(i);
+              if (k && k.startsWith(slotPrefix)) {
+                keysToRemove.push(k);
+              }
             }
-            localStorage.removeItem(`${storagePrefix}_save_slot_150`);
+            keysToRemove.forEach(k => localStorage.removeItem(k));
           }
         }
       } catch (e) {

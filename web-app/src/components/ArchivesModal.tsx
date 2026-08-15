@@ -76,12 +76,13 @@ export const ArchivesModal: React.FC<ArchivesModalProps> = ({
       .map(([id, data]) => ({ ...data, slotId: id }));
   }, [saveSlots]);
 
-  // Find next available slot ID (0 - 23)
+  // Find next available slot ID (unlimited dynamic allocation, strictly avoiding slot 150)
   const nextAvailableSlotId = useMemo(() => {
-    for (let i = 0; i < 24; i++) {
-      if (!saveSlots[i]) return i;
+    let i = 0;
+    while (i === 150 || saveSlots[i]) {
+      i++;
     }
-    return 0; // fallback to 0 if all 24 are full
+    return i;
   }, [saveSlots]);
 
   // Filter slots by search query
@@ -502,7 +503,7 @@ export const ArchivesModal: React.FC<ArchivesModalProps> = ({
                 档案记录管理 / Document Archives
               </h2>
               <span style={{ fontSize: '11px', color: 'rgba(255, 255, 255, 0.4)' }}>
-                已保存 {allOccupiedSlots.length} / 24 个档案槽位
+                {language === 'JP' ? `已保存 ${allOccupiedSlots.length} 份档案记录 (无上限)` : `Saved ${allOccupiedSlots.length} Documents (Unlimited)`}
               </span>
             </div>
           </div>
