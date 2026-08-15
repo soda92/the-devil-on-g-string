@@ -2004,7 +2004,6 @@ export function useKagRunner({
     }
     await loadScenario(scenId, null, targetPtr, false, false, true);
     setGameState('PLAYING');
-    setShowTableOfContents(false);
   };
 
   const seekPointer = async (targetPtr: number) => {

@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SCENARIO_INDEX, RouteType } from '../data/scenarioIndex';
 
 interface TableOfContentsModalProps {
   onClose: () => void;
   onSelectTopic: (scenId: string, startPtr: number, presets?: Record<string, any>) => void;
   currentScenario: string | null;
+  pointer?: number;
   language: 'JP' | 'EN';
   isSidebar?: boolean;
 }
@@ -15,10 +16,19 @@ export default function TableOfContentsModal({
   onClose, 
   onSelectTopic, 
   currentScenario, 
+  pointer,
   language,
   isSidebar = false
 }: TableOfContentsModalProps) {
   const [selectedRoute, setSelectedRoute] = useState<TabFilter>('ALL');
+  const activeCardRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-scroll active reading scenario card into view on mount
+  useEffect(() => {
+    if (activeCardRef.current) {
+      activeCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [currentScenario]);
 
   const routes: { id: TabFilter; labelJp: string; labelEn: string }[] = [
     { id: 'ALL', labelJp: '全部章节', labelEn: 'All Chapters' },
@@ -221,19 +231,46 @@ export default function TableOfContentsModal({
                 </div>
                 <div className="toc-chapter-desc">{ch.description}</div>
                 <div className="toc-scenarios-grid">
-                  {matchingScenarios.map(scen => (
-                    <div
-                      key={scen.id}
-                      className={`toc-scenario-card ${currentScenario === scen.id ? 'current' : ''}`}
-                      onClick={() => onSelectTopic(scen.id, scen.startPtr, scen.presets)}
-                    >
-                      <div className="toc-scen-name">{scen.title}</div>
-                      <div className="toc-scen-meta">
-                        <span>{scen.id}.ks (ptr {scen.startPtr})</span>
-                        <span className={`toc-badge badge-${scen.route.toLowerCase()}`}>{scen.route}</span>
+                  {matchingScenarios.map(scen => {
+                    const isCurrent = currentScenario === scen.id;
+                    return (
+                      <div
+                        key={scen.id}
+                        ref={isCurrent ? activeCardRef : undefined}
+                        className={`toc-scenario-card ${isCurrent ? 'current' : ''}`}
+                        onClick={() => onSelectTopic(scen.id, scen.startPtr, scen.presets)}
+                        style={isCurrent ? {
+                          border: '2px solid #f59e0b',
+                          background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(217, 119, 6, 0.12))',
+                          boxShadow: '0 0 14px rgba(245, 158, 11, 0.4)'
+                        } : undefined}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
+                          <div className="toc-scen-name" style={{ fontWeight: isCurrent ? 'bold' : '600', color: isCurrent ? '#fbbf24' : '#f3f4f6' }}>
+                            {language === 'JP' ? scen.title : (scen.titleEn || scen.title)}
+                          </div>
+                          {isCurrent && (
+                            <span style={{
+                              background: '#f59e0b',
+                              color: '#000',
+                              fontSize: '10px',
+                              fontWeight: 'bold',
+                              padding: '1px 5px',
+                              borderRadius: '4px',
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0
+                            }}>
+                              📍 {language === 'JP' ? '当前' : 'Active'} {pointer !== undefined && pointer > 0 ? `L.${pointer}` : ''}
+                            </span>
+                          )}
+                        </div>
+                        <div className="toc-scen-meta">
+                          <span>{scen.id}.ks (ptr {scen.startPtr})</span>
+                          <span className={`toc-badge badge-${scen.route.toLowerCase()}`}>{scen.route}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );

@@ -633,6 +633,7 @@ export default function App() {
               onClose={() => runner.setShowTableOfContents(false)}
               onSelectTopic={runner.jumpToTopic}
               currentScenario={runner.currentScenario}
+              pointer={runner.pointer}
               language={runner.language}
             />
           )}
