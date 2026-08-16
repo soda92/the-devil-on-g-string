@@ -74,8 +74,8 @@ export const SCENARIO_INDEX: ChapterIndex[] = [
       { id: 'gt08', title: '椿姬线：公寓反击策划 (Ch 8)', titleEn: 'Tsubaki Route: Counterattack (Ch 8)', startPtr: 0, bg: 'bg_19b', route: 'Tsubaki', presets: { flag_tubaki: 4 } },
       { id: 'gt09', title: '椿姬线：决胜与救赎 (Ch 9)', titleEn: 'Tsubaki Route: Final Victory (Ch 9)', startPtr: 0, bg: 'bg_08a', route: 'Tsubaki', presets: { flag_tubaki: 4 } },
       { id: 'gted', title: '椿姬线：大结局 (Ending)', titleEn: 'Tsubaki Route: Ending', startPtr: 0, bg: 'bg_25a', route: 'Tsubaki', presets: { flag_tubaki: 4, tubaki_clear: 1 } },
-      { id: 'gth1', title: '椿姬后日谈 1', titleEn: 'Tsubaki After Story 1', startPtr: 0, bg: 'bg_19a', route: 'Tsubaki', presets: { flag_tubaki: 4, tubaki_clear: 1 } },
-      { id: 'gth2', title: '椿姬后日谈 2', titleEn: 'Tsubaki After Story 2', startPtr: 0, bg: 'bg_19b', route: 'Tsubaki', presets: { flag_tubaki: 4, tubaki_clear: 1 } }
+      { id: 'gth1', title: '椿姬特殊场景 1 (初夜·誓言之夜)', titleEn: 'Tsubaki Special Scene 1 (The Vow)', startPtr: 0, bg: 'bg_19a', route: 'Tsubaki', presets: { flag_tubaki: 4, tubaki_clear: 1 } },
+      { id: 'gth2', title: '椿姬特殊场景 2 (温泉蜜语)', titleEn: 'Tsubaki Special Scene 2 (Hot Springs)', startPtr: 0, bg: 'bg_19b', route: 'Tsubaki', presets: { flag_tubaki: 4, tubaki_clear: 1 } }
     ]
   },
   {
@@ -115,8 +115,8 @@ export const SCENARIO_INDEX: ChapterIndex[] = [
       { id: 'gk09', title: '花音线：冰上绽放 (Ch 9)', titleEn: 'Kanon Route: Blooming on Ice (Ch 9)', startPtr: 0, bg: 'bg_16a', route: 'Kanon', presets: { flag_kanon: 3 } },
       { id: 'gk10', title: '花音线：巅峰一跃 (Ch 10)', titleEn: 'Kanon Route: Pinnacle Leap (Ch 10)', startPtr: 0, bg: 'bg_16b', route: 'Kanon', presets: { flag_kanon: 3 } },
       { id: 'gked', title: '花音线：大结局 (Ending)', titleEn: 'Kanon Route: Ending', startPtr: 0, bg: 'bg_25a', route: 'Kanon', presets: { flag_kanon: 3, kanon_clear: 1 } },
-      { id: 'gkh1', title: '花音后日谈 1', titleEn: 'Kanon After Story 1', startPtr: 0, bg: 'bg_14a', route: 'Kanon', presets: { flag_kanon: 3, kanon_clear: 1 } },
-      { id: 'gkh2', title: '花音后日谈 2', titleEn: 'Kanon After Story 2', startPtr: 0, bg: 'bg_15a', route: 'Kanon', presets: { flag_kanon: 3, kanon_clear: 1 } }
+      { id: 'gkh1', title: '花音特殊场景 1 (冰场更衣室)', titleEn: 'Kanon Special Scene 1 (Locker Room)', startPtr: 0, bg: 'bg_14a', route: 'Kanon', presets: { flag_kanon: 3, kanon_clear: 1 } },
+      { id: 'gkh2', title: '花音特殊场景 2 (旅馆心迹)', titleEn: 'Kanon Special Scene 2 (Hotel Room)', startPtr: 0, bg: 'bg_15a', route: 'Kanon', presets: { flag_kanon: 3, kanon_clear: 1 } }
     ]
   },
   {
@@ -147,8 +147,8 @@ export const SCENARIO_INDEX: ChapterIndex[] = [
       { id: 'gm05', title: '水羽线：真相大白 (Ch 5)', titleEn: 'Mizuha Route: Truth Revealed (Ch 5)', startPtr: 0, bg: 'bg_01a', route: 'Mizuha', presets: { flag_mizuha: 2 } },
       { id: 'gm06', title: '水羽线：坚定的携手 (Ch 6)', titleEn: 'Mizuha Route: Hand in Hand (Ch 6)', startPtr: 0, bg: 'bg_08a', route: 'Mizuha', presets: { flag_mizuha: 2 } },
       { id: 'gmed', title: '水羽线：大结局 (Ending)', titleEn: 'Mizuha Route: Ending', startPtr: 0, bg: 'bg_25a', route: 'Mizuha', presets: { flag_mizuha: 2, mizuha_clear: 1 } },
-      { id: 'gmh1', title: '水羽后日谈 1', titleEn: 'Mizuha After Story 1', startPtr: 0, bg: 'bg_01a', route: 'Mizuha', presets: { flag_mizuha: 2, mizuha_clear: 1 } },
-      { id: 'gmh2', title: '水羽后日谈 2', titleEn: 'Mizuha After Story 2', startPtr: 0, bg: 'bg_03a', route: 'Mizuha', presets: { flag_mizuha: 2, mizuha_clear: 1 } }
+      { id: 'gmh1', title: '水羽特殊场景 1 (两人世界)', titleEn: 'Mizuha Special Scene 1 (Two of Us)', startPtr: 0, bg: 'bg_01a', route: 'Mizuha', presets: { flag_mizuha: 2, mizuha_clear: 1 } },
+      { id: 'gmh2', title: '水羽特殊场景 2 (破晓缠绵)', titleEn: 'Mizuha Special Scene 2 (At Dawn)', startPtr: 0, bg: 'bg_03a', route: 'Mizuha', presets: { flag_mizuha: 2, mizuha_clear: 1 } }
     ]
   },
   {
@@ -170,8 +170,8 @@ export const SCENARIO_INDEX: ChapterIndex[] = [
       { id: 'g53', title: '日常回忆与融雪之音', titleEn: 'Memory of Warm Days & Melting Snow', startPtr: 0, bg: 'bg_10a', route: 'Haru', presets: { flag_haru: 3 } },
       { id: 'g54', title: '雪夜枪声：顶罪与救赎', titleEn: 'Gunshot in the Snow: Taking the Blame', startPtr: 0, bg: 'bg_01a', route: 'Haru', presets: { flag_haru: 3 } },
       { id: 'g55', title: '真实大结局：提前到来的春天', titleEn: 'True Ending: The Early Spring', startPtr: 0, bg: 'bg_25a', route: 'Haru', presets: { flag_haru: 3, game_clear: 1 } },
-      { id: 'ghh1', title: '哈尔后日谈 1', titleEn: 'Haru After Story 1', startPtr: 0, bg: 'bg_01a', route: 'Haru', presets: { flag_haru: 3, game_clear: 1 } },
-      { id: 'ghh2', title: '哈尔后日谈 2', titleEn: 'Haru After Story 2', startPtr: 0, bg: 'bg_25a', route: 'Haru', presets: { flag_haru: 3, game_clear: 1 } }
+      { id: 'ghh1', title: '哈尔特殊场景 1 (废墟依偎)', titleEn: 'Haru Special Scene 1 (Ruins Embrace)', startPtr: 0, bg: 'bg_01a', route: 'Haru', presets: { flag_haru: 3, game_clear: 1 } },
+      { id: 'ghh2', title: '哈尔特殊场景 2 (融雪之晨)', titleEn: 'Haru Special Scene 2 (Melting Snow)', startPtr: 0, bg: 'bg_25a', route: 'Haru', presets: { flag_haru: 3, game_clear: 1 } }
     ]
   }
 ];
