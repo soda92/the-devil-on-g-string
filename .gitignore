@@ -18,6 +18,7 @@ game-images
 the-devil-on-g-string*
 saves.json.old
 saves.db
+*.db-journal
 saves.json.bak
 
 file_map.json
@@ -33,3 +34,18 @@ scenario_names.json
 *_backup
 
 game-server.exe
+
+# Documentation build output
+docs/book/
+docs/book
+book/
+
+# Web App build output
+web-app/dist/
+web-app/node_modules/
+
+# Test & E2E Screenshots & Artifacts
+docs/screenshots/
+screenshots/
+e2e/.venv/
+e2e/__pycache__/
