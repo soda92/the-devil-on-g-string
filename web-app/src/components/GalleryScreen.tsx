@@ -68,6 +68,17 @@ const formatCgTitle = (base: string, fallbackTitle: string): string => {
   return `${char}${isH} · ${num}`;
 };
 
+const isBadEndCg = (base: string, storyLoc?: CgStoryLocation | null): boolean => {
+  const b = base.toLowerCase();
+  if (b === 'ev_other_20' || b === 'ev_maou_04a') return true;
+  if (storyLoc) {
+    if (storyLoc.scenario === 'g23' && storyLoc.pointer >= 1500) return true;
+    if (storyLoc.scenario === 'gk07' && storyLoc.pointer >= 1800) return true;
+    if (storyLoc.scenario === 'gm04' && storyLoc.pointer >= 2800) return true;
+  }
+  return false;
+};
+
 export interface SpecialScene {
   id: string;
   scenario: string;
@@ -606,13 +617,22 @@ export default function GalleryScreen({
                 || typedCgScenarioMap[item.base] 
                 || (item.variants ? item.variants.map(v => typedCgScenarioMap[v]).find(Boolean) : null);
               
+              const isBadEnd = isBadEndCg(item.base, storyLoc);
+              
               return (
                 <div 
                   key={item.id} 
-                  className="gallery-grid-item glass-panel" 
+                  className={`gallery-grid-item glass-panel ${isBadEnd ? 'bad-end-cg-item' : ''}`}
                   onClick={() => isUnlocked && handleItemClick(item)}
                   onMouseEnter={() => isUnlocked && preloadCardVariants(item)}
-                  style={{ position: 'relative', overflow: 'hidden' }}
+                  style={{ 
+                    position: 'relative', 
+                    overflow: 'hidden',
+                    ...(isBadEnd ? {
+                      border: '1px solid rgba(239, 68, 68, 0.7)',
+                      boxShadow: '0 0 12px rgba(239, 68, 68, 0.3)'
+                    } : {})
+                  }}
                 >
                   {isUnlocked ? (
                     <>
@@ -635,7 +655,7 @@ export default function GalleryScreen({
                           left: 0,
                           right: 0,
                           padding: '2px 6px',
-                          background: 'linear-gradient(transparent, rgba(0,0,0,0.85))',
+                          background: 'linear-gradient(transparent, rgba(0,0,0,0.88))',
                           fontSize: '10px',
                           color: '#e2e8f0',
                           display: 'flex',
@@ -644,7 +664,24 @@ export default function GalleryScreen({
                           zIndex: 3
                         }}
                       >
-                        <span>{formattedTitle}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span>{formattedTitle}</span>
+                          {isBadEnd && (
+                            <span 
+                              style={{
+                                fontSize: '8px',
+                                background: 'rgba(239, 68, 68, 0.35)',
+                                border: '1px solid rgba(239, 68, 68, 0.7)',
+                                color: '#fca5a5',
+                                padding: '0 3px',
+                                borderRadius: '3px',
+                                fontWeight: 'bold'
+                              }}
+                            >
+                              💀 BAD END
+                            </span>
+                          )}
+                        </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           {unlockedVariants.length > 1 && (
                             <span style={{ fontSize: '9px', color: '#c084fc' }}>
@@ -660,17 +697,17 @@ export default function GalleryScreen({
                                 onJumpToStory(storyLoc.scenario, contextPtr);
                               }}
                               style={{
-                                background: 'rgba(168, 85, 247, 0.35)',
-                                border: '1px solid rgba(168, 85, 247, 0.6)',
+                                background: isBadEnd ? 'rgba(239, 68, 68, 0.4)' : 'rgba(168, 85, 247, 0.35)',
+                                border: isBadEnd ? '1px solid rgba(239, 68, 68, 0.7)' : '1px solid rgba(168, 85, 247, 0.6)',
                                 borderRadius: '3px',
-                                color: '#e9d5ff',
+                                color: isBadEnd ? '#fca5a5' : '#e9d5ff',
                                 fontSize: '9px',
                                 padding: '1px 4px',
                                 cursor: 'pointer',
                                 lineHeight: 1
                               }}
                             >
-                              📖
+                              {isBadEnd ? '💀' : '📖'}
                             </button>
                           )}
                         </div>
@@ -712,20 +749,37 @@ export default function GalleryScreen({
                         justifyContent: 'center',
                         width: '100%',
                         height: '100%',
-                        background: 'radial-gradient(circle at center, rgba(30, 20, 45, 0.85) 0%, rgba(10, 8, 18, 0.96) 100%)',
+                        background: isBadEnd 
+                          ? 'radial-gradient(circle at center, rgba(50, 15, 20, 0.9) 0%, rgba(18, 5, 8, 0.98) 100%)'
+                          : 'radial-gradient(circle at center, rgba(30, 20, 45, 0.85) 0%, rgba(10, 8, 18, 0.96) 100%)',
                         padding: '8px',
                         boxSizing: 'border-box',
                         gap: '6px',
                         textAlign: 'center'
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94a3b8', fontSize: '11px', fontWeight: 600 }}>
-                        <span>🔒</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: isBadEnd ? '#fca5a5' : '#94a3b8', fontSize: '11px', fontWeight: 600 }}>
+                        <span>{isBadEnd ? '💀' : '🔒'}</span>
                         <span>{formattedTitle}</span>
+                        {isBadEnd && (
+                          <span 
+                            style={{
+                              fontSize: '8px',
+                              background: 'rgba(239, 68, 68, 0.35)',
+                              border: '1px solid rgba(239, 68, 68, 0.7)',
+                              color: '#fee2e2',
+                              padding: '0 3px',
+                              borderRadius: '3px',
+                              fontWeight: 'bold'
+                            }}
+                          >
+                            BAD END
+                          </span>
+                        )}
                       </div>
                       {storyLoc && onJumpToStory && (
                         <button
-                          className="gallery-read-context-btn"
+                          className={`gallery-read-context-btn ${isBadEnd ? 'bad-end-read-btn' : ''}`}
                           title={language === 'JP' ? `跳转到该CG的前导剧情 [${storyLoc.scenario}] (预留前导对话，连贯体验)` : `Jump to Dialogue Context [${storyLoc.scenario}]`}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -736,20 +790,24 @@ export default function GalleryScreen({
                             display: 'flex',
                             alignItems: 'center',
                             gap: '4px',
-                            background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(99, 102, 241, 0.4))',
-                            border: '1px solid rgba(168, 85, 247, 0.65)',
+                            background: isBadEnd 
+                              ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.5), rgba(185, 28, 28, 0.5))'
+                              : 'linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(99, 102, 241, 0.4))',
+                            border: isBadEnd 
+                              ? '1px solid rgba(239, 68, 68, 0.8)'
+                              : '1px solid rgba(168, 85, 247, 0.65)',
                             borderRadius: '5px',
-                            color: '#f3e8ff',
+                            color: isBadEnd ? '#fee2e2' : '#f3e8ff',
                             fontSize: '10.5px',
                             padding: '4px 8px',
                             cursor: 'pointer',
                             fontWeight: 600,
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                            boxShadow: isBadEnd ? '0 2px 10px rgba(239, 68, 68, 0.4)' : '0 2px 8px rgba(0,0,0,0.5)',
                             transition: 'all 0.2s ease'
                           }}
                         >
-                          <span>📖</span>
-                          <span>{language === 'JP' ? '溯源阅读' : 'Read Scene'}</span>
+                          <span>{isBadEnd ? '💀' : '📖'}</span>
+                          <span>{isBadEnd ? (language === 'JP' ? '溯源坏结局' : 'Read Bad End') : (language === 'JP' ? '溯源阅读' : 'Read Scene')}</span>
                           <span style={{ fontSize: '9px', opacity: 0.85, background: 'rgba(0,0,0,0.3)', padding: '0 3px', borderRadius: '3px' }}>
                             {storyLoc.scenario}
                           </span>

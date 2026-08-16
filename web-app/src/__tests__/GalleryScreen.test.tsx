@@ -146,4 +146,24 @@ describe('GalleryScreen Locked CG Scene Reading Actions', () => {
     expect(scen).toBe('gk03');
     expect(ptr).toBe(648); // 658 - 10
   });
+
+  it('correctly identifies and displays Bad End badges on Bad End CG cards', () => {
+    render(
+      <GalleryScreen
+        sf={{}}
+        resolveAsset={(name) => `/mock/${name}.jpg`}
+        onBack={vi.fn()}
+        language="JP"
+        onJumpToStory={vi.fn()}
+      />
+    );
+
+    // Switch to Maou category where ev_maou_04a (Chapter 2 Bad End) is located
+    const maouTabBtn = screen.getByText(/魔王/);
+    fireEvent.click(maouTabBtn);
+
+    // Check for Bad End badges / text
+    const badEndBadges = screen.getAllByText(/BAD END|溯源坏结局/);
+    expect(badEndBadges.length).toBeGreaterThanOrEqual(1);
+  });
 });
