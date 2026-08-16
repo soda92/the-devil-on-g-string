@@ -133,6 +133,36 @@ const BGM_TRACKS: BgmTrack[] = [
     ]
   },
   { 
+    id: "bgm_16c", 
+    name: "羽管键琴协奏曲 (慢板)", 
+    desc: "巴赫 《f小调羽管键琴协奏曲 慢板》 BWV 1056", 
+    composer: "J.S. Bach",
+    scenes: [
+      { scen: 'g23', title: '幽咽夜曲' },
+      { scen: 'g53', title: '融雪回响' }
+    ]
+  },
+  { 
+    id: "bgm_16d", 
+    name: "羽管键琴协奏曲 (哀伤版)", 
+    desc: "巴赫 《f小调羽管键琴协奏曲》 BWV 1056", 
+    composer: "J.S. Bach",
+    scenes: [
+      { scen: 'g36', title: '绝望时刻' },
+      { scen: 'g54', title: '诀别顶罪' }
+    ]
+  },
+  { 
+    id: "bgm_16e", 
+    name: "羽管键琴协奏曲 (尾声版)", 
+    desc: "巴赫 《f小调羽管键琴协奏曲》 BWV 1056", 
+    composer: "J.S. Bach",
+    scenes: [
+      { scen: 'g52', title: '破晓黎明' },
+      { scen: 'gted', title: '椿姬尾声' }
+    ]
+  },
+  { 
     id: "bgm_17", 
     name: "帕萨卡里亚与赋格", 
     desc: "巴赫 《c小调帕萨卡里亚与赋格》", 
@@ -166,12 +196,40 @@ const BGM_TRACKS: BgmTrack[] = [
   },
   { 
     id: "bgm_21", 
-    name: "欢乐颂", 
-    desc: "贝多芬 《第九交响曲“合唱”》 (Ode to Joy)", 
+    name: "欢乐颂 (管弦激昂版)", 
+    desc: "贝多芬 《第九交响曲“合唱”》 (Ode to Joy - Orchestral)", 
     composer: "L. van Beethoven",
     scenes: [
       { scen: 'g45', title: '温暖之歌' },
       { scen: 'g51', title: '勇气的胜利' }
+    ]
+  },
+  { 
+    id: "bgm_21b", 
+    name: "欢乐颂 (小提琴变奏)", 
+    desc: "贝多芬 《第九交响曲“欢乐颂”》 (Violin Solo ver.)", 
+    composer: "L. van Beethoven",
+    scenes: [
+      { scen: 'g51', title: '终章决战' }
+    ]
+  },
+  { 
+    id: "bgm_21c", 
+    name: "欢乐颂 (八音盒轻音版)", 
+    desc: "贝多芬 《第九交响曲“欢乐颂”》 (Music Box ver.)", 
+    composer: "L. van Beethoven",
+    scenes: [
+      { scen: 'g42', title: '回忆余音' }
+    ]
+  },
+  { 
+    id: "bgm_21d", 
+    name: "欢乐颂 (抒情慢板 · 提前到来的春天)", 
+    desc: "贝多芬 《第九交响曲“欢乐颂”》 (True End Climax - Piano Ballad)", 
+    composer: "L. van Beethoven",
+    scenes: [
+      { scen: 'g44', title: '血缘信件' },
+      { scen: 'g55', title: '终章融雪与重逢' }
     ]
   },
   { 
@@ -196,13 +254,51 @@ const BGM_TRACKS: BgmTrack[] = [
   },
   { 
     id: "bgm_24", 
-    name: "埃格蒙特序曲", 
+    name: "埃格蒙特序曲 (管弦版)", 
     desc: "贝多芬 《埃格蒙特序曲》 (Egmont Overture)", 
     composer: "L. van Beethoven",
     scenes: [
       { scen: 'g23', title: '英雄进军' },
-      { scen: 'g45', title: '雪地小屋' },
       { scen: 'g55', title: '春日重逢' }
+    ]
+  },
+  { 
+    id: "bgm_24a", 
+    name: "埃格蒙特序曲 (雪地小屋变奏)", 
+    desc: "贝多芬 《埃格蒙特序曲》 Op. 84", 
+    composer: "L. van Beethoven",
+    scenes: [
+      { scen: 'g45', title: '雪中小屋' }
+    ]
+  },
+  { 
+    id: "bgm_24b", 
+    name: "埃格蒙特序曲 (春风微拂版)", 
+    desc: "贝多芬 《埃格蒙特序曲》 Op. 84", 
+    composer: "L. van Beethoven",
+    scenes: [
+      { scen: 'g43', title: '终章博弈' },
+      { scen: 'gm05', title: '水羽之约' }
+    ]
+  },
+  { 
+    id: "bgm_25", 
+    name: "华尔斯坦奏鸣曲", 
+    desc: "贝多芬 《C大调第二十一钢琴奏鸣曲“华尔斯坦”》 Op. 53", 
+    composer: "L. van Beethoven",
+    scenes: [
+      { scen: 'g47', title: '黎明誓言' },
+      { scen: 'gt04', title: '椿姬之路' }
+    ]
+  },
+  { 
+    id: "bgm_25c", 
+    name: "华尔斯坦 (千钧一发版)", 
+    desc: "贝多芬 《第二十一钢琴奏鸣曲“华尔斯坦”》 Op. 53", 
+    composer: "L. van Beethoven",
+    scenes: [
+      { scen: 'g33', title: '致命危机' },
+      { scen: 'g49', title: '黑道对峙' }
     ]
   },
   { 
