@@ -112,4 +112,38 @@ describe('GalleryScreen Locked CG Scene Reading Actions', () => {
     expect(scen).toBe('g49');
     expect(ptr).toBe(3636); // 3646 - 10
   });
+
+  it('correctly provides Read Scene buttons for CGs 126-133 (Kanon special costumes in gk03)', () => {
+    const onJumpToStoryMock = vi.fn();
+    const resolveAssetMock = vi.fn((name) => `/mock/${name}.jpg`);
+
+    render(
+      <GalleryScreen
+        sf={{}} // All locked
+        resolveAsset={resolveAssetMock}
+        onBack={vi.fn()}
+        language="JP"
+        onJumpToStory={onJumpToStoryMock}
+      />
+    );
+
+    // Switch category to Kanon
+    const kanonTabBtn = screen.getByText(/美轮 花音/);
+    fireEvent.click(kanonTabBtn);
+
+    // Switch to page 3 (where items 126-133 / standee CGs are located)
+    const page3Btn = screen.getByText('3');
+    fireEvent.click(page3Btn);
+
+    // Verify Read Scene buttons for gk03 exist on this page
+    const gk03ReadBtns = screen.getAllByTitle(/跳转到该CG的前导剧情 \[gk03\]/);
+    expect(gk03ReadBtns.length).toBeGreaterThanOrEqual(1);
+
+    fireEvent.click(gk03ReadBtns[0]);
+
+    expect(onJumpToStoryMock).toHaveBeenCalledTimes(1);
+    const [scen, ptr] = onJumpToStoryMock.mock.calls[0];
+    expect(scen).toBe('gk03');
+    expect(ptr).toBe(648); // 658 - 10
+  });
 });

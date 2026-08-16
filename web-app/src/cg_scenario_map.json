@@ -1846,5 +1846,53 @@
     "pointer": 1061,
     "speaker": "",
     "previewText": "哔卜……！　哔噜！"
+  },
+  "st_kanon_a_ra_01_b": {
+    "scenario": "gk03",
+    "pointer": 658,
+    "speaker": "花音",
+    "previewText": "看着从黑暗浴室里走出的花音，大吃一惊。"
+  },
+  "st_kanon_a_ra_01_f": {
+    "scenario": "gk03",
+    "pointer": 658,
+    "speaker": "花音",
+    "previewText": "看着从黑暗浴室里走出的花音，大吃一惊。"
+  },
+  "st_kanon_a_ra_03_b": {
+    "scenario": "gk03",
+    "pointer": 658,
+    "speaker": "花音",
+    "previewText": "看着从黑暗浴室里走出的花音，大吃一惊。"
+  },
+  "st_kanon_a_ra_03_f": {
+    "scenario": "gk03",
+    "pointer": 658,
+    "speaker": "花音",
+    "previewText": "看着从黑暗浴室里走出的花音，大吃一惊。"
+  },
+  "st_kanon_a_ra_11_b": {
+    "scenario": "gk03",
+    "pointer": 658,
+    "speaker": "花音",
+    "previewText": "看着从黑暗浴室里走出的花音，大吃一惊。"
+  },
+  "st_kanon_a_ra_11_f": {
+    "scenario": "gk03",
+    "pointer": 658,
+    "speaker": "花音",
+    "previewText": "看着从黑暗浴室里走出的花音，大吃一惊。"
+  },
+  "st_kanon_a_ra_11b_b": {
+    "scenario": "gk03",
+    "pointer": 658,
+    "speaker": "花音",
+    "previewText": "看着从黑暗浴室里走出的花音，大吃一惊。"
+  },
+  "st_kanon_a_ra_11b_f": {
+    "scenario": "gk03",
+    "pointer": 658,
+    "speaker": "花音",
+    "previewText": "看着从黑暗浴室里走出的花音，大吃一惊。"
   }
 }
