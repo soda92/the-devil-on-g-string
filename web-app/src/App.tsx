@@ -388,10 +388,15 @@ export default function App() {
           <MusicRoom 
             playBgm={audio.playBgm}
             stopBgm={audio.stopBgm}
+            bgmPlayer={audio.bgmPlayer}
             currentBgmName={audio.bgmPlayer.src ? audio.bgmPlayer.src.split('/').pop()?.split('.')[0] || '' : ''}
             onBack={runner.quitToTitle}
             sf={runner.sf}
             setSf={runner.updateSf}
+            onJumpToStory={(scenario, ptr) => {
+              runner.setGameState('PLAYING');
+              runner.loadScenario(scenario, null, ptr || 0, false, false, true);
+            }}
           />
         )}
 
