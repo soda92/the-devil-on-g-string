@@ -70,7 +70,7 @@ const formatCgTitle = (base: string, fallbackTitle: string): string => {
 
 const isBadEndCg = (base: string, storyLoc?: CgStoryLocation | null): boolean => {
   const b = base.toLowerCase();
-  if (b === 'ev_other_20' || b === 'ev_maou_04a') return true;
+  if (b.startsWith('ev_other_20') || b.startsWith('ev_maou_04')) return true;
   if (storyLoc) {
     if (storyLoc.scenario === 'g23' && storyLoc.pointer >= 1500) return true;
     if (storyLoc.scenario === 'gk07' && storyLoc.pointer >= 1800) return true;
