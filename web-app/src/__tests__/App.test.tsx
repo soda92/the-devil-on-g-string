@@ -924,4 +924,54 @@ describe('G-String Visual Novel Engine Unit Tests', () => {
 
     globalThis.fetch = originalFetch;
   });
+
+  it('restores avg dialogue mode when jumping from novel mode back to avg dialogue line via history snapshot', async () => {
+    const originalFetch = globalThis.fetch;
+    const mixedModeScenario = {
+      instructions: [
+        { type: 'command', name: 'bg', args: { storage: 'bg_01' } },
+        { type: 'text', text_jp: '这是普通AVG对话。', text_en: 'Normal AVG line.' }, // 1
+        { type: 'wait_click' }, // 2
+        { type: 'command', name: 'novel', args: {} }, // 3
+        { type: 'text', text_jp: '这是全屏小说模式。', text_en: 'Fullscreen novel line.' } // 4
+      ]
+    };
+
+    globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.includes('g01.json') || url.includes('scenarios/')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mixedModeScenario)
+        } as Response);
+      }
+      return Promise.resolve({ ok: false, status: 404 } as Response);
+    });
+
+    const App = await getApp();
+    render(<App />);
+
+    // Start at pointer 4 (which is in novel mode)
+    await act(async () => {
+      const runner = (window as any).quick_check();
+      await runner.loadScenario('g01', null, 4, false, false, true);
+    });
+
+    let runnerState = (window as any).quick_check();
+    expect(runnerState.dialogueMode).toBe('novel');
+
+    // The historyLog[0] is the AVG line at pointer 1
+    const avgSnapshot = runnerState.historyLog[0]?.snapshot;
+    expect(avgSnapshot).toBeDefined();
+
+    // Jump to the AVG line snapshot
+    await act(async () => {
+      await runnerState.jumpToHistorySnapshot(avgSnapshot, 0);
+    });
+
+    runnerState = (window as any).quick_check();
+    // Verify dialogueMode has been restored to 'avg' (not stuck in 'novel')
+    expect(runnerState.dialogueMode).toBe('avg');
+
+    globalThis.fetch = originalFetch;
+  });
 });

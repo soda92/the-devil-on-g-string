@@ -1296,6 +1296,7 @@ export function useKagRunner({
             speaker: language === 'JP' ? currentSpeakerRef.current.jp : currentSpeakerRef.current.en,
             currentSpeaker: { ...currentSpeakerRef.current },
             dialogueText: targetFullText,
+            dialogueMode: dialogueMode,
             currentVoice: currentVoiceRef.current || '',
             currentScenario,
             pointer: p,
@@ -1317,6 +1318,7 @@ export function useKagRunner({
                 voice: voiceFile,
                 currentScenario,
                 pointer: p,
+                dialogueMode: dialogueMode,
                 snapshot
               }
             ];
@@ -1562,6 +1564,7 @@ export function useKagRunner({
         historyLog,
         setHistoryLog,
         loadScenario,
+        jumpToHistorySnapshot,
         audio: {
           bgm: { src: bgmPlayer.src, paused: bgmPlayer.paused, volume: bgmPlayer.volume },
           se: { src: sePlayer.src, paused: sePlayer.paused, volume: sePlayer.volume },
@@ -1974,10 +1977,10 @@ export function useKagRunner({
       setSprites(snap.sprites);
       setBackground(snap.background);
       setSpeaker(snap.speaker);
-      currentSpeakerRef.current = snap.currentSpeaker || { jp: snap.speaker || '', en: snap.speaker || '' };
-      setCurrentVoice(snap.currentVoice || '');
+      currentVoiceRef.current = snap.currentVoice || null;
       updateDialogueText(snap.dialogueText);
       setTypewriterText(snap.dialogueText);
+      setDialogueMode(snap.dialogueMode || entry?.dialogueMode || 'avg');
 
       if (snap.showOptions) {
         setShowOptions(snap.showOptions);
@@ -2002,8 +2005,10 @@ export function useKagRunner({
       setSpeaker(resolvedSp);
       currentSpeakerRef.current = { jp: entry.speakerJp || '', en: entry.speakerEn || '' };
       setCurrentVoice(entry.voice || '');
+      currentVoiceRef.current = entry.voice || null;
       updateDialogueText(text);
       setTypewriterText(text);
+      setDialogueMode(entry?.dialogueMode || 'avg');
       setShowOptions(false);
     }
 
