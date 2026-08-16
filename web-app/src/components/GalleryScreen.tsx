@@ -602,7 +602,9 @@ export default function GalleryScreen({
               const isRevealed = revealedThumbs.has(String(item.id));
               const shouldBlur = isSensitive && !isRevealed;
               const formattedTitle = formatCgTitle(item.base, item.title);
-              const storyLoc = thumbName ? typedCgScenarioMap[thumbName] : null;
+              const storyLoc = (thumbName ? typedCgScenarioMap[thumbName] : null) 
+                || typedCgScenarioMap[item.base] 
+                || (item.variants ? item.variants.map(v => typedCgScenarioMap[v]).find(Boolean) : null);
               
               return (
                 <div 
@@ -651,10 +653,11 @@ export default function GalleryScreen({
                           )}
                           {storyLoc && onJumpToStory && (
                             <button
-                              title={language === 'JP' ? `跳转到剧情 [${storyLoc.scenario}]` : `Jump to Dialog [${storyLoc.scenario}]`}
+                              title={language === 'JP' ? `跳转到该CG前导剧情 [${storyLoc.scenario}] (预留前导对话)` : `Jump to Dialogue Context [${storyLoc.scenario}]`}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                onJumpToStory(storyLoc.scenario, storyLoc.pointer);
+                                const contextPtr = Math.max(0, storyLoc.pointer - 10);
+                                onJumpToStory(storyLoc.scenario, contextPtr);
                               }}
                               style={{
                                 background: 'rgba(168, 85, 247, 0.35)',
@@ -700,7 +703,59 @@ export default function GalleryScreen({
                       )}
                     </>
                   ) : (
-                    <div className="gallery-locked">🔒 LOCKED</div>
+                    <div 
+                      className="gallery-locked"
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
+                        height: '100%',
+                        background: 'radial-gradient(circle at center, rgba(30, 20, 45, 0.85) 0%, rgba(10, 8, 18, 0.96) 100%)',
+                        padding: '8px',
+                        boxSizing: 'border-box',
+                        gap: '6px',
+                        textAlign: 'center'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94a3b8', fontSize: '11px', fontWeight: 600 }}>
+                        <span>🔒</span>
+                        <span>{formattedTitle}</span>
+                      </div>
+                      {storyLoc && onJumpToStory && (
+                        <button
+                          className="gallery-read-context-btn"
+                          title={language === 'JP' ? `跳转到该CG的前导剧情 [${storyLoc.scenario}] (预留前导对话，连贯体验)` : `Jump to Dialogue Context [${storyLoc.scenario}]`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const contextPtr = Math.max(0, storyLoc.pointer - 10);
+                            onJumpToStory(storyLoc.scenario, contextPtr);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(99, 102, 241, 0.4))',
+                            border: '1px solid rgba(168, 85, 247, 0.65)',
+                            borderRadius: '5px',
+                            color: '#f3e8ff',
+                            fontSize: '10.5px',
+                            padding: '4px 8px',
+                            cursor: 'pointer',
+                            fontWeight: 600,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.5)',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <span>📖</span>
+                          <span>{language === 'JP' ? '溯源阅读' : 'Read Scene'}</span>
+                          <span style={{ fontSize: '9px', opacity: 0.85, background: 'rgba(0,0,0,0.3)', padding: '0 3px', borderRadius: '3px' }}>
+                            {storyLoc.scenario}
+                          </span>
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               );
@@ -968,7 +1023,8 @@ export default function GalleryScreen({
               onClick={(e) => {
                 e.stopPropagation();
                 const loc = typedCgScenarioMap[viewingVariants[viewingIdx]];
-                onJumpToStory(loc.scenario, loc.pointer);
+                const contextPtr = Math.max(0, loc.pointer - 10);
+                onJumpToStory(loc.scenario, contextPtr);
               }}
               style={{
                 position: 'absolute',
