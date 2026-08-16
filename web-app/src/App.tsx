@@ -352,6 +352,7 @@ export default function App() {
             sf={runner.sf}
             updateSf={runner.updateSf}
             isSceneReplayMode={runner.isSceneReplayMode}
+            currentBgm={audio.bgmPlayer.src ? audio.bgmPlayer.src.split('/').pop()?.split('.')[0] || '' : ''}
           />
         )}
 

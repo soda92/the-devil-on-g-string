@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import scenarioNames from '../scenario_names.json';
+import { getBgmInfo } from '../data/bgmMetadata';
 import { GameVariables, KagInstruction, SpritesState, SystemFlags } from '../types/kag';
 
 const typedScenarioNames: string[] = scenarioNames as string[];
@@ -293,7 +294,20 @@ export default function DebugPanel({
           {/* Audio Status & Controls */}
           <div style={{ background: '#111', padding: '8px', borderRadius: '4px', lineHeight: '1.4', border: '1px solid #222' }}>
             <h4 style={{ margin: '0 0 5px 0', color: '#fff', borderBottom: '1px solid #333', fontSize: '11px', paddingBottom: '2px' }}>2b. Audio Player Status</h4>
-            <div><strong>BGM Track:</strong> "{bgmState.src}"</div>
+            {(() => {
+              const rawTrack = bgmState.src ? bgmState.src.split('/').pop()?.split('.')[0] || '' : '';
+              const info = rawTrack ? getBgmInfo(rawTrack) : null;
+              return (
+                <>
+                  <div><strong>BGM Track:</strong> "{bgmState.src || '(none)'}"</div>
+                  {info && info.title && (
+                    <div style={{ color: '#c084fc', fontSize: '11px', margin: '2px 0' }}>
+                      🎵 <strong>{info.title}</strong> {info.composer ? `— ${info.composer}` : ''}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
             <div><strong>BGM State:</strong> {bgmState.paused ? '⏸️ PAUSED' : '▶️ PLAYING'}</div>
             <div><strong>BGM Vol  :</strong> {(bgmState.volume * 100).toFixed(0)}% {bgmState.muted ? '(MUTED)' : ''}</div>
             <div style={{ display: 'flex', gap: '5px', marginTop: '8px' }}>

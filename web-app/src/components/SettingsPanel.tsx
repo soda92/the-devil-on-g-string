@@ -139,6 +139,18 @@ export default function SettingsPanel({
         </div>
 
         <div className="settings-row">
+          <label className="settings-label">{language === 'JP' ? 'BGM 曲目切换提示' : 'BGM Track Toast'}</label>
+          <div className="settings-control-buttons">
+            <button className={`control-btn ${!sf.disableBgmToast ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, disableBgmToast: false }))}>
+              {language === 'JP' ? '开启' : 'Enabled'}
+            </button>
+            <button className={`control-btn ${sf.disableBgmToast ? 'active' : ''}`} onClick={() => setSf(prev => ({ ...prev, disableBgmToast: true }))}>
+              {language === 'JP' ? '关闭' : 'Disabled'}
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-row">
           <label className="settings-label">{language === 'JP' ? '背景音乐音量' : 'Music Volume'}</label>
           <input 
             type="range" 

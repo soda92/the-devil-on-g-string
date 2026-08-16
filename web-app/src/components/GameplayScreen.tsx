@@ -1,5 +1,6 @@
 import React from 'react';
 import DialogueBox from './DialogueBox';
+import BgmToast from './BgmToast';
 import spritePositions from '../sprite_positions.json';
 import { DialogueMode, Language, SpritesState, SystemFlags, ChoiceOption } from '../types/kag';
 
@@ -110,6 +111,7 @@ export interface GameplayScreenProps {
   onOpenToc?: () => void;
   onToggleFlipper?: () => void;
   isSceneReplayMode?: boolean;
+  currentBgm?: string | null;
   sf?: SystemFlags;
   updateSf?: (sf: SystemFlags) => void;
 }
@@ -147,6 +149,7 @@ export default function GameplayScreen({
   onOpenToc,
   onToggleFlipper,
   isSceneReplayMode,
+  currentBgm,
   sf,
   updateSf
 }: GameplayScreenProps) {
@@ -161,6 +164,9 @@ export default function GameplayScreen({
           backgroundColor: background === 'white' ? '#fff' : '#000'
         }} 
       />
+
+      {/* Floating Top-Left BGM Change Toast Notification */}
+      <BgmToast currentBgm={currentBgm} disabled={Boolean(sf?.disableBgmToast)} language={language} />
 
       {/* Character Sprites Layer */}
       <div className="sprites-container">

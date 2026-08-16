@@ -676,7 +676,12 @@ export default function MusicRoom({ playBgm, stopBgm, bgmPlayer, currentBgmName,
               onClick={() => handlePlayTrack(track.id)}
             >
               <div className="music-track-header">
-                <span className="music-track-title">{track.name}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '10px', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', padding: '1px 5px', borderRadius: '3px', border: '1px solid rgba(168, 85, 247, 0.3)', fontFamily: 'monospace', fontWeight: 'bold' }}>
+                    {track.id}
+                  </span>
+                  <span className="music-track-title">{track.name}</span>
+                </div>
                 <span className="music-track-composer">{track.composer}</span>
               </div>
               <span className="music-track-desc">{track.desc}</span>
@@ -698,8 +703,11 @@ export default function MusicRoom({ playBgm, stopBgm, bgmPlayer, currentBgmName,
           <div style={{ width: '100%', marginBottom: '8px' }}>
             {activeTrack ? (
               <>
-                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff', marginBottom: '3px' }}>
-                  {activeTrack.name}
+                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fff', marginBottom: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <span>{activeTrack.name}</span>
+                  <span style={{ fontSize: '10px', background: 'rgba(168, 85, 247, 0.25)', color: '#e9d5ff', padding: '1px 6px', borderRadius: '4px', border: '1px solid rgba(168, 85, 247, 0.4)', fontFamily: 'monospace' }}>
+                    {activeTrack.id}
+                  </span>
                 </div>
                 <div style={{ fontSize: '11px', color: '#a855f7', fontWeight: 600, marginBottom: '2px' }}>
                   {activeTrack.composer}

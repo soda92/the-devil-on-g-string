@@ -87,6 +87,7 @@ export interface SystemFlags {
   kanon_clear?: number;
   mizuha_clear?: number;
   disableWheelHistory?: boolean;
+  disableBgmToast?: boolean;
   typewriterMode?: 'CHAR' | 'LINE' | string;
   avgOpacity?: number;
   avgBlur?: number;
