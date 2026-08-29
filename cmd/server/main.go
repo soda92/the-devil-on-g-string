@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
 	"runtime"
+	"syscall"
 	"time"
 
 	"game-rewrite/lib/extraction"
@@ -33,7 +35,7 @@ func openBrowser(url string) {
 }
 
 func main() {
-	port := flag.Int("port", 8080, "port to listen on")
+	port := flag.Int("port", 0, "port to listen on (default 8080 in prod, 38080 in dev)")
 	extractMode := flag.Bool("extract", false, "run asset extraction mode")
 	devMode := flag.Bool("dev", false, "run in frontend development mode (runs pnpm dev concurrently)")
 	analyzeMode := flag.Bool("analyze", false, "run scenario analysis to find unhandled events")
@@ -42,6 +44,16 @@ func main() {
 	if *analyzeMode {
 		analyzer.RunAnalysis()
 		return
+	}
+
+	// Resolve effective port: 38080 for dev, 8080 for prod unless explicitly provided
+	effectivePort := *port
+	if effectivePort == 0 {
+		if *devMode {
+			effectivePort = 38080
+		} else {
+			effectivePort = 8080
+		}
 	}
 
 	// Detect if extraction is needed
@@ -81,24 +93,30 @@ func main() {
 		}
 	}
 
+	var devCmd *exec.Cmd
 	if *devMode {
-		fmt.Println("Launching frontend Vite development server (pnpm dev)...")
-		var cmd *exec.Cmd
+		fmt.Printf("Launching frontend Vite development server (pnpm dev) with BACKEND_PORT=%d...\n", effectivePort)
 		if runtime.GOOS == "windows" {
-			cmd = exec.Command("cmd", "/c", "pnpm", "dev")
+			devCmd = exec.Command("cmd", "/c", "pnpm", "dev")
 		} else {
-			cmd = exec.Command("pnpm", "dev")
+			devCmd = exec.Command("pnpm", "dev")
 		}
-		cmd.Dir = "./web-app"
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
+		devCmd.Dir = "./web-app"
+		devCmd.Env = append(os.Environ(), fmt.Sprintf("BACKEND_PORT=%d", effectivePort))
+		devCmd.Stdout = os.Stdout
+		devCmd.Stderr = os.Stderr
 
-		err := cmd.Start()
+		// Enable process group for clean subtree termination on Unix
+		if runtime.GOOS != "windows" {
+			devCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		}
+
+		err := devCmd.Start()
 		if err != nil {
 			log.Printf("Warning: Failed to start frontend development server (pnpm dev): %v\n", err)
 		} else {
 			go func() {
-				cmd.Wait()
+				_ = devCmd.Wait()
 			}()
 		}
 	}
@@ -106,16 +124,16 @@ func main() {
 	// Setup Gin Router
 	router := handlers.SetupRouter(*devMode)
 
-	url := fmt.Sprintf("http://localhost:%d", *port)
+	frontendUrl := fmt.Sprintf("http://localhost:%d", effectivePort)
 	if *devMode {
-		url = "http://localhost:38942"
+		frontendUrl = "http://localhost:38942"
 	}
 
 	if *devMode {
-		fmt.Printf("Starting backend server on http://localhost:%d\n", *port)
-		fmt.Printf("Dev mode active. Web application available at %s\n", url)
+		fmt.Printf("Backend API server listening on http://localhost:%d\n", effectivePort)
+		fmt.Printf("Dev mode active. Frontend dev application available at %s\n", frontendUrl)
 	} else {
-		fmt.Printf("Starting backend server on %s\n", url)
+		fmt.Printf("Starting backend server on %s\n", frontendUrl)
 	}
 
 	// Async browser open after a slight delay to allow port binding
@@ -125,8 +143,32 @@ func main() {
 			delay = 1500 * time.Millisecond
 		}
 		time.Sleep(delay)
-		openBrowser(url)
+		openBrowser(frontendUrl)
 	}()
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), router))
+	// Graceful shutdown listener to terminate the Vite child process tree
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", effectivePort),
+		Handler: router,
+	}
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		<-quit
+		log.Println("Shutting down server...")
+		if devCmd != nil && devCmd.Process != nil {
+			if runtime.GOOS != "windows" {
+				_ = syscall.Kill(-devCmd.Process.Pid, syscall.SIGKILL)
+			} else {
+				_ = devCmd.Process.Kill()
+			}
+		}
+		os.Exit(0)
+	}()
+
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("Server listen error: %v", err)
+	}
 }
